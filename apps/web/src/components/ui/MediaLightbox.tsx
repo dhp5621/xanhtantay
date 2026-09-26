@@ -69,11 +69,11 @@ export function MediaLightbox({
         </div>
 
         <div className="m3-lightbox-stage" onClick={(e) => { if (e.target === e.currentTarget) close(); }}>
-          <div key={item.url} className="m3-lightbox-media anim-in-scale" style={{ width: "min(100%, 1100px)", height: "100%", display: "grid", placeItems: "center" }}>
+          <div key={item.url} className="m3-lightbox-fit anim-in-scale">
             {item.kind === "video" ? (
-              <SmartVideo src={item.url} controls autoPlay objectFit="contain" style={{ maxHeight: "100%", background: "transparent", borderRadius: "var(--shape-md)" }} />
+              <SmartVideo src={item.url} controls autoPlay objectFit="contain" style={{ background: "transparent" }} />
             ) : (
-              <SmartImage src={item.url} alt={item.caption ?? ""} objectFit="contain" priority style={{ maxHeight: "100%", background: "transparent", borderRadius: "var(--shape-md)" }} />
+              <SmartImage src={item.url} alt={item.caption ?? ""} objectFit="contain" priority style={{ background: "transparent" }} />
             )}
           </div>
           {items.length > 1 && (

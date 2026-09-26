@@ -1357,8 +1357,13 @@ input[type="number"].tabular::-webkit-inner-spin-button { -webkit-appearance: no
 .m3-lightbox.closing { animation: m3-fade-out var(--dur-short-4) var(--ease-standard-accel) both; }
 .m3-lightbox-top, .m3-lightbox-bottom { display: flex; align-items: center; gap: 8px; padding: 8px 12px; }
 .m3-lightbox-bottom { flex-direction: column; padding-bottom: 16px; }
-.m3-lightbox-stage { position: relative; flex: 1; min-height: 0; display: grid; place-items: center; padding: 0 8px; }
-.m3-lightbox-media { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: var(--shape-md); box-shadow: var(--elev-4); }
+.m3-lightbox-stage { position: relative; flex: 1; min-height: 0; overflow: hidden; padding: 0 8px; }
+/* The fit box is the stage itself; media inside may never exceed it on any screen */
+.m3-lightbox-fit { position: absolute; inset: 8px 64px; display: flex; align-items: center; justify-content: center; }
+@media (max-width: 639px) { .m3-lightbox-fit { inset: 4px 8px; } }
+.m3-lightbox-fit .m3-img.contain { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: transparent; }
+.m3-lightbox-fit .m3-img.contain img, .m3-lightbox-fit .m3-img.contain video { border-radius: var(--shape-md); box-shadow: var(--elev-4); }
+.m3-lightbox-fit .m3-img-ph { background: transparent; }
 .m3-lightbox-nav { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,.14); color: #fff; width: 48px; height: 48px; }
 .m3-lightbox-dot { height: 8px; border-radius: 4px; border: none; padding: 0; cursor: pointer; transition: width var(--dur-medium-2) var(--spring-default-spatial), background-color var(--dur-short-4) var(--ease-standard); }
 .m3-thumb { overflow: hidden; transition: transform var(--dur-medium-2) var(--spring-fast-spatial), box-shadow var(--dur-medium-2) var(--ease-standard); }
@@ -1896,3 +1901,6 @@ input[type="number"].tabular::-webkit-inner-spin-button { -webkit-appearance: no
 /* ─── Filter panel ───────────────────────────────────────────── */
 .m3-filter-panel { display: grid; gap: 14px; padding: 16px 18px; border-radius: var(--shape-xl); background: var(--md-surface-container-low); animation: m3-enter var(--dur-medium-2) var(--ease-emphasized-decel) both; }
 @media (min-width: 768px) { .m3-filter-panel { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+/* contain-mode images anywhere: centre inside their box */
+.m3-img.contain { display: flex; align-items: center; justify-content: center; }

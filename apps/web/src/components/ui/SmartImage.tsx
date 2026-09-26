@@ -11,7 +11,7 @@ export function SmartImage({ src, alt = "", className = "", style, sizes, priori
 }) {
   const [state, setState] = useState<"loading" | "done" | "error">("loading");
   return (
-    <span className={`m3-img ${state} ${className}`} style={style}>
+    <span className={`m3-img ${state} ${objectFit === "contain" ? "contain" : ""} ${className}`} style={style}>
       {state !== "done" && (
         <span className="m3-img-ph" aria-hidden>
           {state === "loading" ? <span className="m3-loader sm" /> : <span className="msr" style={{ fontSize: 28, opacity: 0.5 }}>broken_image</span>}
@@ -26,7 +26,9 @@ export function SmartImage({ src, alt = "", className = "", style, sizes, priori
         decoding="async"
         onLoad={() => setState("done")}
         onError={() => setState("error")}
-        style={{ width: "100%", height: "100%", objectFit, display: "block", opacity: state === "done" ? 1 : 0, transition: "opacity var(--dur-medium-4) var(--ease-standard)" }}
+        style={objectFit === "contain"
+          ? { maxWidth: "100%", maxHeight: "100%", width: "auto", height: "auto", objectFit: "contain", display: "block", opacity: state === "done" ? 1 : 0, transition: "opacity var(--dur-medium-4) var(--ease-standard)" }
+          : { width: "100%", height: "100%", objectFit, display: "block", opacity: state === "done" ? 1 : 0, transition: "opacity var(--dur-medium-4) var(--ease-standard)" }}
       />
     </span>
   );

@@ -6,7 +6,7 @@ import { useState } from "react";
 export function SmartVideo({ src, controls = false, autoPlay = false, style, objectFit = "cover" }: { src: string; controls?: boolean; autoPlay?: boolean; style?: React.CSSProperties; objectFit?: "cover" | "contain" }) {
   const [ready, setReady] = useState(false);
   return (
-    <span className={`m3-img ${ready ? "done" : "loading"}`} style={style}>
+    <span className={`m3-img ${ready ? "done" : "loading"} ${objectFit === "contain" ? "contain" : ""}`} style={style}>
       {!ready && <span className="m3-img-ph" aria-hidden><span className="m3-loader sm" /></span>}
       <video
         src={src}
@@ -17,7 +17,9 @@ export function SmartVideo({ src, controls = false, autoPlay = false, style, obj
         preload="metadata"
         onLoadedData={() => setReady(true)}
         onCanPlay={() => setReady(true)}
-        style={{ width: "100%", height: "100%", objectFit, display: "block", opacity: ready ? 1 : 0, transition: "opacity var(--dur-medium-4) var(--ease-standard)" }}
+        style={objectFit === "contain"
+          ? { maxWidth: "100%", maxHeight: "100%", width: "auto", height: "auto", objectFit: "contain", display: "block", opacity: ready ? 1 : 0, transition: "opacity var(--dur-medium-4) var(--ease-standard)" }
+          : { width: "100%", height: "100%", objectFit, display: "block", opacity: ready ? 1 : 0, transition: "opacity var(--dur-medium-4) var(--ease-standard)" }}
       />
     </span>
   );
