@@ -6,6 +6,7 @@ import { Icon } from "@/components/ui/Icon";
 import { Portal } from "@/components/ui/Portal";
 import { useSnackbar } from "@/components/ui/Snackbar";
 import { CATEGORY_LABELS, CATEGORY_ICONS, formatVND } from "@/lib/format";
+import { QtyInput } from "@/components/cart/QtyInput";
 
 interface Product { id: string; name: string; unit: string; price_per_unit: number; category: string; in_stock: boolean; stock_qty: number }
 const EMPTY = { name: "", unit: "kg", price_per_unit: 10000, category: "rau_la", stock_qty: 20 };
@@ -24,8 +25,8 @@ export function ProductManager({ farmId, initial }: { farmId: string; initial: P
 
   // Debounced stock adjustment: quick +/- taps, one PATCH after the taps stop.
   const pendingRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
-  const adjustStock = (p: Product, delta: number) => {
-    const next = Math.max(0, p.stock_qty + delta);
+  const setStock = (p: Product, next: number) => {
+    next = Math.max(0, Math.min(100000, Math.round(next)));
     setItems((xs) => xs.map((x) => (x.id === p.id ? { ...x, stock_qty: next, in_stock: next > 0 } : x)));
     clearTimeout(pendingRef.current[p.id]);
     pendingRef.current[p.id] = setTimeout(async () => {
@@ -33,6 +34,7 @@ export function ProductManager({ farmId, initial }: { farmId: string; initial: P
       if (!res.ok) { show("Không lưu được tồn kho", { kind: "error" }); router.refresh(); }
     }, 500);
   };
+  const adjustStock = (p: Product, delta: number) => setStock(p, p.stock_qty + delta);
   const close = () => { setClosing(true); setTimeout(() => { setClosing(false); setEditing(null); }, 250); };
 
   const toggleStock = async (p: Product) => {
@@ -96,7 +98,10 @@ export function ProductManager({ farmId, initial }: { farmId: string; initial: P
                 {/* Stock counter: auto-decrements when customers order */}
                 <div style={{ display: "inline-flex", alignItems: "center", gap: 2, background: p.stock_qty > 0 ? "var(--md-primary-container)" : "var(--md-error-container)", color: p.stock_qty > 0 ? "var(--md-on-primary-container)" : "var(--md-on-error-container)", borderRadius: "var(--shape-full)", padding: 3 }} title="Số lượng còn bán">
                   <button className="m3-icon-btn sm" onClick={() => adjustStock(p, -1)} aria-label="Bớt 1" style={{ background: "var(--md-surface-container-lowest)", color: "var(--md-on-surface)" }} disabled={p.stock_qty <= 0}><Icon name="remove" size={18} /></button>
-                  <span className="tabular label-lg" style={{ minWidth: 64, textAlign: "center" }}>{p.stock_qty} {p.unit}</span>
+                  <span style={{ display: "inline-flex", alignItems: "baseline", gap: 4, minWidth: 64, justifyContent: "center" }}>
+                    <QtyInput value={p.stock_qty} max={100000} width={44} onCommit={(n) => setStock(p, n)} />
+                    <span className="label-lg">{p.unit}</span>
+                  </span>
                   <button className="m3-icon-btn sm filled" onClick={() => adjustStock(p, +1)} aria-label="Thêm 1"><Icon name="add" size={18} /></button>
                 </div>
                 <button className={`m3-btn m3-btn-sm ${p.in_stock && p.stock_qty > 0 ? "m3-btn-tonal-primary" : "m3-btn-error"}`} onClick={() => toggleStock(p)} disabled={busy === p.id || (p.stock_qty <= 0 && !p.in_stock)} aria-pressed={p.in_stock} title={p.stock_qty <= 0 ? "Thêm số lượng để mở bán" : undefined}>
