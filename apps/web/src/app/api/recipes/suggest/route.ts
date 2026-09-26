@@ -1,88 +1,82 @@
 import { NextResponse } from "next/server";
+import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { recipes, products } from "@/db/schema";
-import { inArray } from "drizzle-orm";
+import { recipes, user_recipes } from "@/db/schema";
+import { getSessionUser } from "@/lib/session";
+import { getPurchases, distinctNames } from "@/lib/purchases";
+import { aiConfigured, chatJSON } from "@/lib/ai";
 
-const CHAT_API_URL = "https://chat-api.chuyenbienhoa.com/v1/chat/completions";
-const CHAT_API_MODEL = "gemini-flash-lite";
+interface AiRecipe { title: string; description?: string; minutes?: number; ingredients: string[]; steps: string[]; based_on?: string[] }
 
+const SYSTEM = `Bạn là đầu bếp gia đình Việt Nam. Bạn gợi ý món ăn CHỈ dựa trên nguyên liệu khách vừa mua từ vườn, cộng thêm gia vị và nguyên liệu cơ bản trong bếp (thịt, trứng, tỏi, hành, nước mắm...). Mỗi món phải dùng ít nhất một món khách đã mua làm nguyên liệu chính. Trả về JSON thuần, không giải thích.`;
+
+/**
+ * POST { count?: 1..4, order_id?: string, exclude?: string[], replace_id?: string }
+ * Generates personal recipes from what the signed-in customer actually bought and stores them.
+ */
 export async function POST(req: Request) {
-  const body = await req.json();
-  const { product_ids }: { product_ids: string[] } = body;
+  const user = await getSessionUser();
+  if (!user) return NextResponse.json({ error: "Đăng nhập để nhận gợi ý riêng" }, { status: 401 });
 
-  if (!product_ids?.length) {
-    return NextResponse.json({ error: "Cần danh sách sản phẩm" }, { status: 400 });
+  const body = (await req.json().catch(() => ({}))) as { count?: number; order_id?: string; exclude?: string[]; replace_id?: string };
+  const count = Math.min(4, Math.max(1, Number(body.count ?? 3)));
+
+  const purchases = await getPurchases(user.id, { orderId: body.order_id });
+  const names = distinctNames(purchases).slice(0, 12);
+  if (!names.length) return NextResponse.json({ error: "Bạn chưa mua món nào, đặt rau trước rồi quay lại nhé" }, { status: 400 });
+
+  // Titles already in history are excluded so "đổi món" really gives something new.
+  const history = await db.select({ title: user_recipes.title }).from(user_recipes).where(eq(user_recipes.user_id, user.id)).orderBy(desc(user_recipes.created_at)).limit(30);
+  const exclude = Array.from(new Set([...history.map((h) => h.title), ...(body.exclude ?? [])])).slice(0, 40);
+
+  let generated: AiRecipe[] = [];
+  let source: "ai" | "curated" = "ai";
+
+  if (aiConfigured()) {
+    const prompt = `Khách vừa mua: ${names.join(", ")}.
+${exclude.length ? `KHÔNG gợi ý lại các món: ${exclude.join("; ")}.` : ""}
+Gợi ý ${count} món ăn gia đình đơn giản, mỗi món dưới 40 phút, dùng nguyên liệu trên làm chính.
+JSON array, mỗi phần tử: {"title": "...", "description": "1 câu hấp dẫn", "minutes": số phút, "ingredients": ["... (ghi rõ định lượng)"], "steps": ["bước 1", "..."], "based_on": ["tên món đã mua được dùng"]}`;
+    const out = await chatJSON<AiRecipe[]>(SYSTEM, prompt, { temperature: 0.8 });
+    if (Array.isArray(out)) generated = out.filter((r) => r && typeof r.title === "string" && Array.isArray(r.ingredients) && Array.isArray(r.steps)).slice(0, count);
   }
 
-  // Get product names to match against recipe ingredients
-  const purchasedProducts = await db
-    .select()
-    .from(products)
-    .where(inArray(products.id, product_ids));
-
-  const productNames = purchasedProducts.map((p) => p.name.toLowerCase());
-
-  // Find recipes whose ingredients overlap with purchased products
-  const allRecipes = await db.select().from(recipes);
-  const matched = allRecipes
-    .map((recipe) => {
-      const ings = (recipe.ingredients as string[]).map((i) => i.toLowerCase());
-      const overlap = ings.filter((ing) =>
-        productNames.some((name) => name.includes(ing) || ing.includes(name))
-      );
-      return { ...recipe, score: overlap.length };
-    })
-    .filter((r) => r.score > 0)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 5);
-
-  if (matched.length > 0) {
-    return NextResponse.json(matched);
-  }
-
-  // Fallback: call self-hosted chat API
-  const apiKey = process.env.CHAT_API_SECRET;
-  if (!apiKey) {
-    return NextResponse.json([]);
-  }
-
-  try {
-    const productList = purchasedProducts.map((p) => p.name).join(", ");
-    const res = await fetch(CHAT_API_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: CHAT_API_MODEL,
-        temperature: 0.4,
-        messages: [
-          {
-            role: "system",
-            content:
-              "Bạn là trợ lý gợi ý công thức nấu ăn. Chỉ trả lời bằng JSON thuần, không giải thích thêm.",
-          },
-          {
-            role: "user",
-            content: `Tôi vừa mua: ${productList}. Gợi ý 2-3 công thức nấu ăn đơn giản bằng tiếng Việt sử dụng những nguyên liệu này. Trả về JSON array với định dạng: [{"title": "...", "ingredients": ["..."], "steps": ["..."]}]`,
-          },
-        ],
-      }),
-    });
-
-    if (!res.ok) {
-      return NextResponse.json([]);
+  if (!generated.length) {
+    // Fallback: curated recipes whose ingredients overlap the purchases, excluding history.
+    source = "curated";
+    const lower = names.map((n) => n.toLowerCase());
+    const all = await db.select().from(recipes);
+    generated = all
+      .map((r) => {
+        const hits = r.ingredients.filter((ing) => lower.some((n) => n.includes(ing.toLowerCase()) || ing.toLowerCase().includes(n)));
+        return { r, score: hits.length, hits };
+      })
+      .filter((x) => x.score > 0 && !exclude.includes(x.r.title))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, count)
+      .map(({ r, hits }) => ({ title: r.title, ingredients: r.ingredients, steps: r.steps, based_on: names.filter((n) => hits.some((h) => n.toLowerCase().includes(h.toLowerCase()) || h.toLowerCase().includes(n.toLowerCase()))) }));
+    if (!generated.length) {
+      return NextResponse.json({ error: aiConfigured() ? "AI đang bận, thử lại sau một chút" : "Chưa có công thức phù hợp với món bạn mua. Máy chủ chưa bật trợ lý AI." }, { status: 503 });
     }
-
-    const data = await res.json();
-    const text: string = data?.choices?.[0]?.message?.content ?? "";
-    const jsonMatch = text.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) return NextResponse.json([]);
-
-    const suggestions = JSON.parse(jsonMatch[0]);
-    return NextResponse.json(suggestions);
-  } catch {
-    return NextResponse.json([]);
   }
+
+  if (body.replace_id) {
+    await db.delete(user_recipes).where(and(eq(user_recipes.id, body.replace_id), eq(user_recipes.user_id, user.id)));
+  }
+
+  const rows = await db.insert(user_recipes).values(
+    generated.map((g) => ({
+      user_id: user.id,
+      order_id: body.order_id ?? null,
+      title: String(g.title).slice(0, 120),
+      description: g.description ? String(g.description).slice(0, 300) : null,
+      minutes: Number.isFinite(Number(g.minutes)) ? Math.round(Number(g.minutes)) : null,
+      ingredients: g.ingredients.map(String).slice(0, 20),
+      steps: g.steps.map(String).slice(0, 12),
+      based_on: (g.based_on?.length ? g.based_on : names.filter((n) => g.ingredients.some((i) => i.toLowerCase().includes(n.toLowerCase())))).map(String).slice(0, 8),
+      source,
+    }))
+  ).returning();
+
+  return NextResponse.json({ recipes: rows, purchased: names, source }, { status: 201 });
 }

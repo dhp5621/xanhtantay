@@ -6,7 +6,7 @@ export type FieldType = "text" | "textarea" | "number" | "boolean" | "select" | 
 export interface Field { key: string; label: string; type: FieldType; options?: { value: string; label: string }[]; required?: boolean; min?: number }
 export interface Section {
   key: string;
-  table: "users" | "farms" | "products" | "orders" | "subscriptions" | "group_orders" | "farm_diary" | "recipes";
+  table: "users" | "farms" | "products" | "orders" | "subscriptions" | "group_orders" | "farm_diary" | "recipes" | "user_recipes";
   label: string;
   icon: string;
   desc: string;
@@ -105,7 +105,12 @@ export const SECTIONS: Section[] = [
     createFields: [],
   },
   {
-    key: "recipes", table: "recipes", label: "Công thức", icon: "skillet", desc: "Gợi ý bếp núc", canDelete: true,
+    key: "user_recipes", table: "user_recipes", label: "Món AI của khách", icon: "auto_awesome", desc: "Công thức AI đã gợi ý cho từng khách", canDelete: true,
+    fields: [{ key: "title", label: "Tên món", type: "text", required: true }],
+    createFields: [],
+  },
+  {
+    key: "recipes", table: "recipes", label: "Công thức mẫu", icon: "skillet", desc: "Dự phòng khi chưa bật AI", canDelete: true,
     fields: [
       { key: "title", label: "Tên món", type: "text", required: true },
       { key: "ingredients", label: "Nguyên liệu (mỗi dòng một)", type: "list" },

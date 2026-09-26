@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 import { notFound } from "next/navigation";
 import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { users, farms, products, orders, subscriptions, group_orders, farm_diary, recipes, order_items } from "@/db/schema";
+import { users, farms, products, orders, subscriptions, group_orders, farm_diary, recipes, order_items, user_recipes } from "@/db/schema";
 import { sectionByKey } from "@/lib/admin-config";
 import { AdminTable, type Column as ViewColumn } from "@/components/admin/AdminTable";
 import { Icon } from "@/components/ui/Icon";
@@ -97,6 +97,13 @@ async function load(key: string): Promise<{ rows: Row[]; columns: Column[]; hint
       return {
         rows: rows.map(({ d, farm }) => ({ ...d, farm_name: farm?.name ?? "", media_count: d.media_urls.length })) as Row[],
         columns: [{ key: "farm_name", label: "Vườn" }, { key: "content", label: "Nội dung", clamp: true }, { key: "media_count", label: "Tệp" }, { key: "created_at", label: "Lúc", render: dt }],
+      };
+    }
+    case "user_recipes": {
+      const rows = await db.select({ r: user_recipes, customer: { name: users.name } }).from(user_recipes).leftJoin(users, eq(user_recipes.user_id, users.id)).orderBy(desc(user_recipes.created_at));
+      return {
+        rows: rows.map(({ r, customer }) => ({ ...r, customer_name: customer?.name ?? "", based: r.based_on.join(", ") })) as Row[],
+        columns: [{ key: "title", label: "Món" }, { key: "customer_name", label: "Khách" }, { key: "based", label: "Từ món đã mua", clamp: true }, { key: "source", label: "Nguồn", render: (v) => (v === "ai" ? "AI" : "Mẫu") }, { key: "created_at", label: "Lúc", render: dt }],
       };
     }
     case "recipes": {

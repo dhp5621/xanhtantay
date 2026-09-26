@@ -41,7 +41,7 @@ const PILLARS = [
     eyebrow: "Tiện ích bếp núc",
     title: "Mua gì, gợi ý nấu nấy",
     items: [
-      { icon: "restaurant", t: "Gợi ý mâm cơm", d: "Mua bí đỏ và thịt băm, app gợi ý ngay canh bí đỏ thịt băm với công thức từng bước.", more: "Công thức được ghép từ chính những món trong đơn của bạn: nguyên liệu, số bước, cách làm ngắn gọn kiểu bếp nhà. Không có công thức khớp thì AI gợi ý thêm 2–3 món đơn giản." },
+      { icon: "auto_awesome", t: "Gợi ý mâm cơm bằng AI", d: "Mua bí đỏ và thịt băm, trợ lý gợi ý ngay canh bí đỏ thịt băm với công thức từng bước.", more: "AI nấu riêng cho từng khách từ đúng những món trong đơn đã đặt. Không ưng thì bấm “đổi món khác”, không bao giờ lặp lại. Mọi gợi ý lưu vào lịch sử để bạn xem lại bất cứ lúc nào." },
     ],
   },
 ];
