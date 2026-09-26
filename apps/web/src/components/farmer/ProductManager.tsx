@@ -105,9 +105,7 @@ export function ProductManager({ farmId, initial }: { farmId: string; initial: P
         <div className="m3-list-group stagger">
           {items.map((p) => (
             <div key={p.id} className="m3-list-item" style={{ cursor: "default", opacity: p.in_stock && p.stock_qty > 0 ? 1 : 0.6, flexWrap: "wrap" }}>
-              <span className="m3-list-leading" style={{ background: p.in_stock && p.stock_qty > 0 ? undefined : "var(--md-surface-container-highest)", color: p.in_stock ? undefined : "var(--md-on-surface-variant)" }}>
-                <Icon name={CATEGORY_ICONS[p.category] ?? "eco"} filled={p.in_stock && p.stock_qty > 0} />
-              </span>
+              <ProductThumb image_url={p.image_url} category={p.category} name={p.name} size={52} />
               <div style={{ flex: 1, minWidth: 160 }}>
                 <p className="title-sm text-on-surface">{p.name} <span className="m3-chip sm" style={{ marginLeft: 6, height: 22, fontSize: 11 }}>{CATEGORY_LABELS[p.category] ?? p.category}</span></p>
                 <p className="label-lg text-primary tabular">{formatVND(p.price_per_unit)} <span className="body-sm text-on-surface-variant" style={{ fontWeight: 400 }}>/ {p.unit}</span></p>
@@ -133,6 +131,7 @@ export function ProductManager({ farmId, initial }: { farmId: string; initial: P
         </div>
       )}
 
+      {camera && <CameraCapture modes={["photo"]} initialFacing="environment" title="Ảnh sản phẩm" onClose={() => setCamera(false)} onCapture={(f) => void uploadImage(f)} />}
       {editing && (
         <>
 <Portal>
@@ -143,6 +142,19 @@ export function ProductManager({ farmId, initial }: { farmId: string; initial: P
               <h2 className="m3-dialog-title">{editing === "new" ? "Thêm sản phẩm" : "Sửa sản phẩm"}</h2>
             </div>
             <div className="m3-dialog-body">
+              <div className="m3-field">
+                <label className="m3-field-label">Ảnh sản phẩm</label>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                  <ProductThumb image_url={form.image_url} category={form.category} name={form.name || "Sản phẩm"} size={88} radius="var(--shape-lg)" />
+                  <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) void uploadImage(f); }} />
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    <button type="button" className="m3-btn m3-btn-tonal m3-btn-sm" onClick={() => (hasCameraApi() ? setCamera(true) : fileRef.current?.click())} disabled={uploading}>{uploading ? <span className="m3-loader sm" /> : <Icon name="photo_camera" size={18} />}<span>Chụp</span></button>
+                    <button type="button" className="m3-btn m3-btn-outlined m3-btn-sm" onClick={() => fileRef.current?.click()} disabled={uploading}><Icon name="image" size={18} /><span>Chọn ảnh</span></button>
+                    {form.image_url && <button type="button" className="m3-btn m3-btn-text m3-btn-sm" onClick={() => setForm({ ...form, image_url: null })} style={{ color: "var(--md-error)" }}><Icon name="delete" size={18} /><span>Gỡ</span></button>}
+                  </div>
+                </div>
+                <p className="body-sm text-on-surface-variant">Ảnh được nén còn ≤1280px trước khi tải lên. Không có ảnh thì hiện màu theo loại rau.</p>
+              </div>
               <div className="m3-field">
                 <label className="m3-field-label" htmlFor="pm-name">Tên sản phẩm</label>
                 <input id="pm-name" className="m3-input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required maxLength={80} placeholder="Ví dụ: Cải ngọt" />
