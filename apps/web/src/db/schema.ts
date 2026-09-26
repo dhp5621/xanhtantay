@@ -23,8 +23,13 @@ export const users = pgTable("users", {
   role: userRoleEnum("role").notNull().default("customer"),
   avatar_url: text("avatar_url"),
   password_hash: text("password_hash"),
+  /** Kitchen assistant preferences: goal, diet tags, servings, notes. */
+  recipe_prefs: jsonb("recipe_prefs").$type<RecipePrefs>(),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
+
+export type RecipeGoal = "normal" | "diet" | "gym";
+export interface RecipePrefs { goal: RecipeGoal; tags: string[]; servings: number; notes?: string }
 
 export const farms = pgTable("farms", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
@@ -119,6 +124,10 @@ export const user_recipes = pgTable("user_recipes", {
   based_on: text("based_on").array().notNull().default([]),
   source: text("source").notNull().default("ai"), // "ai" | "curated"
   minutes: integer("minutes"),
+  kcal: integer("kcal"),
+  protein_g: integer("protein_g"),
+  /** Goal / diet tags the recipe was generated for, e.g. ["gym", "it_dau_mo"]. */
+  tags: text("tags").array().notNull().default([]),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 

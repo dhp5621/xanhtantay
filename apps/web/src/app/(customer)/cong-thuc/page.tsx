@@ -2,7 +2,8 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { user_recipes } from "@/db/schema";
+import { user_recipes, users } from "@/db/schema";
+import { normalizePrefs } from "@/lib/recipe-prefs";
 import { getSessionUser } from "@/lib/session";
 import { getPurchases, distinctNames } from "@/lib/purchases";
 import { aiConfigured } from "@/lib/ai";
@@ -26,16 +27,18 @@ export default async function CongThucPage({ searchParams }: { searchParams: Pro
     );
   }
 
-  const [purchases, history] = await Promise.all([
+  const [purchases, history, [me]] = await Promise.all([
     getPurchases(user.id, { limitOrders: 5 }),
     db.select().from(user_recipes).where(eq(user_recipes.user_id, user.id)).orderBy(desc(user_recipes.created_at)).limit(50),
+    db.select({ recipe_prefs: users.recipe_prefs }).from(users).where(eq(users.id, user.id)),
   ]);
+  const prefs = normalizePrefs(me?.recipe_prefs);
   const names = distinctNames(purchases);
 
   return (
     <div>
       <PageHeader icon="skillet" eyebrow="Tiện ích bếp núc" title="Gợi ý mâm cơm" subtitle={aiConfigured() ? "Trợ lý AI nấu từ đúng những gì đã giao đến bạn" : "Gợi ý từ những gì đã giao đến bạn"} />
-      <RecipeAssistant purchased={names} initial={history} focusOrderId={order} ai={aiConfigured()} />
+      <RecipeAssistant purchased={names} initial={history} focusOrderId={order} ai={aiConfigured()} initialPrefs={prefs} />
     </div>
   );
 }

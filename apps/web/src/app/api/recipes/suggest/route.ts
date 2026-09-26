@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { recipes, user_recipes } from "@/db/schema";
+import { recipes, user_recipes, users } from "@/db/schema";
+import { normalizePrefs, prefsToPrompt, DEFAULT_PREFS } from "@/lib/recipe-prefs";
 import { getSessionUser } from "@/lib/session";
 import { getPurchases, distinctNames } from "@/lib/purchases";
 import { aiConfigured, chatJSON } from "@/lib/ai";
 
-interface AiRecipe { title: string; description?: string; minutes?: number; ingredients: string[]; steps: string[]; based_on?: string[] }
+interface AiRecipe { title: string; description?: string; minutes?: number; kcal?: number; protein_g?: number; ingredients: string[]; steps: string[]; based_on?: string[] }
 
 const SYSTEM = `Bạn là đầu bếp gia đình Việt Nam. Bạn gợi ý món ăn CHỈ dựa trên nguyên liệu khách vừa mua từ vườn, cộng thêm gia vị và nguyên liệu cơ bản trong bếp (thịt, trứng, tỏi, hành, nước mắm...). Mỗi món phải dùng ít nhất một món khách đã mua làm nguyên liệu chính. Trả về JSON thuần, không giải thích.`;
 
@@ -18,8 +19,17 @@ export async function POST(req: Request) {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Đăng nhập để nhận gợi ý riêng" }, { status: 401 });
 
-  const body = (await req.json().catch(() => ({}))) as { count?: number; order_id?: string; exclude?: string[]; replace_id?: string };
+  const body = (await req.json().catch(() => ({}))) as { count?: number; order_id?: string; exclude?: string[]; replace_id?: string; prefs?: unknown };
   const count = Math.min(4, Math.max(1, Number(body.count ?? 3)));
+
+  // Preferences: sent with the request, else the ones saved on the account.
+  let prefs = DEFAULT_PREFS;
+  if (body.prefs !== undefined) prefs = normalizePrefs(body.prefs);
+  else {
+    const [me] = await db.select({ recipe_prefs: users.recipe_prefs }).from(users).where(eq(users.id, user.id));
+    if (me?.recipe_prefs) prefs = normalizePrefs(me.recipe_prefs);
+  }
+  const tags = [prefs.goal === "normal" ? [] : [prefs.goal], prefs.tags].flat();
 
   const purchases = await getPurchases(user.id, { orderId: body.order_id });
   const names = distinctNames(purchases).slice(0, 12);
@@ -35,10 +45,11 @@ export async function POST(req: Request) {
   let source: "ai" | "curated" = "ai";
 
   if (aiConfigured()) {
-    const prompt = `Khách vừa mua: ${names.join(", ")}.
+    const prompt = `Khách vừa nhận: ${names.join(", ")}.
+${prefsToPrompt(prefs)}
 ${exclude.length ? `KHÔNG gợi ý lại các món: ${exclude.join("; ")}.` : ""}
-Gợi ý ${count} món ăn gia đình đơn giản, mỗi món dưới 40 phút, dùng nguyên liệu trên làm chính.
-JSON array, mỗi phần tử: {"title": "...", "description": "1 câu hấp dẫn", "minutes": số phút, "ingredients": ["... (ghi rõ định lượng)"], "steps": ["bước 1", "..."], "based_on": ["tên món đã mua được dùng"]}`;
+Gợi ý ${count} món đơn giản, mỗi món dưới 40 phút, dùng nguyên liệu trên làm chính.
+JSON array, mỗi phần tử: {"title": "...", "description": "1 câu hấp dẫn", "minutes": số phút, "kcal": kcal mỗi khẩu phần (số), "protein_g": gam đạm mỗi khẩu phần (số), "ingredients": ["... (định lượng cho ${prefs.servings} người)"], "steps": ["bước 1", "..."], "based_on": ["tên món đã mua được dùng"]}`;
     const out = await chatJSON<AiRecipe[]>(SYSTEM, prompt, { temperature: 0.8 });
     if (Array.isArray(out)) generated = out.filter((r) => r && typeof r.title === "string" && Array.isArray(r.ingredients) && Array.isArray(r.steps)).slice(0, count);
   }
@@ -73,6 +84,9 @@ JSON array, mỗi phần tử: {"title": "...", "description": "1 câu hấp d�
       title: String(g.title).slice(0, 120),
       description: g.description ? String(g.description).slice(0, 300) : null,
       minutes: Number.isFinite(Number(g.minutes)) ? Math.round(Number(g.minutes)) : null,
+      kcal: Number.isFinite(Number(g.kcal)) && Number(g.kcal) > 0 ? Math.round(Number(g.kcal)) : null,
+      protein_g: Number.isFinite(Number(g.protein_g)) && Number(g.protein_g) > 0 ? Math.round(Number(g.protein_g)) : null,
+      tags,
       ingredients: g.ingredients.map(String).slice(0, 20),
       steps: g.steps.map(String).slice(0, 12),
       based_on: (g.based_on?.length ? g.based_on : names.filter((n) => g.ingredients.some((i) => i.toLowerCase().includes(n.toLowerCase())))).map(String).slice(0, 8),
@@ -80,5 +94,5 @@ JSON array, mỗi phần tử: {"title": "...", "description": "1 câu hấp d�
     }))
   ).returning();
 
-  return NextResponse.json({ recipes: rows, purchased: names, source }, { status: 201 });
+  return NextResponse.json({ recipes: rows, purchased: names, source, prefs }, { status: 201 });
 }

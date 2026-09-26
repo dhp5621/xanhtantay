@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { getSessionUser } from "@/lib/session";
+import { normalizePrefs } from "@/lib/recipe-prefs";
 
 // Avatars are stored inline as a tiny data URL (96×96 WebP ≈ 3–5 KB), never in Blob storage.
 const MAX_AVATAR_CHARS = 24 * 1024;
@@ -20,7 +21,7 @@ export async function PATCH(req: Request) {
   if (!user) return NextResponse.json({ error: "Chưa đăng nhập" }, { status: 401 });
 
   const body = await req.json().catch(() => null);
-  const { avatar_url, name, phone } = (body ?? {}) as { avatar_url?: unknown; name?: unknown; phone?: unknown };
+  const { avatar_url, name, phone, recipe_prefs } = (body ?? {}) as { avatar_url?: unknown; name?: unknown; phone?: unknown; recipe_prefs?: unknown };
   const updates: Partial<typeof users.$inferInsert> = {};
 
   if (avatar_url === null) updates.avatar_url = null;
@@ -32,8 +33,9 @@ export async function PATCH(req: Request) {
   }
   if (typeof name === "string" && name.trim().length >= 2) updates.name = name.trim().slice(0, 60);
   if (typeof phone === "string") updates.phone = phone.replace(/[^\d+ ]/g, "").slice(0, 20) || null;
+  if (recipe_prefs !== undefined) updates.recipe_prefs = normalizePrefs(recipe_prefs);
   if (Object.keys(updates).length === 0) return NextResponse.json({ error: "Không có gì để cập nhật" }, { status: 400 });
 
-  const [row] = await db.update(users).set(updates).where(eq(users.id, user.id)).returning({ id: users.id, name: users.name, avatar_url: users.avatar_url });
+  const [row] = await db.update(users).set(updates).where(eq(users.id, user.id)).returning({ id: users.id, name: users.name, avatar_url: users.avatar_url, recipe_prefs: users.recipe_prefs });
   return NextResponse.json(row);
 }

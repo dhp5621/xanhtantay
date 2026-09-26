@@ -5,14 +5,20 @@ import Link from "next/link";
 import { Icon } from "@/components/ui/Icon";
 import { useSnackbar } from "@/components/ui/Snackbar";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { RecipeSettings } from "./RecipeSettings";
+import { GOALS, DIET_TAGS } from "@/lib/recipe-prefs";
+import type { RecipePrefs } from "@/db/schema";
 
 export interface UserRecipe {
   id: string; title: string; description: string | null; ingredients: string[]; steps: string[];
   based_on: string[]; source: string; minutes: number | null; created_at: Date | string; order_id: string | null;
+  kcal?: number | null; protein_g?: number | null; tags?: string[];
 }
+const TAG_LABEL: Record<string, string> = Object.fromEntries([...GOALS.map((g) => [g.value, g.label]), ...DIET_TAGS.map((t) => [t.value, t.label])]);
 
-export function RecipeAssistant({ purchased, initial, focusOrderId, ai }: { purchased: string[]; initial: UserRecipe[]; focusOrderId?: string; ai: boolean }) {
+export function RecipeAssistant({ purchased, initial, focusOrderId, ai, initialPrefs }: { purchased: string[]; initial: UserRecipe[]; focusOrderId?: string; ai: boolean; initialPrefs: RecipePrefs }) {
   const [recipes, setRecipes] = useState<UserRecipe[]>(initial);
+  const [prefs, setPrefs] = useState<RecipePrefs>(initialPrefs);
   const [busy, setBusy] = useState<"all" | string | null>(null);
   const [open, setOpen] = useState<string | null>(initial[0]?.id ?? null);
   const { show } = useSnackbar();
@@ -23,7 +29,7 @@ export function RecipeAssistant({ purchased, initial, focusOrderId, ai }: { purc
       const res = await fetch("/api/recipes/suggest", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ count: opts.count ?? 3, replace_id: opts.replace_id, order_id: opts.order_id, exclude: recipes.map((r) => r.title) }),
+        body: JSON.stringify({ count: opts.count ?? 3, replace_id: opts.replace_id, order_id: opts.order_id, exclude: recipes.map((r) => r.title), prefs }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error ?? "Không gợi ý được");
@@ -36,6 +42,13 @@ export function RecipeAssistant({ purchased, initial, focusOrderId, ai }: { purc
     } finally {
       setBusy(null);
     }
+  };
+
+  const savePrefs = async (p: RecipePrefs) => {
+    setPrefs(p);
+    const res = await fetch("/api/users/me", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ recipe_prefs: p }) });
+    if (!res.ok) show("Không lưu được tuỳ chọn, nhưng vẫn áp dụng cho lần này", { kind: "error" });
+    else show("Đã lưu tuỳ chọn thực đơn", { kind: "success", duration: 1800 });
   };
 
   const remove = async (id: string) => {
@@ -72,6 +85,7 @@ export function RecipeAssistant({ purchased, initial, focusOrderId, ai }: { purc
                   {busy === "all" ? <span className="m3-loader sm on-primary" /> : <Icon name="auto_awesome" filled />}
                   <span>{busy === "all" ? "Đang nghĩ món…" : recipes.length ? "Gợi ý thêm 3 món" : "Gợi ý món cho tôi"}</span>
                 </button>
+                <RecipeSettings prefs={prefs} onChange={savePrefs} disabled={busy !== null} />
                 {focusOrderId && <span className="m3-chip sm round m3-chip-tertiary"><Icon name="receipt_long" size={16} /> Theo đơn đã giao này</span>}
               </>
             )}
@@ -103,7 +117,7 @@ export function RecipeAssistant({ purchased, initial, focusOrderId, ai }: { purc
                     <span style={{ flex: 1, minWidth: 0 }}>
                       <span className="title-md text-on-surface" style={{ display: "block" }}>{r.title}</span>
                       <span className="body-sm text-on-surface-variant" style={{ display: "block", fontWeight: 400 }}>
-                        {r.minutes ? `${r.minutes} phút · ` : ""}{r.based_on.length ? `từ ${r.based_on.join(", ")}` : `${r.ingredients.length} nguyên liệu`}
+                        {r.minutes ? `${r.minutes} phút · ` : ""}{r.kcal ? `≈${r.kcal} kcal · ` : ""}{r.protein_g ? `${r.protein_g}g đạm · ` : ""}{r.based_on.length ? `từ ${r.based_on.join(", ")}` : `${r.ingredients.length} nguyên liệu`}
                       </span>
                     </span>
                     <Icon name={expanded ? "expand_less" : "expand_more"} className="text-on-surface-variant" />
@@ -111,6 +125,11 @@ export function RecipeAssistant({ purchased, initial, focusOrderId, ai }: { purc
 
                   {expanded && (
                     <div className="anim-in" style={{ padding: "0 18px 18px 18px" }}>
+                      {(r.tags?.length ?? 0) > 0 && (
+                        <div className="flex flex-wrap gap-2" style={{ marginBottom: 10 }}>
+                          {r.tags!.map((t) => <span key={t} className={`m3-chip sm round ${t === "gym" || t === "diet" ? "m3-chip-tertiary" : "m3-chip-surface"}`}><Icon name={t === "gym" ? "fitness_center" : t === "diet" ? "monitor_weight" : "check"} size={14} /> {TAG_LABEL[t] ?? t}</span>)}
+                        </div>
+                      )}
                       {r.description && <p className="body-md text-on-surface-variant" style={{ marginBottom: 12, fontWeight: 400 }}>{r.description}</p>}
                       <div className="grid grid-cols-1 md:grid-cols-5 gap-5">
                         <div className="md:col-span-2">
