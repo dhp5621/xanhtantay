@@ -4,8 +4,9 @@ import { db } from "@/db";
 import { group_orders, farms, group_order_members, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
-export default async function GomDonDetailPage({ params }: { params: { id: string } }) {
-  const [group] = await db.select().from(group_orders).where(eq(group_orders.id, params.id));
+export default async function GomDonDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const [group] = await db.select().from(group_orders).where(eq(group_orders.id, id));
   if (!group) notFound();
 
   const [farm] = await db.select().from(farms).where(eq(farms.id, group.farm_id));

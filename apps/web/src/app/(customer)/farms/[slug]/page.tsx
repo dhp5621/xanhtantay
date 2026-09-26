@@ -5,8 +5,9 @@ import { farms, products, farm_diary } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { AddToCartButton } from "@/components/order/AddToCartButton";
 
-export default async function FarmPage({ params }: { params: { slug: string } }) {
-  const [farm] = await db.select().from(farms).where(eq(farms.slug, params.slug));
+export default async function FarmPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const [farm] = await db.select().from(farms).where(eq(farms.slug, slug));
   if (!farm) notFound();
 
   const [farmProducts, diary] = await Promise.all([

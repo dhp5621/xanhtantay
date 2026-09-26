@@ -5,7 +5,8 @@ import { db } from "@/db";
 import { orders, farms } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Chưa đăng nhập" }, { status: 401 });
 
@@ -21,7 +22,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   }
 
   // Verify the order belongs to this farmer's farm
-  const [order] = await db.select().from(orders).where(eq(orders.id, params.id));
+  const [order] = await db.select().from(orders).where(eq(orders.id, id));
   if (!order) return NextResponse.json({ error: "Không tìm thấy đơn" }, { status: 404 });
 
   const [farm] = await db.select().from(farms).where(eq(farms.id, order.farm_id));
@@ -32,7 +33,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   const [updated] = await db
     .update(orders)
     .set({ status })
-    .where(eq(orders.id, params.id))
+    .where(eq(orders.id, id))
     .returning();
 
   return NextResponse.json(updated);

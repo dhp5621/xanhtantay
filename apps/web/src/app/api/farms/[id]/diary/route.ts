@@ -5,24 +5,26 @@ import { db } from "@/db";
 import { farm_diary, farms } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 
-export async function GET(_: Request, { params }: { params: { id: string } }) {
+export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const entries = await db
     .select()
     .from(farm_diary)
-    .where(eq(farm_diary.farm_id, params.id))
+    .where(eq(farm_diary.farm_id, id))
     .orderBy(desc(farm_diary.created_at))
     .limit(20);
   return NextResponse.json(entries);
 }
 
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Chưa đăng nhập" }, { status: 401 });
 
   const user = session.user as { id: string; role?: string };
   if (user.role !== "farmer") return NextResponse.json({ error: "Không có quyền" }, { status: 403 });
 
-  const [farm] = await db.select().from(farms).where(eq(farms.id, params.id));
+  const [farm] = await db.select().from(farms).where(eq(farms.id, id));
   if (!farm || farm.owner_id !== user.id) {
     return NextResponse.json({ error: "Không có quyền" }, { status: 403 });
   }
@@ -35,7 +37,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   }
 
   const [entry] = await db.insert(farm_diary).values({
-    farm_id: params.id,
+    farm_id: id,
     content,
     media_urls,
   }).returning();
