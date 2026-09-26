@@ -1930,11 +1930,11 @@ input[type="number"].tabular::-webkit-inner-spin-button { -webkit-appearance: no
 .m3-viewer-fit { position: absolute; inset: 8px 84px; display: flex; align-items: center; justify-content: center; }
 @media (max-width: 639px) { .m3-viewer-fit { inset: 4px 8px; } }
 .m3-viewer-fit .m3-img.contain { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: transparent; }
-.m3-viewer-fit .m3-img.contain video { border-radius: var(--shape-lg); box-shadow: var(--elev-5); max-width: 100%; max-height: 100%; }
+.m3-viewer-fit .m3-img.contain video { border-radius: var(--shape-lg); box-shadow: var(--elev-5); width: 100%; height: 100%; object-fit: contain; }
 .m3-viewer-fit .m3-img-ph { background: transparent; }
 .m3-viewer-img {
-  max-width: 100%; max-height: 100%; width: auto; height: auto;
-  border-radius: var(--shape-lg); box-shadow: var(--elev-5);
+  width: 100%; height: 100%; object-fit: contain;
+  border-radius: var(--shape-lg);
   transform-origin: center; will-change: transform;
 }
 .m3-viewer-nav {
@@ -1954,4 +1954,5 @@ input[type="number"].tabular::-webkit-inner-spin-button { -webkit-appearance: no
 .m3-viewer-zoom { display: inline-flex; align-items: center; gap: 2px; height: 48px; padding: 0 6px; border-radius: var(--shape-full); background: rgba(255,255,255,.12); color: #fff; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
 .m3-viewer-zoom .m3-icon-btn { color: #fff; }
 .m3-viewer-tools .m3-btn { height: 48px; }
+@media (max-width: 639px), (hover: none) and (pointer: coarse) { .m3-viewer-zoom { display: none; } }
 @media (max-width: 479px) { .m3-viewer-tools .m3-btn span { display: none; } .m3-viewer-tools .m3-btn { padding: 0 14px; } }
