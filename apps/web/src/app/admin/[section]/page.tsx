@@ -4,9 +4,9 @@ import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { users, farms, products, orders, subscriptions, group_orders, farm_diary, recipes, order_items } from "@/db/schema";
 import { sectionByKey } from "@/lib/admin-config";
-import { AdminTable, type Column } from "@/components/admin/AdminTable";
+import { AdminTable, type Column as ViewColumn } from "@/components/admin/AdminTable";
 import { Icon } from "@/components/ui/Icon";
-import { formatVND, formatDateTime, STATUS_SHORT } from "@/lib/format";
+import { formatVND, ORDER_TYPE_LABELS } from "@/lib/format";
 
 export async function generateMetadata({ params }: { params: Promise<{ section: string }> }) {
   const { section } = await params;
@@ -14,9 +14,11 @@ export async function generateMetadata({ params }: { params: Promise<{ section: 
 }
 
 type Row = Record<string, unknown> & { id: string };
+/** Server-side column: may carry a render fn; it is applied here and never sent to the client. */
+interface Column extends ViewColumn { render?: (v: unknown, row: Row) => string }
 
 async function load(key: string): Promise<{ rows: Row[]; columns: Column[]; hint?: string; lookups?: Record<string, { value: string; label: string }[]> }> {
-  const dt = (v: unknown) => (v ? formatDateTime(v as Date) : "");
+  const dt = (v: unknown) => (v ? new Date(v as string).toLocaleString("vi-VN", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Ho_Chi_Minh" }) : "");
   switch (key) {
     case "users": {
       const rows = await db.select().from(users).orderBy(desc(users.created_at));
@@ -24,7 +26,6 @@ async function load(key: string): Promise<{ rows: Row[]; columns: Column[]; hint
         rows: rows.map((r) => ({ ...r, avatar_url: r.avatar_url ? "✓" : "" })) as Row[],
         columns: [
           { key: "name", label: "Tên" }, { key: "email", label: "Email" }, { key: "phone", label: "Điện thoại" },
-          { key: "role", label: "Vai trò", render: (v) => (v === "farmer" ? "Nhà vườn" : "Khách hàng") },
           { key: "created_at", label: "Tạo lúc", render: dt }, { key: "id", label: "ID", mono: true },
         ],
       };
@@ -47,7 +48,7 @@ async function load(key: string): Promise<{ rows: Row[]; columns: Column[]; hint
           { key: "name", label: "Sản phẩm" }, { key: "farm_name", label: "Vườn" },
           { key: "price_per_unit", label: "Giá", render: (v, r) => `${formatVND(Number(v))}/${r.unit}` },
           { key: "stock_qty", label: "Tồn", render: (v, r) => `${v} ${r.unit}` },
-          { key: "in_stock", label: "Bán", render: (v) => (v ? "Đang bán" : "Ẩn") }, { key: "category", label: "Loại" },
+          { key: "category", label: "Loại", render: (v) => ({ rau_la: "Rau lá", cu_qua: "Củ quả", rau_thom: "Rau thơm", rau_mam: "Rau mầm" } as Record<string, string>)[String(v)] ?? String(v) },
         ],
         lookups: { farm_id: farmOpts },
       };
@@ -61,10 +62,9 @@ async function load(key: string): Promise<{ rows: Row[]; columns: Column[]; hint
       return {
         rows: rows.map(({ o, farm, customer }) => ({ ...o, farm_name: farm?.name ?? "", customer_name: customer?.name ?? "", phone: customer?.phone ?? "", items: (byOrder.get(o.id) ?? []).join(", ") })) as Row[],
         columns: [
-          { key: "customer_name", label: "Khách" }, { key: "farm_name", label: "Vườn" }, { key: "items", label: "Món" },
+          { key: "customer_name", label: "Khách" }, { key: "farm_name", label: "Vườn" }, { key: "items", label: "Món", clamp: true },
           { key: "total", label: "Tổng", render: (v) => formatVND(Number(v)) },
-          { key: "status", label: "Trạng thái", render: (v) => STATUS_SHORT[String(v)] ?? String(v) },
-          { key: "type", label: "Loại" }, { key: "created_at", label: "Lúc", render: dt },
+          { key: "type", label: "Loại", render: (v) => ORDER_TYPE_LABELS[String(v)] ?? String(v) }, { key: "created_at", label: "Lúc", render: dt },
         ],
         hint: "Đổi trạng thái tại đây sẽ hiện ngay cho khách và nhà vườn.",
       };
@@ -78,7 +78,6 @@ async function load(key: string): Promise<{ rows: Row[]; columns: Column[]; hint
           { key: "customer_name", label: "Khách" }, { key: "farm_name", label: "Vườn" },
           { key: "frequency", label: "Tần suất", render: (v) => (v === "weekly" ? "Tuần" : "Tháng") },
           { key: "item_count", label: "Món" }, { key: "next_delivery", label: "Giao tiếp", render: dt },
-          { key: "active", label: "Trạng thái", render: (v) => (v ? "Hoạt động" : "Tạm dừng") },
         ],
       };
     }
@@ -89,7 +88,7 @@ async function load(key: string): Promise<{ rows: Row[]; columns: Column[]; hint
         columns: [
           { key: "title", label: "Nhóm" }, { key: "farm_name", label: "Vườn" },
           { key: "current_members", label: "Thành viên", render: (v, r) => `${v}/${r.min_members}` },
-          { key: "status", label: "Trạng thái" }, { key: "deadline", label: "Hạn", render: dt }, { key: "shipping_address", label: "Địa chỉ" },
+          { key: "deadline", label: "Hạn", render: dt }, { key: "shipping_address", label: "Địa chỉ", clamp: true },
         ],
       };
     }
@@ -117,6 +116,13 @@ export default async function AdminSectionPage({ params }: { params: Promise<{ s
   const section = sectionByKey(key);
   if (!section) notFound();
   const { rows, columns, hint, lookups } = await load(key);
+  // Client components cannot receive functions: pre-format rendered columns into "__key" strings.
+  const viewColumns: ViewColumn[] = columns.map((c) => ({ key: c.render ? `__${c.key}` : c.key, label: c.label, mono: c.mono, clamp: c.clamp }));
+  const viewRows = rows.map((r) => {
+    const o: Row = { ...r };
+    for (const c of columns) if (c.render) o[`__${c.key}`] = c.render(r[c.key], r);
+    return o;
+  });
 
   return (
     <div className="flex flex-col gap-6">
@@ -127,7 +133,8 @@ export default async function AdminSectionPage({ params }: { params: Promise<{ s
           <p className="body-md text-on-surface-variant">{section.desc} · {rows.length} mục{hint ? ` · ${hint}` : ""}</p>
         </div>
       </div>
-      <AdminTable section={section} rows={rows} columns={columns} lookups={lookups} />
+      <AdminTable section={section} rows={viewRows} columns={viewColumns} lookups={lookups} />
+      <p className="body-sm text-on-surface-variant">Mẹo: các cột trạng thái / có-không sửa trực tiếp trong bảng; bấm biểu tượng bút để sửa đầy đủ.</p>
     </div>
   );
 }

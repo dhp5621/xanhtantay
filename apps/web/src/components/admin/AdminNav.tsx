@@ -30,7 +30,7 @@ export function AdminNav() {
           const href = it.key ? `/admin/${it.key}` : "/admin";
           const active = it.key ? pathname.startsWith(href) : pathname === "/admin";
           return (
-            <Link key={href} href={href} className={`admin-rail-item ${active ? "active" : ""}`} aria-current={active ? "page" : undefined}>
+            <Link key={href} href={href} className={`admin-rail-item ${active ? "active" : ""}`} aria-current={active ? "page" : undefined} title={it.label}>
               <span className="admin-rail-icon"><Icon name={it.icon} filled={active} /></span>
               <span className="admin-rail-label">{it.label}</span>
             </Link>

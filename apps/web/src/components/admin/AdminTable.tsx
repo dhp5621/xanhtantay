@@ -8,7 +8,7 @@ import { useSnackbar } from "@/components/ui/Snackbar";
 import type { Section, Field } from "@/lib/admin-config";
 
 type Row = Record<string, unknown> & { id: string };
-export interface Column { key: string; label: string; render?: (v: unknown, row: Row) => React.ReactNode; mono?: boolean; clamp?: boolean }
+export interface Column { key: string; label: string; mono?: boolean; clamp?: boolean }
 type Lookups = Record<string, { value: string; label: string }[]>;
 
 const toInput = (f: Field, v: unknown) => {
@@ -112,7 +112,7 @@ export function AdminTable({ section, rows, columns, lookups }: { section: Secti
               <tr key={r.id}>
                 {columns.map((c) => (
                   <td key={c.key} className={`${c.mono ? "mono" : ""} ${c.clamp ? "clamp" : ""}`} title={c.clamp ? String(r[c.key] ?? "") : undefined}>
-                    {c.render ? c.render(r[c.key], r) : String(r[c.key] ?? "")}
+                    {String(r[c.key] ?? "")}
                   </td>
                 ))}
                 {quickFields.map((f) => (
@@ -122,15 +122,15 @@ export function AdminTable({ section, rows, columns, lookups }: { section: Secti
                         <Icon name={r[f.key] ? "check_circle" : "cancel"} size={16} filled /> {r[f.key] ? "Có" : "Không"}
                       </button>
                     ) : (
-                      <select className="admin-select" value={String(r[f.key] ?? "")} onChange={(e) => quick(r, f.key, e.target.value)}>
+                      <select className={`admin-select tone-${String(r[f.key] ?? "")}`} value={String(r[f.key] ?? "")} onChange={(e) => quick(r, f.key, e.target.value)} aria-label={f.label}>
                         {f.options?.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                       </select>
                     )}
                   </td>
                 ))}
                 <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
-                  {section.fields.length > 0 && <button className="m3-icon-btn sm" onClick={() => open(r)} aria-label="Sửa"><Icon name="edit" size={20} /></button>}
-                  {section.canDelete && <button className="m3-icon-btn sm" onClick={() => setConfirm(r)} aria-label="Xoá" style={{ color: "var(--md-error)" }}><Icon name="delete" size={20} /></button>}
+                  {section.fields.length > 0 && <button className="m3-icon-btn sm" onClick={() => open(r)} aria-label="Sửa" title="Sửa"><Icon name="edit" size={20} /></button>}
+                  {section.canDelete && <button className="m3-icon-btn sm" onClick={() => setConfirm(r)} aria-label="Xoá" title="Xoá" style={{ color: "var(--md-error)" }}><Icon name="delete" size={20} /></button>}
                 </td>
               </tr>
             ))}

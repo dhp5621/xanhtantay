@@ -6,7 +6,7 @@ import { and, count, desc, eq, lte, sum } from "drizzle-orm";
 import { Icon } from "@/components/ui/Icon";
 import { formatVND, formatDateTime, STATUS_SHORT, STATUS_ICONS } from "@/lib/format";
 
-export const metadata = { title: "Tổng quan" };
+export const metadata = { title: { absolute: "Tổng quan · Quản trị Xanh Tận Tay" } };
 
 export default async function AdminDashboard() {
   const [[u], [f], [p], [o], [pending], [rev], [s], [g], [low], [d], recent] = await Promise.all([

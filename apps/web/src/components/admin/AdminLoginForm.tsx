@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Icon } from "@/components/ui/Icon";
 
 export function AdminLoginForm({ next, configured }: { next?: string; configured: boolean }) {
-  const [user, setUser] = useState("admin");
+  const [user, setUser] = useState("");
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
   const [error, setError] = useState("");
@@ -38,7 +38,7 @@ export function AdminLoginForm({ next, configured }: { next?: string; configured
         )}
         <div className="m3-field">
           <label className="m3-field-label" htmlFor="au">Tài khoản</label>
-          <input id="au" className="m3-input" value={user} onChange={(e) => setUser(e.target.value)} autoComplete="username" required />
+          <input id="au" className="m3-input" value={user} onChange={(e) => setUser(e.target.value)} autoComplete="username" placeholder="Tên đăng nhập quản trị" required />
         </div>
         <div className="m3-field">
           <label className="m3-field-label" htmlFor="ap">Mật khẩu</label>
