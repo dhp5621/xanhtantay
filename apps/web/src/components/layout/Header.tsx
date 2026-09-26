@@ -107,7 +107,8 @@ function HeaderImpl() {
 
   const role = (session?.user as { role?: string } | undefined)?.role;
   const isFarmer = role === "farmer";
-  const inFarmerArea = pathname.startsWith("/farmer");
+  // /tai-khoan is neutral — keep farmer nav so the mode doesn't reset on account/settings pages
+  const inFarmerArea = pathname.startsWith("/farmer") || pathname === "/tai-khoan";
   const items = !session ? VISITOR_NAV : isFarmer && inFarmerArea ? FARMER_NAV : CUSTOMER_NAV;
 
   // Scroll elevation via IntersectionObserver instead of a scroll listener,

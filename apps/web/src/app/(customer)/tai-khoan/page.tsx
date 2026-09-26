@@ -34,7 +34,7 @@ export default async function TaiKhoanPage() {
   ];
 
   return (
-    <div className="max-w-md mx-auto flex flex-col gap-5">
+    <div className="max-w-md mx-auto flex flex-col gap-5 pb-4">
       <div className="anim-in-scale" style={{ background: "linear-gradient(135deg, var(--md-primary-container), var(--md-tertiary-container))", borderRadius: "var(--shape-xl-inc)", padding: "28px 24px", display: "flex", alignItems: "center", gap: 18 }}>
         <div className="m3-avatar xl" style={{ background: "var(--md-primary)", color: "var(--md-on-primary)" }}>{user.name?.trim()?.[0]?.toUpperCase() ?? "?"}</div>
         <div style={{ minWidth: 0 }}>

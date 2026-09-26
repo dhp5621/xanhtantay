@@ -61,15 +61,13 @@ export function CreateGroupDialog({ farms }: { farms: FarmOpt[] }) {
         <>
           <div className={`m3-scrim ${closing ? "closing" : ""}`} onClick={close} aria-hidden />
           <form className={`m3-dialog ${closing ? "closing" : ""}`} onSubmit={submit} role="dialog" aria-modal="true" aria-labelledby="cg-title">
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
-              <span className="m3-list-leading"><Icon name="groups" filled /></span>
-              <div>
-                <h2 id="cg-title" className="headline-sm">Tạo nhóm gom đơn</h2>
-                <p className="body-sm text-on-surface-variant">Đủ người là cả nhóm được freeship</p>
-              </div>
+            <div className="m3-dialog-icon"><Icon name="groups" size={24} filled /></div>
+            <div className="m3-dialog-header">
+              <h2 className="m3-dialog-title" id="cg-title">Tạo nhóm gom đơn</h2>
+              <p className="m3-dialog-desc">Đủ người là cả nhóm được freeship</p>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div className="m3-dialog-body">
               <div className="m3-field">
                 <label className="m3-field-label" htmlFor="cg-farm">Vườn rau</label>
                 <select id="cg-farm" className="m3-select" value={form.farm_id} onChange={(e) => setForm({ ...form, farm_id: e.target.value })} required>
@@ -96,7 +94,7 @@ export function CreateGroupDialog({ farms }: { farms: FarmOpt[] }) {
               </div>
             </div>
 
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 24 }}>
+            <div className="m3-dialog-actions">
               <button type="button" className="m3-btn m3-btn-text" onClick={close}>Huỷ</button>
               <button type="submit" className="m3-btn m3-btn-filled" disabled={loading || !farms.length}>
                 {loading ? <span className="m3-loader sm on-primary" /> : <Icon name="rocket_launch" />}

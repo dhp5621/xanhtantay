@@ -1231,6 +1231,49 @@ button.m3-chip:active { transform: scale(0.95); border-radius: var(--shape-md); 
 }
 .m3-dialog.closing { animation: m3-dialog-out-center var(--dur-medium-2) var(--ease-emphasized-accel) both; }
 
+/* M3 dialog internal structure */
+.m3-dialog-icon {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+  color: var(--md-secondary);
+  font-size: 24px;
+}
+.m3-dialog-header {
+  margin-bottom: 16px;
+}
+.m3-dialog-header h2,
+.m3-dialog-header .m3-dialog-title {
+  font-size: 1.375rem; /* 22sp — title-large */
+  line-height: 1.75rem;
+  font-weight: 400;
+  color: var(--md-on-surface);
+  margin: 0 0 4px;
+  text-wrap: balance;
+}
+.m3-dialog-header p,
+.m3-dialog-header .m3-dialog-desc {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: var(--md-on-surface-variant);
+  margin: 0;
+}
+.m3-dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  color: var(--md-on-surface-variant);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+.m3-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  padding-top: 24px;
+}
+
 @keyframes m3-fade-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes m3-fade-out { from { opacity: 1; } to { opacity: 0; } }
 @keyframes m3-sheet-in { from { transform: translateY(100%); } to { transform: translateY(0); } }

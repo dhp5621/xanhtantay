@@ -2,9 +2,9 @@ export const dynamic = "force-dynamic";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { db } from "@/db";
-import { orders, farms, order_items, products } from "@/db/schema";
+import { orders, farms, users, order_items, products } from "@/db/schema";
 import { desc, eq, inArray } from "drizzle-orm";
-import { ORDER_STATUS_LABELS } from "@xanhtantay/types";
+import { getOrderStatusLabel, ORDER_STATUS_LABELS, OrderStatus } from "@xanhtantay/types";
 import { getSessionUser } from "@/lib/session";
 import { Icon } from "@/components/ui/Icon";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -22,11 +22,12 @@ export default async function DonHangPage() {
   if (!user) redirect("/dang-nhap?next=/don-hang");
 
   const myOrders = await db
-    .select({ order: orders, farm: farms })
+    .select({ order: orders, farm: farms, farmer: { name: users.name } })
     .from(orders)
     .leftJoin(farms, eq(orders.farm_id, farms.id))
+    .leftJoin(users, eq(farms.owner_id, users.id))
     .where(eq(orders.user_id, user.id))
-    .orderBy(desc(orders.created_at)); // newest first (was ascending)
+    .orderBy(desc(orders.created_at));
 
   const items = myOrders.length
     ? await db.select({ item: order_items, product: { name: products.name, unit: products.unit } })
@@ -44,7 +45,7 @@ export default async function DonHangPage() {
         <EmptyState icon="grocery" title="Chưa có đơn hàng nào" description="Khám phá các vườn rau và đặt đơn đầu tiên nhé!" action={<Link href="/farms" className="m3-btn m3-btn-filled"><Icon name="potted_plant" /><span>Chọn vườn rau</span></Link>} />
       ) : (
         <div className="flex flex-col gap-4 stagger">
-          {myOrders.map(({ order, farm }) => {
+          {myOrders.map(({ order, farm, farmer }) => {
             const currentIdx = STEPS.indexOf(order.status);
             const lines = itemsByOrder.get(order.id) ?? [];
             return (
@@ -56,7 +57,7 @@ export default async function DonHangPage() {
                       <span className="m3-chip sm m3-chip-surface round">{ORDER_TYPE_LABELS[order.type] ?? order.type}</span>
                       <span className={`status-pill status-${order.status}`}>
                         <Icon name={STATUS_ICONS[order.status]} size={16} filled />
-                        {stripEmoji(ORDER_STATUS_LABELS[order.status as keyof typeof ORDER_STATUS_LABELS])}
+                        {stripEmoji(getOrderStatusLabel(order.status as OrderStatus, farmer?.name))}
                       </span>
                     </div>
                   </div>

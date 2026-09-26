@@ -101,7 +101,15 @@ export interface Recipe {
 }
 
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
-  harvesting: "Rau đang được bác Tư thu hoạch 🌿",
+  harvesting: "Rau đang được nhà vườn thu hoạch 🌿",
   loaded: "Hàng đã lên xe lạnh về phố 🚚",
   delivered: "Đồ quê đã đến tận cửa nhà bạn 🏡",
 };
+
+/** Dynamic label that includes the actual farmer/farm name */
+export function getOrderStatusLabel(status: OrderStatus, farmerName?: string | null): string {
+  if (status === "harvesting" && farmerName) {
+    return `Rau đang được ${farmerName} thu hoạch 🌿`;
+  }
+  return ORDER_STATUS_LABELS[status];
+}

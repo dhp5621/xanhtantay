@@ -95,8 +95,11 @@ export function ProductManager({ farmId, initial }: { farmId: string; initial: P
         <>
           <div className={`m3-scrim ${closing ? "closing" : ""}`} onClick={close} aria-hidden />
           <form className={`m3-dialog ${closing ? "closing" : ""}`} onSubmit={save} role="dialog" aria-modal="true">
-            <h2 className="headline-sm" style={{ marginBottom: 20 }}>{editing === "new" ? "Thêm sản phẩm" : "Sửa sản phẩm"}</h2>
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div className="m3-dialog-icon"><Icon name={editing === "new" ? "add_circle" : "edit"} size={24} filled /></div>
+            <div className="m3-dialog-header">
+              <h2 className="m3-dialog-title">{editing === "new" ? "Thêm sản phẩm" : "Sửa sản phẩm"}</h2>
+            </div>
+            <div className="m3-dialog-body">
               <div className="m3-field">
                 <label className="m3-field-label" htmlFor="pm-name">Tên sản phẩm</label>
                 <input id="pm-name" className="m3-input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required maxLength={80} placeholder="Ví dụ: Cải ngọt" />
@@ -124,7 +127,7 @@ export function ProductManager({ farmId, initial }: { farmId: string; initial: P
                 </div>
               </div>
             </div>
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 24 }}>
+            <div className="m3-dialog-actions">
               <button type="button" className="m3-btn m3-btn-text" onClick={close}>Huỷ</button>
               <button type="submit" className="m3-btn m3-btn-filled" disabled={busy === "form"}>
                 {busy === "form" ? <span className="m3-loader sm on-primary" /> : <Icon name="save" />}<span>Lưu</span>
