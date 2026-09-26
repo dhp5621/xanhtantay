@@ -7,6 +7,7 @@ import { Icon } from "@/components/ui/Icon";
 import { formatDate, daysUntil, formatDateTime, timeAgo } from "@/lib/format";
 import { getSessionUser } from "@/lib/session";
 import { Landing } from "@/components/landing/Landing";
+import { MediaGallery } from "@/components/ui/MediaGallery";
 
 export default async function HomePage() {
   const user = await getSessionUser();
@@ -110,9 +111,7 @@ export default async function HomePage() {
           {diaryFeed.map(({ entry, farm }) => (
             <Link key={entry.id} href={farm ? `/farms/${farm.slug}` : "/farms"} className="m3-list-item" style={{ alignItems: "flex-start", padding: 16 }}>
               {entry.media_urls[0] ? (
-                <div className="m3-media-wrap" style={{ width: 84, height: 84, borderRadius: "var(--shape-md)", flexShrink: 0 }}>
-                  <div className="m3-card-media" style={{ width: "100%", height: "100%", backgroundImage: `url(${entry.media_urls[0]})` }} />
-                </div>
+                <MediaGallery urls={entry.media_urls.slice(0, 1)} size={84} caption={farm?.name ?? undefined} />
               ) : (
                 <span className="m3-list-leading"><Icon name="eco" /></span>
               )}

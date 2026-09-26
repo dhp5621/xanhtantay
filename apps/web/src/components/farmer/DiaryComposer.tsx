@@ -6,6 +6,7 @@ import { Icon } from "@/components/ui/Icon";
 import { useSnackbar } from "@/components/ui/Snackbar";
 import { compressImage, compressVideo, canCompressVideo, getVideoDuration, VIDEO_MAX_SECONDS } from "@/lib/media";
 import { CameraCapture, hasCameraApi } from "@/components/ui/CameraCapture";
+import { MediaLightbox } from "@/components/ui/MediaLightbox";
 
 const SUGGESTIONS = [
   { icon: "eco", text: "Hôm nay thu hoạch được lứa rau xanh mướt." },
@@ -27,6 +28,7 @@ export function DiaryComposer() {
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [camera, setCamera] = useState<null | "photo" | "video">(null);
+  const [preview, setPreview] = useState<number | null>(null);
   const pickRef = useRef<HTMLInputElement>(null);
   const photoRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLInputElement>(null);
@@ -179,12 +181,15 @@ export function DiaryComposer() {
             <div className="flex gap-2 flex-wrap stagger" style={{ marginTop: 8 }}>
               {media.map((m, i) => (
                 <div key={m.url} style={{ position: "relative" }}>
-                  {m.kind === "video" ? (
-                    <video src={m.url} style={{ width: 96, height: 96, objectFit: "cover", borderRadius: "var(--shape-md)", background: "#000" }} muted playsInline controls={false} />
-                  ) : (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={m.url} alt="" style={{ width: 96, height: 96, objectFit: "cover", borderRadius: "var(--shape-md)" }} />
-                  )}
+                  <button type="button" className="m3-thumb" onClick={() => setPreview(i)} aria-label="Xem trước" style={{ width: 96, height: 96, borderRadius: "var(--shape-md)", border: "none", padding: 0, background: "#000", cursor: "zoom-in", display: "block", position: "relative" }}>
+                    {m.kind === "video" ? (
+                      <video src={m.url} style={{ width: "100%", height: "100%", objectFit: "cover" }} muted playsInline preload="metadata" />
+                    ) : (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={m.url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    )}
+                    {m.kind === "video" && <span className="m3-thumb-play"><Icon name="play_arrow" size={22} filled /></span>}
+                  </button>
                   <span className="m3-chip sm round" style={{ position: "absolute", left: 4, bottom: 4, height: 20, fontSize: 10, padding: "0 6px", background: "rgba(0,0,0,.6)", color: "#fff", boxShadow: "none" }}>
                     {m.kind === "video" && <Icon name="videocam" size={12} filled />} {fmtMB(m.file.size)}
                   </span>
@@ -205,6 +210,15 @@ export function DiaryComposer() {
         <div className="anim-in-scale m3-chip m3-chip-primary" style={{ height: "auto", padding: "12px 16px", borderRadius: "var(--shape-md)", whiteSpace: "normal" }}>
           <Icon name="check_circle" filled /> Đã đăng nhật ký thành công!
         </div>
+      )}
+
+      {preview !== null && (
+        <MediaLightbox
+          items={media.map((m) => ({ url: m.url, kind: m.kind, caption: `${m.kind === "video" ? "Video" : "Ảnh"} · ${fmtMB(m.file.size)}` }))}
+          index={preview}
+          onClose={() => setPreview(null)}
+          onDelete={(k) => setMedia((ms) => ms.filter((_, j) => j !== k))}
+        />
       )}
 
       {camera && (

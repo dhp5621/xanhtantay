@@ -7,6 +7,7 @@ import { AddToCartButton } from "@/components/cart/AddToCartButton";
 import { FollowFarmButton } from "@/components/farm/FollowFarmButton";
 import { SubscribeButton } from "@/components/farm/SubscribeButton";
 import { getSessionUser } from "@/lib/session";
+import { MediaGallery } from "@/components/ui/MediaGallery";
 import { Icon } from "@/components/ui/Icon";
 import { CATEGORY_LABELS, CATEGORY_ICONS, formatVND, formatDateTime, timeAgo } from "@/lib/format";
 
@@ -116,10 +117,8 @@ export default async function FarmPage({ params }: { params: Promise<{ slug: str
           <div className="m3-list-group stagger">
             {diary.map((entry) => (
               <div key={entry.id} className="m3-list-item" style={{ alignItems: "flex-start", padding: 16, cursor: "default" }}>
-                {entry.media_urls[0] ? (
-                  <div className="m3-media-wrap" style={{ width: 96, height: 96, borderRadius: "var(--shape-md)", flexShrink: 0 }}>
-                    <div className="m3-card-media" style={{ width: "100%", height: "100%", backgroundImage: `url(${entry.media_urls[0]})` }} />
-                  </div>
+                {entry.media_urls.length ? (
+                  <MediaGallery urls={entry.media_urls} size={entry.media_urls.length > 1 ? 72 : 96} caption={`${farm.name} · ${formatDateTime(entry.created_at)}`} />
                 ) : <span className="m3-list-leading"><Icon name="eco" /></span>}
                 <div>
                   <p className="body-md text-on-surface" style={{ fontWeight: 400, lineHeight: 1.6 }}>{entry.content}</p>

@@ -1335,6 +1335,28 @@ input[type="number"].tabular::-webkit-inner-spin-button { -webkit-appearance: no
 .m3-shutter.recording .m3-shutter-core { border-radius: var(--shape-sm); transform: scale(0.5); }
 @keyframes m3-blink { 50% { opacity: 0.2; } }
 
+/* ─── Lightbox ───────────────────────────────────────────────── */
+.m3-lightbox {
+  position: fixed; inset: 0; z-index: 210;
+  display: flex; flex-direction: column;
+  color: #fff;
+  animation: m3-fade-in var(--dur-medium-2) var(--ease-standard) both;
+  padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom);
+}
+.m3-lightbox.closing { animation: m3-fade-out var(--dur-short-4) var(--ease-standard-accel) both; }
+.m3-lightbox-top, .m3-lightbox-bottom { display: flex; align-items: center; gap: 8px; padding: 8px 12px; }
+.m3-lightbox-bottom { flex-direction: column; padding-bottom: 16px; }
+.m3-lightbox-stage { position: relative; flex: 1; min-height: 0; display: grid; place-items: center; padding: 0 8px; }
+.m3-lightbox-media { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: var(--shape-md); box-shadow: var(--elev-4); }
+.m3-lightbox-nav { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,.14); color: #fff; width: 48px; height: 48px; }
+.m3-lightbox-dot { height: 8px; border-radius: 4px; border: none; padding: 0; cursor: pointer; transition: width var(--dur-medium-2) var(--spring-default-spatial), background-color var(--dur-short-4) var(--ease-standard); }
+.m3-thumb { overflow: hidden; transition: transform var(--dur-medium-2) var(--spring-fast-spatial), box-shadow var(--dur-medium-2) var(--ease-standard); }
+@media (hover: hover) { .m3-thumb:hover { transform: scale(1.04); box-shadow: var(--elev-2); } }
+.m3-thumb:active { transform: scale(0.96); }
+.m3-thumb-play { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; background: rgba(0,0,0,.25); }
+.m3-thumb-play .msr { background: rgba(0,0,0,.5); border-radius: 50%; padding: 6px; }
+.m3-thumb-more { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(0,0,0,.55); color: #fff; font-weight: 700; font-size: 16px; }
+
 /* ─── Snackbar ─────────────────────────────────────────────── */
 .m3-snackbar-host {
   position: fixed;
