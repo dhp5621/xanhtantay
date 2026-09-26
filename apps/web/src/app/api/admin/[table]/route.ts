@@ -8,7 +8,7 @@ import { sectionByKey, type Field } from "@/lib/admin-config";
 const TABLES = {
   users: schema.users, farms: schema.farms, products: schema.products, orders: schema.orders,
   subscriptions: schema.subscriptions, group_orders: schema.group_orders, farm_diary: schema.farm_diary, recipes: schema.recipes,
-  user_recipes: schema.user_recipes,
+  user_recipes: schema.user_recipes, meal_plans: schema.meal_plans,
 } as const;
 
 function coerce(field: Field, v: unknown) {
@@ -90,6 +90,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ table
       case "orders":
         await db.delete(schema.order_items).where(eq(schema.order_items.order_id, id));
         await db.update(schema.user_recipes).set({ order_id: null }).where(eq(schema.user_recipes.order_id, id));
+        await db.delete(schema.meal_plans).where(eq(schema.meal_plans.order_id, id));
         break;
       case "group_orders": await db.delete(schema.group_order_members).where(eq(schema.group_order_members.group_order_id, id)); break;
       case "products": await db.delete(schema.order_items).where(eq(schema.order_items.product_id, id)); break;
@@ -97,7 +98,11 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ table
         const prods = await db.select({ id: schema.products.id }).from(schema.products).where(eq(schema.products.farm_id, id));
         for (const p of prods) await db.delete(schema.order_items).where(eq(schema.order_items.product_id, p.id));
         const ords = await db.select({ id: schema.orders.id }).from(schema.orders).where(eq(schema.orders.farm_id, id));
-        for (const o of ords) await db.delete(schema.order_items).where(eq(schema.order_items.order_id, o.id));
+        for (const o of ords) {
+          await db.delete(schema.order_items).where(eq(schema.order_items.order_id, o.id));
+          await db.delete(schema.meal_plans).where(eq(schema.meal_plans.order_id, o.id));
+          await db.update(schema.user_recipes).set({ order_id: null }).where(eq(schema.user_recipes.order_id, o.id));
+        }
         await db.delete(schema.orders).where(eq(schema.orders.farm_id, id));
         await db.delete(schema.subscriptions).where(eq(schema.subscriptions.farm_id, id));
         const groups = await db.select({ id: schema.group_orders.id }).from(schema.group_orders).where(eq(schema.group_orders.farm_id, id));
@@ -116,6 +121,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ table
         await db.delete(schema.subscriptions).where(eq(schema.subscriptions.user_id, id));
         await db.delete(schema.group_order_members).where(eq(schema.group_order_members.user_id, id));
         await db.delete(schema.user_recipes).where(eq(schema.user_recipes.user_id, id));
+        await db.delete(schema.meal_plans).where(eq(schema.meal_plans.user_id, id));
         break;
       }
     }

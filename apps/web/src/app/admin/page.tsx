@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { db } from "@/db";
-import { users, farms, products, orders, subscriptions, group_orders, farm_diary } from "@/db/schema";
+import { users, farms, products, orders, subscriptions, group_orders, farm_diary, meal_plans, user_recipes } from "@/db/schema";
 import { and, count, desc, eq, lte, sum } from "drizzle-orm";
 import { Icon } from "@/components/ui/Icon";
 import { formatVND, formatDateTime, STATUS_SHORT, STATUS_ICONS } from "@/lib/format";
@@ -9,7 +9,7 @@ import { formatVND, formatDateTime, STATUS_SHORT, STATUS_ICONS } from "@/lib/for
 export const metadata = { title: { absolute: "Tổng quan · Quản trị Xanh Tận Tay" } };
 
 export default async function AdminDashboard() {
-  const [[u], [f], [p], [o], [pending], [rev], [s], [g], [low], [d], recent] = await Promise.all([
+  const [[u], [f], [p], [o], [pending], [rev], [s], [g], [low], [d], recent, [pooled], [plans], [ai]] = await Promise.all([
     db.select({ c: count() }).from(users),
     db.select({ c: count() }).from(farms),
     db.select({ c: count() }).from(products),
@@ -22,6 +22,9 @@ export default async function AdminDashboard() {
     db.select({ c: count() }).from(farm_diary),
     db.select({ order: orders, farm: { name: farms.name }, customer: { name: users.name } }).from(orders)
       .leftJoin(farms, eq(orders.farm_id, farms.id)).leftJoin(users, eq(orders.user_id, users.id)).orderBy(desc(orders.created_at)).limit(8),
+    db.select({ c: count() }).from(orders).where(and(eq(orders.delivery_mode, "pooled"), eq(orders.status, "harvesting"))),
+    db.select({ c: count() }).from(meal_plans),
+    db.select({ c: count() }).from(user_recipes),
   ]);
   const revenue = Number(rev.s ?? 0);
   const commission = Math.round(revenue * 0.075); // midpoint of the 5–10% model
@@ -38,6 +41,9 @@ export default async function AdminDashboard() {
     { icon: "groups", label: "Nhóm gom mở", value: g.c, href: "/admin/group_orders", tone: "surface" },
     { icon: "auto_stories", label: "Bài nhật ký", value: d.c, href: "/admin/diary", tone: "surface" },
     { icon: "priority_high", label: "Sắp hết hàng (≤5)", value: low.c, href: "/admin/products", tone: low.c > 0 ? "error" : "surface" },
+    { icon: "group_work", label: "Đơn chờ ghép chuyến", value: pooled.c, href: "/admin/orders", tone: pooled.c > 0 ? "tertiary" : "surface" },
+    { icon: "auto_awesome", label: "Món AI đã gợi ý", value: ai.c, href: "/admin/user_recipes", tone: "surface" },
+    { icon: "calendar_month", label: "Kế hoạch ăn", value: plans.c, href: "/admin/meal_plans", tone: "surface" },
   ];
   const toneStyle = (t: string) =>
     t === "surface" ? { background: "var(--md-surface-container-high)", color: "var(--md-on-surface)" }
@@ -73,6 +79,7 @@ export default async function AdminDashboard() {
                 <p className="title-sm">{customer?.name ?? "Khách"} → {farm?.name ?? "Vườn"}</p>
                 <p className="body-sm text-on-surface-variant">{formatDateTime(order.created_at)}{order.note ? ` · ${order.note}` : ""}</p>
               </div>
+              {order.delivery_mode === "pooled" && <span className="m3-chip sm round m3-chip-tertiary"><Icon name="group_work" size={14} /> Ghép</span>}
               <span className={`status-pill status-${order.status}`}><Icon name={STATUS_ICONS[order.status]} size={16} filled />{STATUS_SHORT[order.status]}</span>
               <span className="title-md text-primary tabular" style={{ minWidth: 90, textAlign: "right" }}>{formatVND(order.total)}</span>
             </div>

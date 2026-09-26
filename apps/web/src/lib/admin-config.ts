@@ -6,7 +6,7 @@ export type FieldType = "text" | "textarea" | "number" | "boolean" | "select" | 
 export interface Field { key: string; label: string; type: FieldType; options?: { value: string; label: string }[]; required?: boolean; min?: number }
 export interface Section {
   key: string;
-  table: "users" | "farms" | "products" | "orders" | "subscriptions" | "group_orders" | "farm_diary" | "recipes" | "user_recipes";
+  table: "users" | "farms" | "products" | "orders" | "subscriptions" | "group_orders" | "farm_diary" | "recipes" | "user_recipes" | "meal_plans";
   label: string;
   icon: string;
   desc: string;
@@ -70,6 +70,7 @@ export const SECTIONS: Section[] = [
     key: "orders", table: "orders", label: "Đơn hàng", icon: "package_2", desc: "Mọi đơn của mọi vườn", canDelete: true,
     fields: [
       { key: "status", label: "Trạng thái", type: "select", options: ORDER_STATUSES },
+      { key: "delivery_mode", label: "Giao", type: "select", options: [{ value: "direct", label: "Giao riêng" }, { value: "pooled", label: "Ghép chuyến" }] },
       { key: "total", label: "Tổng (₫)", type: "number", min: 0 },
       { key: "note", label: "Ghi chú", type: "textarea" },
     ],
@@ -107,6 +108,11 @@ export const SECTIONS: Section[] = [
   {
     key: "user_recipes", table: "user_recipes", label: "Món AI của khách", icon: "auto_awesome", desc: "Công thức AI đã gợi ý cho từng khách", canDelete: true,
     fields: [{ key: "title", label: "Tên món", type: "text", required: true }],
+    createFields: [],
+  },
+  {
+    key: "meal_plans", table: "meal_plans", label: "Kế hoạch ăn", icon: "calendar_month", desc: "Lịch nấu AI theo từng đơn đã giao", canDelete: true,
+    fields: [{ key: "summary", label: "Tóm tắt", type: "textarea" }],
     createFields: [],
   },
   {

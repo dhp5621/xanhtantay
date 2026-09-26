@@ -2,7 +2,9 @@ export const dynamic = "force-dynamic";
 import { notFound } from "next/navigation";
 import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { users, farms, products, orders, subscriptions, group_orders, farm_diary, recipes, order_items, user_recipes } from "@/db/schema";
+import { users, farms, products, orders, subscriptions, group_orders, farm_diary, recipes, order_items, user_recipes, meal_plans } from "@/db/schema";
+import { sum } from "drizzle-orm";
+import { levelFor, pointsFor } from "@/lib/commerce";
 import { sectionByKey } from "@/lib/admin-config";
 import { AdminTable, type Column as ViewColumn } from "@/components/admin/AdminTable";
 import { Icon } from "@/components/ui/Icon";
@@ -22,10 +24,14 @@ async function load(key: string): Promise<{ rows: Row[]; columns: Column[]; hint
   switch (key) {
     case "users": {
       const rows = await db.select().from(users).orderBy(desc(users.created_at));
+      // Loyalty points per user from delivered orders
+      const totals = await db.select({ user_id: orders.user_id, s: sum(orders.total) }).from(orders).where(eq(orders.status, "delivered")).groupBy(orders.user_id);
+      const pts = new Map(totals.map((t) => [t.user_id, pointsFor(Number(t.s ?? 0))]));
       return {
-        rows: rows.map((r) => ({ ...r, avatar_url: r.avatar_url ? "✓" : "" })) as Row[],
+        rows: rows.map((r) => ({ ...r, avatar_url: r.avatar_url ? "✓" : "", points: pts.get(r.id) ?? 0, level: levelFor(pts.get(r.id) ?? 0).level.name })) as Row[],
         columns: [
           { key: "name", label: "Tên" }, { key: "email", label: "Email" }, { key: "phone", label: "Điện thoại" },
+          { key: "points", label: "Điểm", render: (v, r) => (r.role === "farmer" ? "" : `${v} · ${r.level}`) },
           { key: "created_at", label: "Tạo lúc", render: dt }, { key: "id", label: "ID", mono: true },
         ],
       };
@@ -60,10 +66,11 @@ async function load(key: string): Promise<{ rows: Row[]; columns: Column[]; hint
       const byOrder = new Map<string, string[]>();
       for (const it of items) byOrder.set(it.oi.order_id, [...(byOrder.get(it.oi.order_id) ?? []), `${Number(it.oi.quantity)} ${it.unit ?? ""} ${it.name ?? "?"}`]);
       return {
-        rows: rows.map(({ o, farm, customer }) => ({ ...o, farm_name: farm?.name ?? "", customer_name: customer?.name ?? "", phone: customer?.phone ?? "", items: (byOrder.get(o.id) ?? []).join(", ") })) as Row[],
+        rows: rows.map(({ o, farm, customer }) => ({ ...o, farm_name: farm?.name ?? "", customer_name: customer?.name ?? "", phone: customer?.phone ?? "", items: (byOrder.get(o.id) ?? []).join(", "), batch: o.batch_id ? o.batch_id.slice(-6) : "" })) as Row[],
         columns: [
           { key: "customer_name", label: "Khách" }, { key: "farm_name", label: "Vườn" }, { key: "items", label: "Món", clamp: true },
           { key: "total", label: "Tổng", render: (v) => formatVND(Number(v)) },
+          { key: "batch", label: "Lô", mono: true },
           { key: "type", label: "Loại", render: (v) => ORDER_TYPE_LABELS[String(v)] ?? String(v) }, { key: "created_at", label: "Lúc", render: dt },
         ],
         hint: "Đổi trạng thái tại đây sẽ hiện ngay cho khách và nhà vườn.",
@@ -104,6 +111,14 @@ async function load(key: string): Promise<{ rows: Row[]; columns: Column[]; hint
       return {
         rows: rows.map(({ r, customer }) => ({ ...r, customer_name: customer?.name ?? "", based: r.based_on.join(", ") })) as Row[],
         columns: [{ key: "title", label: "Món" }, { key: "customer_name", label: "Khách" }, { key: "based", label: "Từ món đã mua", clamp: true }, { key: "source", label: "Nguồn", render: (v) => (v === "ai" ? "AI" : "Mẫu") }, { key: "created_at", label: "Lúc", render: dt }],
+      };
+    }
+    case "meal_plans": {
+      const rows = await db.select({ m: meal_plans, customer: { name: users.name }, farm: { name: farms.name } }).from(meal_plans)
+        .leftJoin(users, eq(meal_plans.user_id, users.id)).leftJoin(orders, eq(meal_plans.order_id, orders.id)).leftJoin(farms, eq(orders.farm_id, farms.id)).orderBy(desc(meal_plans.created_at));
+      return {
+        rows: rows.map(({ m, customer, farm }) => ({ ...m, customer_name: customer?.name ?? "", farm_name: farm?.name ?? "", meals: m.plan.reduce((s, d) => s + d.meals.length, 0) })) as Row[],
+        columns: [{ key: "customer_name", label: "Khách" }, { key: "farm_name", label: "Vườn (đơn)" }, { key: "days", label: "Số ngày" }, { key: "meals", label: "Món" }, { key: "summary", label: "Tóm tắt", clamp: true }, { key: "source", label: "Nguồn", render: (v) => (v === "ai" ? "AI" : "Quy tắc") }, { key: "created_at", label: "Lúc", render: dt }],
       };
     }
     case "recipes": {
