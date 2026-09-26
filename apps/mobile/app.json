@@ -14,13 +14,13 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "vn.xanhtantay.app"
+      "bundleIdentifier": "dhp.vkn.xanhtantay"
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#F6FBF4"
       },
-      "package": "vn.xanhtantay.app"
+      "package": "dhp.vkn.xanhtantay"
     },
     "plugins": ["expo-router"]
   }

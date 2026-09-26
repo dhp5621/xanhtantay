@@ -3,17 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "node scripts/icon-subset.mjs; next dev",
+    "build": "node scripts/icon-subset.mjs && next build",
     "start": "next start",
     "lint": "next lint",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/db/migrate.ts",
     "db:push": "drizzle-kit push",
     "db:seed": "tsx src/db/seed.ts",
-    "icons": "node scripts/icon-subset.mjs",
-    "prebuild": "node scripts/icon-subset.mjs",
-    "predev": "node scripts/icon-subset.mjs"
+    "icons": "node scripts/icon-subset.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^0.10.4",
