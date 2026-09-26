@@ -1810,3 +1810,22 @@ input[type="number"].tabular::-webkit-inner-spin-button { -webkit-appearance: no
 }
 .m3-chip-scroll::-webkit-scrollbar { display: none; }
 .m3-chip-scroll > * { flex: 0 0 auto; scroll-snap-align: start; }
+
+/* ─── Diary post media grid ──────────────────────────────────── */
+.m3-post-media { display: grid; gap: 6px; }
+
+/* ─── Plain horizontal card row (no depth / fade; used for levels etc.) ─ */
+.m3-scroll-row {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: 16px;
+  padding: 8px 16px 14px;
+  margin: 0 -16px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.m3-scroll-row::-webkit-scrollbar { display: none; }
+.m3-scroll-card { flex: 0 0 min(220px, 68vw); scroll-snap-align: start; }

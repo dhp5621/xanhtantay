@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { db } from "@/db";
 import { farms, products, farm_diary } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
@@ -74,7 +75,7 @@ export default async function FarmPage({ params }: { params: Promise<{ slug: str
       </div>
 
       {/* Products */}
-      <section>
+      <section id="san-pham">
         <div className="m3-section-head">
           <h2 className="headline-sm text-on-surface"><Icon name="shopping_basket" filled /> Sản phẩm từ vườn</h2>
           <span className="body-sm text-on-surface-variant">{farmProducts.filter((p) => p.in_stock).length} món còn hàng</span>
@@ -120,11 +121,12 @@ export default async function FarmPage({ params }: { params: Promise<{ slug: str
                 {entry.media_urls.length ? (
                   <MediaGallery urls={entry.media_urls} size={entry.media_urls.length > 1 ? 72 : 96} caption={`${farm.name} · ${formatDateTime(entry.created_at)}`} />
                 ) : <span className="m3-list-leading"><Icon name="eco" /></span>}
-                <div>
-                  <p className="body-md text-on-surface" style={{ fontWeight: 400, lineHeight: 1.6 }}>{entry.content}</p>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <Link href={`/nhat-ky/${entry.id}`} className="body-md text-on-surface" style={{ fontWeight: 400, lineHeight: 1.6, textDecoration: "none", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{entry.content}</Link>
                   <p className="body-sm text-on-surface-variant" style={{ marginTop: 8, display: "inline-flex", alignItems: "center", gap: 4 }}>
                     <Icon name="schedule" size={14} /> <strong style={{ fontWeight: 600 }}>{timeAgo(entry.created_at)}</strong> · {formatDateTime(entry.created_at)}
                   </p>
+                  <Link href={`/nhat-ky/${entry.id}`} className="m3-btn m3-btn-text m3-btn-sm" style={{ marginLeft: -12, marginTop: 4 }}><span>Xem bài đầy đủ</span><Icon name="arrow_forward" size={16} /></Link>
                 </div>
               </div>
             ))}

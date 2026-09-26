@@ -109,7 +109,7 @@ export default async function HomePage() {
         </div>
         <div className="m3-list-group stagger">
           {diaryFeed.map(({ entry, farm }) => (
-            <Link key={entry.id} href={farm ? `/farms/${farm.slug}` : "/farms"} className="m3-list-item" style={{ alignItems: "flex-start", padding: 16 }}>
+            <Link key={entry.id} href={`/nhat-ky/${entry.id}`} className="m3-list-item" style={{ alignItems: "flex-start", padding: 16 }}>
               {entry.media_urls[0] ? (
                 <MediaGallery urls={entry.media_urls.slice(0, 1)} size={84} caption={farm?.name ?? undefined} />
               ) : (
@@ -117,7 +117,7 @@ export default async function HomePage() {
               )}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p className="label-md text-primary" style={{ marginBottom: 4 }}>{farm?.name ?? "Vườn rau"}</p>
-                <p className="body-md text-on-surface" style={{ fontWeight: 400 }}>{entry.content}</p>
+                <p className="body-md text-on-surface" style={{ fontWeight: 400, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{entry.content}</p>
                 <p className="body-sm text-on-surface-variant" style={{ marginTop: 6, display: "inline-flex", alignItems: "center", gap: 4 }}>
                   <Icon name="schedule" size={14} /> {timeAgo(entry.created_at)} · {formatDateTime(entry.created_at)}
                 </p>
