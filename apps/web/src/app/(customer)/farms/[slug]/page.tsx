@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { notFound } from "next/navigation";
 import { db } from "@/db";
 import { farms, products, farm_diary } from "@/db/schema";

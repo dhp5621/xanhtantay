@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { notFound } from "next/navigation";
 import { db } from "@/db";
 import { group_orders, farms, group_order_members, users } from "@/db/schema";
