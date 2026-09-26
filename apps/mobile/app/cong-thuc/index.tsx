@@ -4,6 +4,8 @@ import { useFocusEffect } from "expo-router";
 import type { Recipe } from "@xanhtantay/types";
 import { apiFetch, ApiError } from "../../constants/api";
 import { colors, shape, type, elevation } from "../../constants/theme";
+import { DEFAULT_PREFS, RecipePrefs } from "../../constants/recipePrefs";
+import { RecipeSettingsButton, recipePrefsSummary } from "../../components/RecipeSettingsSheet";
 
 type UserRecipe = Recipe & { description?: string | null; minutes?: number | null; kcal?: number | null; based_on?: string[] };
 
@@ -12,10 +14,13 @@ export default function CongThucScreen() {
   const [loading, setLoading] = useState(true);
   const [suggesting, setSuggesting] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [prefs, setPrefs] = useState<RecipePrefs>(DEFAULT_PREFS);
 
   const load = useCallback(async () => {
     try {
-      setRecipes(await apiFetch("/recipes/mine"));
+      const [mine, me] = await Promise.all([apiFetch("/recipes/mine"), apiFetch("/users/me").catch(() => null)]);
+      setRecipes(mine);
+      if (me?.recipe_prefs) setPrefs(me.recipe_prefs);
     } catch {
       // ignore; login state handled by empty view
     }
@@ -27,10 +32,19 @@ export default function CongThucScreen() {
     }, [load])
   );
 
+  const savePrefs = async (p: RecipePrefs) => {
+    setPrefs(p);
+    try {
+      await apiFetch("/users/me", { method: "PATCH", body: JSON.stringify({ recipe_prefs: p }) });
+    } catch {
+      // still applied locally for this session even if saving to the account failed
+    }
+  };
+
   const suggest = async () => {
     setSuggesting(true);
     try {
-      const data = await apiFetch("/recipes/suggest", { method: "POST", body: JSON.stringify({ count: 3 }) });
+      const data = await apiFetch("/recipes/suggest", { method: "POST", body: JSON.stringify({ count: 3, prefs }) });
       setRecipes((rs) => [...(data.recipes ?? []), ...rs]);
     } catch (e) {
       Alert.alert("Không gợi ý được", e instanceof ApiError ? e.message : "Có lỗi xảy ra");

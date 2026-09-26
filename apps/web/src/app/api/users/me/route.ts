@@ -12,8 +12,8 @@ const DATA_URL = /^data:image\/(webp|jpeg|png);base64,[A-Za-z0-9+/=]+$/;
 export async function GET() {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Chưa đăng nhập" }, { status: 401 });
-  const [row] = await db.select({ id: users.id, name: users.name, email: users.email, phone: users.phone, role: users.role, avatar_url: users.avatar_url }).from(users).where(eq(users.id, user.id));
-  return NextResponse.json(row ?? null);
+  const [row] = await db.select({ id: users.id, name: users.name, email: users.email, phone: users.phone, role: users.role, avatar_url: users.avatar_url, recipe_prefs: users.recipe_prefs }).from(users).where(eq(users.id, user.id));
+  return NextResponse.json(row ? { ...row, recipe_prefs: normalizePrefs(row.recipe_prefs) } : null);
 }
 
 export async function PATCH(req: Request) {

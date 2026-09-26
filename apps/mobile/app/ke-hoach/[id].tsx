@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity
 import { useLocalSearchParams } from "expo-router";
 import { apiFetch, ApiError } from "../../constants/api";
 import { colors, shape, type } from "../../constants/theme";
+import { DEFAULT_PREFS, RecipePrefs } from "../../constants/recipePrefs";
+import { RecipeSettingsButton, recipePrefsSummary } from "../../components/RecipeSettingsSheet";
 
 interface MealRecipe {
   minutes?: number;
@@ -19,6 +21,18 @@ interface MealPlan {
   days: number;
   summary: string;
   plan: MealPlanDay[];
+  prefs?: RecipePrefs | null;
+}
+
+function samePrefs(a?: RecipePrefs | null, b?: RecipePrefs | null) {
+  if (!a || !b) return false;
+  return (
+    a.goal === b.goal &&
+    a.servings === b.servings &&
+    (a.notes ?? "") === (b.notes ?? "") &&
+    (a.customDiet ?? "") === (b.customDiet ?? "") &&
+    [...a.tags].sort().join() === [...b.tags].sort().join()
+  );
 }
 
 export default function KeHoachScreen() {
@@ -28,13 +42,21 @@ export default function KeHoachScreen() {
   const [error, setError] = useState<string | null>(null);
   const [openMeals, setOpenMeals] = useState<Record<string, boolean>>({});
   const [loadingMeals, setLoadingMeals] = useState<Record<string, boolean>>({});
+  const [prefs, setPrefs] = useState<RecipePrefs>(DEFAULT_PREFS);
+  const [prefsChanged, setPrefsChanged] = useState(false);
 
-  const load = async (regenerate = false) => {
+  const load = async (regenerate = false, prefsOverride?: RecipePrefs) => {
     setLoading(true);
     setError(null);
     try {
-      setPlan(await apiFetch("/recipes/plan", { method: "POST", body: JSON.stringify({ order_id: id, regenerate }) }));
+      const applied = prefsOverride ?? prefs;
+      const row: MealPlan = await apiFetch("/recipes/plan", {
+        method: "POST",
+        body: JSON.stringify({ order_id: id, regenerate, prefs: applied }),
+      });
+      setPlan(row);
       setOpenMeals({});
+      setPrefsChanged(!samePrefs(row.prefs, applied));
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Không tạo được kế hoạch");
     } finally {
@@ -42,8 +64,27 @@ export default function KeHoachScreen() {
     }
   };
 
+  // Same settings as the recipe assistant: saved on the account, so both screens stay in sync.
+  const savePrefs = async (p: RecipePrefs) => {
+    setPrefs(p);
+    setPrefsChanged(!!plan && !samePrefs(plan.prefs, p));
+    try {
+      await apiFetch("/users/me", { method: "PATCH", body: JSON.stringify({ recipe_prefs: p }) });
+    } catch {
+      // still applied locally for this session even if saving to the account failed
+    }
+  };
+
   useEffect(() => {
-    if (id) load();
+    if (!id) return;
+    apiFetch("/users/me")
+      .then((me) => {
+        const initialPrefs = me?.recipe_prefs ?? DEFAULT_PREFS;
+        setPrefs(initialPrefs);
+        return load(false, initialPrefs);
+      })
+      .catch(() => load());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   async function showHowTo(day: number, mealIdx: number) {
@@ -96,6 +137,12 @@ export default function KeHoachScreen() {
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
       <Text style={styles.title}>Kế hoạch {plan.days} ngày 🍽️</Text>
       <Text style={styles.summary}>{plan.summary}</Text>
+
+      <View style={styles.prefsRow}>
+        <RecipeSettingsButton prefs={prefs} onChange={savePrefs} />
+        <Text style={styles.prefsSummary}>{recipePrefsSummary(prefs)}</Text>
+      </View>
+      {prefsChanged && <Text style={styles.prefsHint}>Tuỳ chọn mới — bấm "Tạo lại kế hoạch" để áp dụng</Text>}
 
       {plan.plan.map((d) => (
         <View key={d.day} style={styles.dayCard}>
@@ -150,7 +197,7 @@ export default function KeHoachScreen() {
       ))}
 
       <TouchableOpacity style={styles.regenBtn} onPress={() => load(true)}>
-        <Text style={styles.regenBtnText}>Tạo lại kế hoạch</Text>
+        <Text style={styles.regenBtnText}>{prefsChanged ? "Áp dụng & tạo lại kế hoạch" : "Tạo lại kế hoạch"}</Text>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -161,7 +208,10 @@ const styles = StyleSheet.create({
   center: { flex: 1, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center", padding: 24 },
   body: { ...type.bodyMedium, color: colors.onSurfaceVariant, textAlign: "center" },
   title: { ...type.headlineSmall, color: colors.onSurface },
-  summary: { ...type.bodyMedium, color: colors.onSurfaceVariant, marginTop: 6, marginBottom: 16 },
+  summary: { ...type.bodyMedium, color: colors.onSurfaceVariant, marginTop: 6, marginBottom: 12 },
+  prefsRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 4, flexWrap: "wrap" },
+  prefsSummary: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12, flexShrink: 1 },
+  prefsHint: { ...type.bodyMedium, color: colors.tertiary, fontSize: 12, marginTop: 4, marginBottom: 12 },
   dayCard: { backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.lg, padding: 14, marginBottom: 12 },
   dayTitle: { ...type.titleMedium, color: colors.primary, marginBottom: 8 },
   mealBlock: { marginBottom: 10, paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: colors.surfaceContainerHighest },
