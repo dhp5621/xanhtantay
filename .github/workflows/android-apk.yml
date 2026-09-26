@@ -1,0 +1,78 @@
+name: Android APK
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/mobile/**"
+      - "packages/types/**"
+      - "my-release-key.jks"
+      - ".github/workflows/android-apk.yml"
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Prebuild Android project
+        working-directory: apps/mobile
+        env:
+          EXPO_PUBLIC_API_URL: ${{ vars.EXPO_PUBLIC_API_URL }}
+        run: npx expo prebuild --platform android --clean
+
+      - name: Install upload keystore
+        run: cp my-release-key.jks apps/mobile/android/app/my-release-key.jks
+
+      - name: Patch release signing config
+        working-directory: apps/mobile
+        run: node scripts/patch-release-signing.js
+
+      - name: Build release APK
+        working-directory: apps/mobile/android
+        env:
+          ANDROID_KEYSTORE_PATH: my-release-key.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleRelease --no-daemon
+
+      - name: Rename APK
+        run: cp apps/mobile/android/app/build/outputs/apk/release/app-release.apk xanhtantay.apk
+
+      - name: Publish rolling Android prerelease
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: android-latest
+          name: Xanh Tận Tay — Android (mới nhất)
+          body: Tự động build từ commit ${{ github.sha }} trên ${{ github.ref_name }}.
+          prerelease: true
+          make_latest: false
+          target_commitish: ${{ github.sha }}
+          files: xanhtantay.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

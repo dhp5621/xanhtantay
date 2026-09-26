@@ -84,7 +84,7 @@ export function MealPlanView({ orderId, delivered, inventory, initial }: { order
                   const state = howTo[key];
                   return (
                     <div key={i} className="m3-list-item" style={{ cursor: "default", alignItems: "flex-start", background: "var(--md-surface-container-lowest)", flexDirection: "column" }}>
-                      <div style={{ display: "flex", gap: 16, alignItems: "flex-start", width: "100%" }}>
+                      <div className="m3-meal-row">
                         <span className="m3-list-leading"><Icon name={m.time.toLowerCase().includes("sáng") ? "wb_twilight" : m.time.toLowerCase().includes("tối") ? "bedtime" : "wb_sunny"} filled /></span>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <p className="label-md text-on-surface-variant" style={{ textTransform: "uppercase" }}>{m.time}</p>
@@ -92,13 +92,13 @@ export function MealPlanView({ orderId, delivered, inventory, initial }: { order
                           {m.uses.length > 0 && <div className="flex flex-wrap gap-1" style={{ marginTop: 6 }}>{m.uses.map((u, k) => <span key={k} className="m3-chip sm m3-chip-surface">{u}</span>)}</div>}
                           {m.note && <p className="body-sm text-on-surface-variant" style={{ marginTop: 6, fontWeight: 400 }}><Icon name="lightbulb" size={14} /> {m.note}</p>}
                         </div>
-                        <button className={`m3-btn m3-btn-sm ${state === "open" ? "m3-btn-tonal" : "m3-btn-tonal-primary"}`} onClick={() => showHowTo(d.day, i)} disabled={state === "loading"} style={{ flexShrink: 0 }}>
+                        <button className={`m3-btn m3-btn-sm m3-meal-howto ${state === "open" ? "m3-btn-tonal" : "m3-btn-tonal-primary"}`} onClick={() => showHowTo(d.day, i)} disabled={state === "loading"}>
                           {state === "loading" ? <span className="m3-loader sm" /> : <Icon name={state === "open" ? "expand_less" : "menu_book"} size={18} />}
                           <span>{state === "loading" ? "Đang viết…" : state === "open" ? "Thu gọn" : "Xem cách làm"}</span>
                         </button>
                       </div>
                       {state === "open" && m.recipe && (
-                        <div className="anim-in" style={{ width: "100%", paddingLeft: 60, paddingTop: 10 }}>
+                        <div className="anim-in m3-meal-recipe">
                           {m.recipe.minutes && <p className="body-sm text-on-surface-variant" style={{ marginBottom: 8 }}><Icon name="schedule" size={14} /> Khoảng {m.recipe.minutes} phút</p>}
                           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                             <div className="md:col-span-2">

@@ -1956,3 +1956,13 @@ input[type="number"].tabular::-webkit-inner-spin-button { -webkit-appearance: no
 .m3-viewer-zoom { display: inline-flex; align-items: center; gap: 2px; height: 48px; padding: 0 6px; border-radius: var(--shape-full); background: rgba(255,255,255,.12); color: #fff; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
 .m3-viewer-zoom .m3-icon-btn { color: #fff; }
 .m3-viewer-tools .m3-btn { height: 48px; }
+
+/* ─── Meal plan rows: button beside on wide screens, under the text on phones ─ */
+.m3-meal-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px 16px; align-items: flex-start; width: 100%; }
+.m3-meal-howto { flex-shrink: 0; }
+.m3-meal-recipe { width: 100%; padding-left: 60px; padding-top: 10px; }
+@media (max-width: 639px) {
+  .m3-meal-row { grid-template-columns: auto minmax(0, 1fr); }
+  .m3-meal-howto { grid-column: 2; justify-self: start; }
+  .m3-meal-recipe { padding-left: 0; }
+}
