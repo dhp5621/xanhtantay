@@ -3,6 +3,9 @@ import { db } from "@/db";
 import { recipes, products } from "@/db/schema";
 import { inArray } from "drizzle-orm";
 
+const CHAT_API_URL = "https://chat-api.chuyenbienhoa.com/v1/chat/completions";
+const CHAT_API_MODEL = "gemini-flash-lite";
+
 export async function POST(req: Request) {
   const body = await req.json();
   const { product_ids }: { product_ids: string[] } = body;
@@ -33,32 +36,53 @@ export async function POST(req: Request) {
     .sort((a, b) => b.score - a.score)
     .slice(0, 5);
 
-  // If no DB matches, fall back to Claude API
-  if (matched.length === 0 && process.env.ANTHROPIC_API_KEY) {
-    try {
-      // @ts-expect-error optional dependency
-      const { default: Anthropic } = await import("@anthropic-ai/sdk");
-      const client = new Anthropic();
-      const productList = purchasedProducts.map((p) => p.name).join(", ");
-
-      const message = await client.messages.create({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 512,
-        messages: [
-          {
-            role: "user",
-            content: `Tôi vừa mua: ${productList}. Gợi ý 2 công thức nấu ăn đơn giản bằng tiếng Việt. Trả về JSON array: [{title, ingredients: string[], steps: string[]}]`,
-          },
-        ],
-      });
-
-      const text = message.content[0].type === "text" ? message.content[0].text : "";
-      const json = JSON.parse(text.match(/\[[\s\S]*\]/)?.[0] ?? "[]");
-      return NextResponse.json(json);
-    } catch {
-      return NextResponse.json([]);
-    }
+  if (matched.length > 0) {
+    return NextResponse.json(matched);
   }
 
-  return NextResponse.json(matched);
+  // Fallback: call self-hosted chat API
+  const apiKey = process.env.CHAT_API_SECRET;
+  if (!apiKey) {
+    return NextResponse.json([]);
+  }
+
+  try {
+    const productList = purchasedProducts.map((p) => p.name).join(", ");
+    const res = await fetch(CHAT_API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: CHAT_API_MODEL,
+        temperature: 0.4,
+        messages: [
+          {
+            role: "system",
+            content:
+              "Bạn là trợ lý gợi ý công thức nấu ăn. Chỉ trả lời bằng JSON thuần, không giải thích thêm.",
+          },
+          {
+            role: "user",
+            content: `Tôi vừa mua: ${productList}. Gợi ý 2-3 công thức nấu ăn đơn giản bằng tiếng Việt sử dụng những nguyên liệu này. Trả về JSON array với định dạng: [{"title": "...", "ingredients": ["..."], "steps": ["..."]}]`,
+          },
+        ],
+      }),
+    });
+
+    if (!res.ok) {
+      return NextResponse.json([]);
+    }
+
+    const data = await res.json();
+    const text: string = data?.choices?.[0]?.message?.content ?? "";
+    const jsonMatch = text.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) return NextResponse.json([]);
+
+    const suggestions = JSON.parse(jsonMatch[0]);
+    return NextResponse.json(suggestions);
+  } catch {
+    return NextResponse.json([]);
+  }
 }
