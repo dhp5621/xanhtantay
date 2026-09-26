@@ -5,14 +5,6 @@ import { stripEmoji } from "@/lib/format";
 
 interface FarmCard { id: string; name: string; slug: string; location: string; cover_url: string | null }
 
-/** "Vườn nhà bác Ba, Trang trại cô Tư và Vườn quê u Thắm" from real farms, with a fallback. */
-function farmNames(farms: FarmCard[]) {
-  const names = farms.slice(0, 3).map((f) => f.name.replace(/^(Vườn|Trang trại)\s+/i, (m) => m.toLowerCase()));
-  if (names.length === 0) return "những vườn rau gần bạn";
-  if (names.length === 1) return names[0];
-  return `${names.slice(0, -1).join(", ")} và ${names[names.length - 1]}`;
-}
-
 const PILLAR_TONES = ["primary", "tertiary", "secondary", "primary"] as const;
 
 const PILLARS = [
@@ -92,7 +84,7 @@ export function Landing({ farms, stats }: { farms: FarmCard[]; stats: { farms: n
             Rau tươi gom thẳng từ vườn, có tên người trồng
           </h1>
           <p className="body-lg anim-in delay-2" style={{ color: "var(--md-on-secondary-container)", maxWidth: 620, marginBottom: 28, fontSize: 18 }}>
-            Đặt mua nông sản tươi gom trực tiếp từ {farmNames(farms)}. Xem nhật ký và livestream nông trại, đặt theo gói định kỳ hoặc gom đơn cùng hàng xóm, biết rau đang ở đâu, và được gợi ý nấu gì tối nay.
+            Đặt mua nông sản tươi gom trực tiếp từ những nhà vườn có tên có mặt, như bác Ba, cô Tư, u Thắm. Xem nhật ký và livestream nông trại, đặt theo gói định kỳ hoặc gom đơn cùng hàng xóm, biết rau đang ở đâu, và được gợi ý nấu gì tối nay.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 anim-in delay-3" style={{ maxWidth: 820 }}>
