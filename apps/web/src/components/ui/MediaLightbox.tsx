@@ -103,7 +103,9 @@ export function MediaLightbox({ items, index, onClose, onDelete, tag }: { items:
 
   return (
     <Portal>
-      <div className={`m3-viewer ${closing ? "closing" : ""}`} role="dialog" aria-modal="true" aria-label="Xem ảnh / video">
+      {/* The viewer is portaled to <body>, but React events still bubble through the component tree:
+          stop them here so a viewer opened from inside a <Link> never triggers that link's navigation. */}
+      <div className={`m3-viewer ${closing ? "closing" : ""}`} role="dialog" aria-modal="true" aria-label="Xem ảnh / video" onClick={(e) => { e.stopPropagation(); e.preventDefault(); }}>
         {/* blurred backdrop of the current image */}
         <div className="m3-viewer-backdrop" style={item.kind === "image" ? { backgroundImage: `url(${item.url})` } : undefined} aria-hidden />
 
@@ -124,7 +126,7 @@ export function MediaLightbox({ items, index, onClose, onDelete, tag }: { items:
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
           onPointerCancel={onPointerUp}
-          onClick={(e) => { if (e.target === e.currentTarget && scale === 1) close(); }}
+          onClick={(e) => { e.stopPropagation(); if (e.target === e.currentTarget && scale === 1) close(); }}
           style={{ cursor: item.kind === "image" ? (scale > 1 ? "grab" : "zoom-in") : "default", touchAction: "none" }}
         >
           {item.kind === "video" ? (
