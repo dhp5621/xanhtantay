@@ -3,12 +3,25 @@
 import { useState } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { useSnackbar } from "@/components/ui/Snackbar";
-import type { MealPlanDay } from "@/db/schema";
+import type { MealPlanDay, RecipePrefs } from "@/db/schema";
+import { RecipeSettings } from "./RecipeSettings";
+import { GOALS, isDefaultPrefs } from "@/lib/recipe-prefs";
 
 interface Plan { id: string; days: number; summary: string | null; plan: MealPlanDay[]; source: string; created_at: Date | string }
 
-export function MealPlanView({ orderId, delivered, inventory, initial }: { orderId: string; delivered: boolean; inventory: { name: string; qty: number; unit: string }[]; initial: Plan | null }) {
+export function MealPlanView({ orderId, delivered, inventory, initial, initialPrefs }: { orderId: string; delivered: boolean; inventory: { name: string; qty: number; unit: string }[]; initial: Plan | null; initialPrefs: RecipePrefs }) {
   const [plan, setPlan] = useState<Plan | null>(initial);
+  const [prefs, setPrefs] = useState<RecipePrefs>(initialPrefs);
+  const [prefsChanged, setPrefsChanged] = useState(false);
+
+  // Same settings as the recipe assistant: saved on the account, so both pages stay in sync.
+  const savePrefs = async (p: RecipePrefs) => {
+    setPrefs(p);
+    setPrefsChanged(!!plan);
+    const res = await fetch("/api/users/me", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ recipe_prefs: p }) });
+    if (!res.ok) show("Không lưu được tuỳ chọn, nhưng vẫn áp dụng cho lần này", { kind: "error" });
+    else show(plan ? "Đã lưu. Bấm “Lên lại kế hoạch” để áp dụng cho kế hoạch này." : "Đã lưu tuỳ chọn thực đơn", { kind: "success", duration: 2500 });
+  };
   const [busy, setBusy] = useState(false);
   const [openDay, setOpenDay] = useState(1);
   const [howTo, setHowTo] = useState<Record<string, "loading" | "open">>({});
@@ -35,10 +48,10 @@ export function MealPlanView({ orderId, delivered, inventory, initial }: { order
   const build = async (regenerate = false) => {
     setBusy(true);
     try {
-      const res = await fetch("/api/recipes/plan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ order_id: orderId, regenerate }) });
+      const res = await fetch("/api/recipes/plan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ order_id: orderId, regenerate, prefs }) });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error ?? "Không lên kế hoạch được");
-      setPlan(data); setOpenDay(1);
+      setPlan(data); setOpenDay(1); setPrefsChanged(false);
       show(data.source === "ai" ? `Đủ ăn ${data.days} ngày, đã xếp lịch nấu` : `Ước tính ${data.days} ngày (chưa bật AI, lịch cơ bản)`, { kind: "success" });
     } catch (e) {
       show(e instanceof Error ? e.message : "Có lỗi", { kind: "error", duration: 6000 });
@@ -56,12 +69,20 @@ export function MealPlanView({ orderId, delivered, inventory, initial }: { order
           {!delivered ? (
             <p className="body-md" style={{ color: "var(--md-on-primary-container)" }}>Đơn chưa giao đến bạn. Rau về tới cửa là lên được kế hoạch.</p>
           ) : (
-            <button className="m3-btn m3-btn-filled m3-btn-lg" onClick={() => build(!!plan)} disabled={busy}>
-              {busy ? <span className="m3-loader sm on-primary" /> : <Icon name="auto_awesome" filled />}<span>{busy ? "Đang tính…" : plan ? "Lên lại kế hoạch" : "Lên kế hoạch ăn"}</span>
-            </button>
+            <>
+              <button className={`m3-btn m3-btn-lg ${prefsChanged ? "m3-btn-tertiary" : "m3-btn-filled"}`} onClick={() => build(!!plan)} disabled={busy}>
+                {busy ? <span className="m3-loader sm on-primary" /> : <Icon name="auto_awesome" filled />}<span>{busy ? "Đang tính…" : plan ? "Lên lại kế hoạch" : "Lên kế hoạch ăn"}</span>
+              </button>
+              <RecipeSettings prefs={prefs} onChange={savePrefs} disabled={busy} />
+            </>
           )}
           {plan && <span className="m3-chip sm round m3-chip-tertiary"><Icon name="event_available" size={16} /> Đủ ăn {plan.plan.length} ngày · {plan.plan.reduce((s, d) => s + d.meals.length, 0)} bữa</span>}
         </div>
+        {!isDefaultPrefs(prefs) && (
+          <p className="body-sm" style={{ color: "var(--md-on-secondary-container)", marginTop: 10 }}>
+            <Icon name={GOALS.find((g) => g.value === prefs.goal)?.icon ?? "tune"} size={14} /> Đang áp dụng: {GOALS.find((g) => g.value === prefs.goal)?.label}{prefs.tags.length ? ` · ${prefs.tags.length} chế độ ăn` : ""}{prefs.customDiet ? ` · ${prefs.customDiet}` : ""} · {prefs.servings} người{prefsChanged ? " — tuỳ chọn mới, kế hoạch hiện tại chưa áp dụng" : ""}
+          </p>
+        )}
       </section>
 
       {plan && (

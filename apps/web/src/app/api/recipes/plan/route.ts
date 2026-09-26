@@ -14,7 +14,7 @@ const SYSTEM = `Bạn là đầu bếp gia đình Việt Nam kiêm chuyên gia b
 export async function POST(req: Request) {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Chưa đăng nhập" }, { status: 401 });
-  const body = (await req.json().catch(() => ({}))) as { order_id?: string; regenerate?: boolean };
+  const body = (await req.json().catch(() => ({}))) as { order_id?: string; regenerate?: boolean; prefs?: unknown };
   if (!body.order_id) return NextResponse.json({ error: "Thiếu đơn" }, { status: 400 });
 
   const [o] = await db.select().from(orders).where(and(eq(orders.id, body.order_id), eq(orders.user_id, user.id)));
@@ -30,8 +30,12 @@ export async function POST(req: Request) {
   const inventory = lines.filter((l) => l.p).map((l) => `${Number(l.oi.quantity)} ${l.p!.unit} ${l.p!.name}`);
   if (!inventory.length) return NextResponse.json({ error: "Đơn không có món nào" }, { status: 400 });
 
-  const [me] = await db.select({ recipe_prefs: users.recipe_prefs }).from(users).where(eq(users.id, user.id));
-  const prefs = me?.recipe_prefs ? normalizePrefs(me.recipe_prefs) : DEFAULT_PREFS;
+  let prefs = DEFAULT_PREFS;
+  if (body.prefs !== undefined) prefs = normalizePrefs(body.prefs);
+  else {
+    const [me] = await db.select({ recipe_prefs: users.recipe_prefs }).from(users).where(eq(users.id, user.id));
+    if (me?.recipe_prefs) prefs = normalizePrefs(me.recipe_prefs);
+  }
 
   let result: AiPlan | null = null;
   let source: "ai" | "rule" = "ai";
