@@ -1870,3 +1870,14 @@ input[type="number"].tabular::-webkit-inner-spin-button { -webkit-appearance: no
   .m3-rank-hero-art svg { width: 160px; }
   .m3-rank-hero-body h2 { justify-content: center; }
 }
+
+/* ─── Images with loading placeholder (no black boxes) ───────── */
+.m3-img { position: relative; display: block; overflow: hidden; background: var(--md-surface-container-high); width: 100%; height: 100%; }
+.m3-img-ph {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  background: linear-gradient(90deg, var(--md-surface-container) 0%, var(--md-surface-container-high) 50%, var(--md-surface-container) 100%);
+  background-size: 200% 100%;
+  animation: m3-shimmer 1.4s var(--ease-standard) infinite;
+  color: var(--md-on-surface-variant);
+}
+.m3-img.done .m3-img-ph { display: none; }

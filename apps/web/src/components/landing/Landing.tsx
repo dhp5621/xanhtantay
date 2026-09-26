@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Icon } from "@/components/ui/Icon";
+import { SmartImage } from "@/components/ui/SmartImage";
 import { ORDER_STATUS_LABELS } from "@xanhtantay/types";
 import { stripEmoji } from "@/lib/format";
 
@@ -240,7 +241,7 @@ export function Landing({ farms, stats }: { farms: FarmCard[]; stats: { farms: n
             {farms.map((farm) => (
               <Link key={farm.id} href={`/farms/${farm.slug}`} className="m3-card-elevated m3-card-action" style={{ borderRadius: "var(--shape-xl)" }}>
                 <div className="m3-media-wrap" style={{ height: 150, position: "relative" }}>
-                  <div className="m3-card-media" style={{ position: "absolute", inset: 0, backgroundImage: farm.cover_url ? `url(${farm.cover_url})` : undefined, backgroundColor: "var(--md-primary-container)" }} />
+                  {farm.cover_url ? <SmartImage src={farm.cover_url} alt={farm.name} className="m3-card-media" style={{ position: "absolute", inset: 0 }} /> : <div style={{ position: "absolute", inset: 0, background: "var(--md-primary-container)" }} />}
                 </div>
                 <div style={{ padding: "14px 18px 16px" }}>
                   <p className="title-md text-on-surface">{farm.name}</p>

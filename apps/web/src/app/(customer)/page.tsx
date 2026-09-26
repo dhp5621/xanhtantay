@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { farms, farm_diary, group_orders, products } from "@/db/schema";
 import { count, desc, eq } from "drizzle-orm";
 import { Icon } from "@/components/ui/Icon";
+import { SmartImage } from "@/components/ui/SmartImage";
 import { formatDate, daysUntil, formatDateTime, timeAgo } from "@/lib/format";
 import { getSessionUser } from "@/lib/session";
 import { Landing } from "@/components/landing/Landing";
@@ -88,7 +89,7 @@ export default async function HomePage() {
           {allFarms.map((farm) => (
             <Link key={farm.id} href={`/farms/${farm.slug}`} className="m3-card-elevated m3-card-action" style={{ borderRadius: "var(--shape-xl)" }}>
               <div className="m3-media-wrap" style={{ height: 170, position: "relative" }}>
-                <div className="m3-card-media" style={{ position: "absolute", inset: 0, backgroundImage: farm.cover_url ? `url(${farm.cover_url})` : undefined, backgroundColor: "var(--md-primary-container)" }} />
+                {farm.cover_url ? <SmartImage src={farm.cover_url} alt={farm.name} className="m3-card-media" style={{ position: "absolute", inset: 0 }} /> : <div style={{ position: "absolute", inset: 0, background: "var(--md-primary-container)" }} />}
                 <span className="m3-chip sm round" style={{ position: "absolute", left: 12, bottom: 12, background: "rgba(0,0,0,.55)", color: "#fff", boxShadow: "none", backdropFilter: "blur(6px)" }}>
                   <Icon name="location_on" size={16} filled /> {farm.location}
                 </span>

@@ -7,6 +7,8 @@ import { useSnackbar } from "@/components/ui/Snackbar";
 import { compressImage, compressVideo, canCompressVideo, getVideoDuration, VIDEO_MAX_SECONDS } from "@/lib/media";
 import { CameraCapture, hasCameraApi } from "@/components/ui/CameraCapture";
 import { MediaLightbox } from "@/components/ui/MediaLightbox";
+import { SmartImage } from "@/components/ui/SmartImage";
+import { SmartVideo } from "@/components/ui/SmartVideo";
 
 const SUGGESTIONS = [
   { icon: "eco", text: "Hôm nay thu hoạch được lứa rau xanh mướt." },
@@ -181,13 +183,8 @@ export function DiaryComposer() {
             <div className="flex gap-2 flex-wrap stagger" style={{ marginTop: 8 }}>
               {media.map((m, i) => (
                 <div key={m.url} style={{ position: "relative" }}>
-                  <button type="button" className="m3-thumb" onClick={() => setPreview(i)} aria-label="Xem trước" style={{ width: 96, height: 96, borderRadius: "var(--shape-md)", border: "none", padding: 0, background: "#000", cursor: "zoom-in", display: "block", position: "relative" }}>
-                    {m.kind === "video" ? (
-                      <video src={m.url} style={{ width: "100%", height: "100%", objectFit: "cover" }} muted playsInline preload="metadata" />
-                    ) : (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={m.url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    )}
+                  <button type="button" className="m3-thumb" onClick={() => setPreview(i)} aria-label="Xem trước" style={{ width: 96, height: 96, borderRadius: "var(--shape-md)", border: "none", padding: 0, background: "var(--md-surface-container-high)", cursor: "zoom-in", display: "block", position: "relative", overflow: "hidden" }}>
+                    {m.kind === "video" ? <SmartVideo src={m.url} /> : <SmartImage src={m.url} />}
                     {m.kind === "video" && <span className="m3-thumb-play"><Icon name="play_arrow" size={22} filled /></span>}
                   </button>
                   <span className="m3-chip sm round" style={{ position: "absolute", left: 4, bottom: 4, height: 20, fontSize: 10, padding: "0 6px", background: "rgba(0,0,0,.6)", color: "#fff", boxShadow: "none" }}>

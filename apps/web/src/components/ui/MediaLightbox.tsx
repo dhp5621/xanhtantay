@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { Portal } from "./Portal";
 import { Icon } from "./Icon";
+import { SmartImage } from "./SmartImage";
+import { SmartVideo } from "./SmartVideo";
 
 export interface LightboxItem { url: string; kind: "image" | "video"; caption?: string }
 
@@ -67,12 +69,13 @@ export function MediaLightbox({
         </div>
 
         <div className="m3-lightbox-stage" onClick={(e) => { if (e.target === e.currentTarget) close(); }}>
-          {item.kind === "video" ? (
-            <video key={item.url} src={item.url} controls autoPlay playsInline className="m3-lightbox-media anim-in-scale" />
-          ) : (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img key={item.url} src={item.url} alt={item.caption ?? ""} className="m3-lightbox-media anim-in-scale" />
-          )}
+          <div key={item.url} className="m3-lightbox-media anim-in-scale" style={{ width: "min(100%, 1100px)", height: "100%", display: "grid", placeItems: "center" }}>
+            {item.kind === "video" ? (
+              <SmartVideo src={item.url} controls autoPlay objectFit="contain" style={{ maxHeight: "100%", background: "transparent", borderRadius: "var(--shape-md)" }} />
+            ) : (
+              <SmartImage src={item.url} alt={item.caption ?? ""} objectFit="contain" priority style={{ maxHeight: "100%", background: "transparent", borderRadius: "var(--shape-md)" }} />
+            )}
+          </div>
           {items.length > 1 && (
             <>
               <button className="m3-icon-btn m3-lightbox-nav" style={{ left: 8 }} onClick={prev} aria-label="Trước"><Icon name="chevron_left" size={28} /></button>

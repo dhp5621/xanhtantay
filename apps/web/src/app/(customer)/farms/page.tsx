@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { farms, products } from "@/db/schema";
 import { count, eq } from "drizzle-orm";
 import { Icon } from "@/components/ui/Icon";
+import { SmartImage } from "@/components/ui/SmartImage";
 import { PageHeader } from "@/components/ui/PageHeader";
 
 export const metadata = { title: "Vườn rau" };
@@ -23,7 +24,7 @@ export default async function FarmsPage() {
         {rows.map(({ farm, productCount }) => (
           <Link key={farm.id} href={`/farms/${farm.slug}`} className="m3-card-elevated m3-card-action" style={{ height: "100%", display: "flex", flexDirection: "column", borderRadius: "var(--shape-xl)" }}>
             <div className="m3-media-wrap" style={{ height: 190, position: "relative" }}>
-              <div className="m3-card-media" style={{ position: "absolute", inset: 0, backgroundImage: farm.cover_url ? `url(${farm.cover_url})` : undefined, backgroundColor: "var(--md-primary-container)" }} />
+              {farm.cover_url ? <SmartImage src={farm.cover_url} alt={farm.name} className="m3-card-media" style={{ position: "absolute", inset: 0 }} /> : <div style={{ position: "absolute", inset: 0, background: "var(--md-primary-container)" }} />}
             </div>
             <div style={{ padding: 18, flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
               <h2 className="title-lg text-on-surface">{farm.name}</h2>
