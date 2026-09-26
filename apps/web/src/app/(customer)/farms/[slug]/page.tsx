@@ -123,10 +123,12 @@ export default async function FarmPage({ params }: { params: Promise<{ slug: str
                 ) : <span className="m3-list-leading"><Icon name="eco" /></span>}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <Link href={`/nhat-ky/${entry.id}`} className="body-md text-on-surface" style={{ fontWeight: 400, lineHeight: 1.6, textDecoration: "none", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{entry.content}</Link>
-                  <p className="body-sm text-on-surface-variant" style={{ marginTop: 8, display: "inline-flex", alignItems: "center", gap: 4 }}>
-                    <Icon name="schedule" size={14} /> <strong style={{ fontWeight: 600 }}>{timeAgo(entry.created_at)}</strong> · {formatDateTime(entry.created_at)}
-                  </p>
-                  <Link href={`/nhat-ky/${entry.id}`} className="m3-btn m3-btn-text m3-btn-sm" style={{ marginLeft: -12, marginTop: 4 }}><span>Xem bài đầy đủ</span><Icon name="arrow_forward" size={16} /></Link>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", marginTop: 8 }}>
+                    <p className="body-sm text-on-surface-variant" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                      <Icon name="schedule" size={14} /> <strong style={{ fontWeight: 600 }}>{timeAgo(entry.created_at)}</strong> · {formatDateTime(entry.created_at)}
+                    </p>
+                    <Link href={`/nhat-ky/${entry.id}`} className="m3-btn m3-btn-text m3-btn-sm"><span>Xem bài đầy đủ</span><Icon name="arrow_forward" size={16} /></Link>
+                  </div>
                 </div>
               </div>
             ))}
