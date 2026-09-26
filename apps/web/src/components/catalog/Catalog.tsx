@@ -139,7 +139,7 @@ export function Catalog({ items, initialQuery, initialCategory, initialProduct }
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {list.map((it) => (
                     <div key={it.id} className="m3-card lift" style={{ padding: "12px 14px 12px 12px", display: "flex", alignItems: "center", gap: 12, borderRadius: "var(--shape-lg-inc)", opacity: it.in_stock ? 1 : 0.6 }}>
-                      <ProductThumb image_url={it.image_url} category={it.category} name={it.name} size={76} radius="var(--shape-lg)" zoom caption={`${it.name} · ${it.farm.name}`} />
+                      <ProductThumb image_url={it.image_url} category={it.category} name={it.name} size={76} radius="var(--shape-lg)" zoom caption={it.name} tag={it.farm.name} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <p className="title-sm text-on-surface" style={{ marginBottom: 2 }}>{it.name}</p>
                         <Link href={`/farms/${it.farm.slug}`} className="body-sm text-primary" style={{ display: "inline-flex", alignItems: "center", gap: 4, textDecoration: "none", fontWeight: 600 }}><Icon name="potted_plant" size={14} filled /> {it.farm.name}</Link>

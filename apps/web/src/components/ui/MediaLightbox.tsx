@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Portal } from "./Portal";
 import { Icon } from "./Icon";
 import { SmartVideo } from "./SmartVideo";
-import { useSnackbar } from "./Snackbar";
 
 export interface LightboxItem { url: string; kind: "image" | "video"; caption?: string }
 
@@ -25,7 +24,6 @@ export function MediaLightbox({ items, index, onClose, onDelete, tag }: { items:
   const pointers = useRef(new Map<number, { x: number; y: number }>());
   const gesture = useRef<{ dist: number; scale: number; startX: number; startY: number; posX: number; posY: number; moved: boolean; t: number } | null>(null);
   const lastTap = useRef(0);
-  const { show } = useSnackbar();
   const item = items[i];
 
   const close = useCallback(() => { setClosing(true); setTimeout(onClose, 220); }, [onClose]);
@@ -102,11 +100,6 @@ export function MediaLightbox({ items, index, onClose, onDelete, tag }: { items:
     }
   };
 
-  const copyLink = async () => {
-    try { await navigator.clipboard.writeText(new URL(item.url, location.href).toString()); show("Đã sao chép liên kết ảnh", { kind: "success", duration: 2000 }); }
-    catch { show("Không sao chép được", { kind: "error" }); }
-  };
-  const fileName = (item.caption ? item.caption.replace(/[^\wÀ-ɏḀ-ỿ ]+/g, "").trim().slice(0, 40) : "xanh-tan-tay") + (item.kind === "video" ? ".mp4" : ".jpg");
 
   return (
     <Portal>

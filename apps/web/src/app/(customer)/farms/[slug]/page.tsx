@@ -89,7 +89,7 @@ export default async function FarmPage({ params }: { params: Promise<{ slug: str
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 stagger">
               {items.map((product) => (
                 <div key={product.id} className="m3-card lift" style={{ padding: "12px 14px 12px 12px", opacity: product.in_stock && product.stock_qty > 0 ? 1 : 0.6, display: "flex", alignItems: "center", gap: 12, borderRadius: "var(--shape-lg-inc)" }}>
-                  <ProductThumb image_url={product.image_url} category={product.category} name={product.name} size={76} radius="var(--shape-lg)" zoom caption={`${product.name} · ${farm.name}`} />
+                  <ProductThumb image_url={product.image_url} category={product.category} name={product.name} size={76} radius="var(--shape-lg)" zoom caption={product.name} tag={farm.name} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p className="title-sm text-on-surface" style={{ marginBottom: 2 }}>{product.name}</p>
                     <p className="label-lg text-primary tabular">{formatVND(product.price_per_unit)} <span className="body-sm text-on-surface-variant" style={{ fontWeight: 400 }}>/ {product.unit}</span></p>
@@ -122,7 +122,7 @@ export default async function FarmPage({ params }: { params: Promise<{ slug: str
               <div key={entry.id} className="m3-list-item" style={{ alignItems: "flex-start", padding: 16, cursor: "default" }}>
                 {entry.media_urls.length ? (
                   <span style={{ position: "relative", flexShrink: 0 }}>
-                    <MediaGallery urls={entry.media_urls.slice(0, 1)} size={96} caption={`${farm.name} · ${formatDateTime(entry.created_at)}`} />
+                    <MediaGallery urls={entry.media_urls.slice(0, 1)} size={96} caption={formatDateTime(entry.created_at)} tag={farm.name} />
                     {entry.media_urls.length > 1 && (
                       <span className="m3-chip sm round" style={{ position: "absolute", right: 4, bottom: 4, height: 20, fontSize: 10, padding: "0 6px", background: "rgba(0,0,0,.6)", color: "#fff", boxShadow: "none", pointerEvents: "none" }}>
                         <Icon name="photo_library" size={12} filled /> {entry.media_urls.length}

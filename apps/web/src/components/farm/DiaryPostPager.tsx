@@ -80,7 +80,7 @@ export function DiaryPostPager({ posts, farm, initialId }: { posts: DiaryPost[];
                 </div>
                 {d.media_urls.length > 0 && near && (
                   <div style={{ padding: "0 12px 12px" }}>
-                    <MediaGallery urls={d.media_urls} caption={`${farm.name} · ${formatDateTime(d.created_at)}`} layout="post" />
+                    <MediaGallery urls={d.media_urls} caption={formatDateTime(d.created_at)} layout="post" tag={farm.name} />
                   </div>
                 )}
                 <footer style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", padding: "6px 20px 18px" }}>

@@ -213,6 +213,7 @@ export function DiaryComposer() {
         <MediaLightbox
           items={media.map((m) => ({ url: m.url, kind: m.kind, caption: `${m.kind === "video" ? "Video" : "Ảnh"} · ${fmtMB(m.file.size)}` }))}
           index={preview}
+          tag={farm?.name}
           onClose={() => setPreview(null)}
           onDelete={(k) => setMedia((ms) => ms.filter((_, j) => j !== k))}
         />

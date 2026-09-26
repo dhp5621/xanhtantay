@@ -9,7 +9,7 @@ import { SmartVideo } from "./SmartVideo";
 const isVideoUrl = (u: string) => /\.(mp4|webm|mov)(\?|$)/i.test(u);
 
 /** Thumbnail strip for diary entries; tapping opens the lightbox. */
-export function MediaGallery({ urls, size = 96, caption, layout = "strip" }: { urls: string[]; size?: number; caption?: string; layout?: "strip" | "post" }) {
+export function MediaGallery({ urls, size = 96, caption, layout = "strip", tag }: { urls: string[]; size?: number; caption?: string; layout?: "strip" | "post"; tag?: string }) {
   const [open, setOpen] = useState<number | null>(null);
   const items: LightboxItem[] = urls.map((url) => ({ url, kind: isVideoUrl(url) ? "video" : "image", caption }));
   if (!items.length) return null;
@@ -26,7 +26,7 @@ export function MediaGallery({ urls, size = 96, caption, layout = "strip" }: { u
             </button>
           ))}
         </div>
-        {open !== null && <MediaLightbox items={items} index={open} onClose={() => setOpen(null)} />}
+        {open !== null && <MediaLightbox items={items} index={open} onClose={() => setOpen(null)} tag={tag} />}
       </>
     );
   }
@@ -42,7 +42,7 @@ export function MediaGallery({ urls, size = 96, caption, layout = "strip" }: { u
           </button>
         ))}
       </div>
-      {open !== null && <MediaLightbox items={items} index={open} onClose={() => setOpen(null)} />}
+      {open !== null && <MediaLightbox items={items} index={open} onClose={() => setOpen(null)} tag={tag} />}
     </>
   );
 }

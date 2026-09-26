@@ -1954,5 +1954,3 @@ input[type="number"].tabular::-webkit-inner-spin-button { -webkit-appearance: no
 .m3-viewer-zoom { display: inline-flex; align-items: center; gap: 2px; height: 48px; padding: 0 6px; border-radius: var(--shape-full); background: rgba(255,255,255,.12); color: #fff; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
 .m3-viewer-zoom .m3-icon-btn { color: #fff; }
 .m3-viewer-tools .m3-btn { height: 48px; }
-@media (max-width: 639px), (hover: none) and (pointer: coarse) { .m3-viewer-zoom { display: none; } }
-@media (max-width: 479px) { .m3-viewer-tools .m3-btn span { display: none; } .m3-viewer-tools .m3-btn { padding: 0 14px; } }
