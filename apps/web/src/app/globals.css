@@ -1795,3 +1795,18 @@ input[type="number"].tabular::-webkit-inner-spin-button { -webkit-appearance: no
 }
 .m3-page-loader-card .m3-loader { width: 56px; height: 56px; }
 .m3-page-loader-card .m3-loader::before { transform: scale(1.1667); }
+
+/* ─── Plain horizontal chip strip (no depth/fade, just scroll) ─ */
+.m3-chip-scroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  padding: 4px 16px 8px;
+  margin: 0 -16px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.m3-chip-scroll::-webkit-scrollbar { display: none; }
+.m3-chip-scroll > * { flex: 0 0 auto; scroll-snap-align: start; }

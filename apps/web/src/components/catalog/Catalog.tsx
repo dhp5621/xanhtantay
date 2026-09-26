@@ -66,10 +66,10 @@ export function Catalog({ items, initialQuery, initialCategory, initialProduct }
       </div>
 
       {/* Aisles */}
-      <div className="m3-carousel anim-in delay-1" style={{ padding: "6px 16px 10px" }}>
-        <button className={`m3-carousel-item m3-chip round ${!product ? "m3-chip-primary" : "m3-chip-surface"}`} style={{ flexBasis: "auto", height: 40 }} onClick={() => setProduct("")}><Icon name="apps" size={18} /> Mọi mặt hàng</button>
+      <div className="m3-chip-scroll" role="tablist" aria-label="Mặt hàng">
+        <button role="tab" aria-selected={!product} className={`m3-chip round ${!product ? "m3-chip-primary" : "m3-chip-surface"}`} style={{ height: 40 }} onClick={() => setProduct("")}><Icon name="apps" size={18} /> Mọi mặt hàng</button>
         {aisles.map((a) => (
-          <button key={a.name} className={`m3-carousel-item m3-chip round ${product === a.name ? "m3-chip-primary" : "m3-chip-surface"}`} style={{ flexBasis: "auto", height: 40 }} onClick={() => setProduct(product === a.name ? "" : a.name)}>
+          <button key={a.name} role="tab" aria-selected={product === a.name} className={`m3-chip round ${product === a.name ? "m3-chip-primary" : "m3-chip-surface"}`} style={{ height: 40 }} onClick={() => setProduct(product === a.name ? "" : a.name)}>
             <Icon name="eco" size={18} filled={product === a.name} /> {a.name} <span style={{ opacity: 0.6 }}>· {a.n}</span>
           </button>
         ))}
