@@ -38,7 +38,7 @@ export async function POST(req: Request) {
   if (aiConfigured()) {
     result = await chatJSON<AiPlan>(SYSTEM, `Khách vừa nhận: ${inventory.join(", ")}. ${prefsToPrompt(prefs)}
 Ước tính số ngày dùng hết (mỗi ngày một gia đình ${prefs.servings} người ăn khoảng 250 g rau/người), tối đa 10 ngày, rau lá ăn trước, củ quả để sau.
-Dữ liệu phải nhất quán: "days" đúng bằng số phần tử trong "plan" (liệt kê đủ từng ngày cho tới khi hết rau). Số bữa mỗi ngày tuỳ lượng rau, có thể 1, 2 hay 3 bữa, không cần ép.
+Dữ liệu phải nhất quán: "days" đúng bằng số phần tử trong "plan", liệt kê đủ từng ngày cho tới khi hết rau. Mỗi ngày có ĐÚNG 2 bữa: "Trưa" và "Tối" (mỗi bữa một món chính dùng rau đã mua).
 JSON: {"days": số ngày, "summary": "1–2 câu: ăn được mấy ngày, cách bảo quản", "plan": [{"day": 1, "meals": [{"time": "Trưa"|"Tối", "title": "tên món", "uses": ["rau nào, bao nhiêu"], "note": "mẹo ngắn (tuỳ chọn)"}], "leftover": "còn lại gì sau ngày này (tuỳ chọn)"}]}`, { temperature: 0.6, timeoutMs: 40_000 });
     if (result && (!Array.isArray(result.plan) || !Number.isFinite(Number(result.days)))) result = null;
   }
@@ -66,7 +66,16 @@ JSON: {"days": số ngày, "summary": "1–2 câu: ăn được mấy ngày, cá
   const [row] = await db.insert(meal_plans).values({
     user_id: user.id, order_id: o.id, days,
     summary: String(result.summary ?? "").slice(0, 400),
-    plan: planDays.map((d, i) => ({ day: i + 1, meals: (d.meals ?? []).slice(0, 4).map((m) => ({ time: String(m.time ?? ""), title: String(m.title ?? ""), uses: (m.uses ?? []).map(String).slice(0, 6), note: m.note ? String(m.note).slice(0, 160) : undefined })), leftover: d.leftover ? String(d.leftover).slice(0, 160) : undefined })),
+    plan: planDays.map((d, i) => {
+      const meals = (d.meals ?? []).map((m) => ({ time: String(m.time ?? ""), title: String(m.title ?? ""), uses: (m.uses ?? []).map(String).slice(0, 6), note: m.note ? String(m.note).slice(0, 160) : undefined }));
+      const pick = (label: string, idx: number) => meals.find((m) => m.time.toLowerCase().includes(label.toLowerCase())) ?? meals[idx];
+      const lunch = pick("Trưa", 0), dinner = pick("Tối", 1) ?? pick("Chiều", 1);
+      const two = [
+        lunch ? { ...lunch, time: "Trưa" } : { time: "Trưa", title: `${inventory[i % inventory.length]?.replace(/^\d+\s*\S+\s*/, "") ?? "Rau"} xào tỏi`, uses: [] as string[] },
+        dinner && dinner !== lunch ? { ...dinner, time: "Tối" } : { time: "Tối", title: `Canh ${inventory[(i + 1) % inventory.length]?.replace(/^\d+\s*\S+\s*/, "") ?? "rau"}`, uses: [] as string[] },
+      ];
+      return { day: i + 1, meals: two, leftover: d.leftover ? String(d.leftover).slice(0, 160) : undefined };
+    }),
     source,
   }).returning();
   return NextResponse.json(row, { status: 201 });
