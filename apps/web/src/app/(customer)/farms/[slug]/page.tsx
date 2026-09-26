@@ -122,7 +122,7 @@ export default async function FarmPage({ params }: { params: Promise<{ slug: str
               <div key={entry.id} className="m3-list-item" style={{ alignItems: "flex-start", padding: 16, cursor: "default" }}>
                 {entry.media_urls.length ? (
                   <span style={{ position: "relative", flexShrink: 0 }}>
-                    <MediaGallery urls={entry.media_urls.slice(0, 1)} size={96} caption={formatDateTime(entry.created_at)} tag={farm.name} />
+                    <MediaGallery urls={entry.media_urls.slice(0, 1)} size={96} linkTo={`/nhat-ky/${entry.id}`} />
                     {entry.media_urls.length > 1 && (
                       <span className="m3-chip sm round" style={{ position: "absolute", right: 4, bottom: 4, height: 20, fontSize: 10, padding: "0 6px", background: "rgba(0,0,0,.6)", color: "#fff", boxShadow: "none", pointerEvents: "none" }}>
                         <Icon name="photo_library" size={12} filled /> {entry.media_urls.length}

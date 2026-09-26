@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { orders, order_items, products, farms } from "@/db/schema";
+import { orders, order_items, products, farms, users } from "@/db/schema";
 import { MIN_DIRECT_ORDER, impactFor } from "@/lib/commerce";
 import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import { getSessionUser } from "@/lib/session";
@@ -8,6 +8,37 @@ import { getSessionUser } from "@/lib/session";
 export async function GET() {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Chưa đăng nhập" }, { status: 401 });
+
+  // Farmers see the incoming orders for their own farm (with customer + line items attached)
+  // instead of orders they placed themselves as a customer, since the mobile/web farmer console
+  // has no separate endpoint for this.
+  if (user.role === "farmer") {
+    const [myFarm] = await db.select().from(farms).where(eq(farms.owner_id, user.id));
+    if (!myFarm) return NextResponse.json([]);
+    const farmOrders = await db
+      .select({ order: orders, customer_name: users.name, customer_phone: users.phone })
+      .from(orders)
+      .leftJoin(users, eq(orders.user_id, users.id))
+      .where(eq(orders.farm_id, myFarm.id))
+      .orderBy(desc(orders.created_at));
+    if (farmOrders.length === 0) return NextResponse.json([]);
+    const items = await db
+      .select({ item: order_items, product_name: products.name, product_unit: products.unit })
+      .from(order_items)
+      .leftJoin(products, eq(order_items.product_id, products.id))
+      .where(inArray(order_items.order_id, farmOrders.map((o) => o.order.id)));
+    const byOrder = new Map<string, typeof items>();
+    for (const it of items) byOrder.set(it.item.order_id, [...(byOrder.get(it.item.order_id) ?? []), it]);
+    return NextResponse.json(
+      farmOrders.map(({ order, customer_name, customer_phone }) => ({
+        ...order,
+        customer_name,
+        customer_phone,
+        items: (byOrder.get(order.id) ?? []).map((it) => ({ ...it.item, product_name: it.product_name, product_unit: it.product_unit })),
+      }))
+    );
+  }
+
   const myOrders = await db.select().from(orders).where(eq(orders.user_id, user.id)).orderBy(desc(orders.created_at));
   return NextResponse.json(myOrders);
 }

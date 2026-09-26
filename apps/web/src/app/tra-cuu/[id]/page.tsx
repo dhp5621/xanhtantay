@@ -74,7 +74,7 @@ export default async function TraCuuPage({ params }: { params: Promise<{ id: str
           <div className="m3-list-group">
             {diary.map((d) => (
               <div key={d.id} className="m3-list-item" style={{ cursor: "default", alignItems: "flex-start" }}>
-                {d.media_urls.length ? <MediaGallery urls={d.media_urls} size={72} caption={formatDateTime(d.created_at)} tag={farm.name} /> : <span className="m3-list-leading"><Icon name="eco" /></span>}
+                {d.media_urls.length ? <MediaGallery urls={d.media_urls} size={72} linkTo={`/nhat-ky/${d.id}`} /> : <span className="m3-list-leading"><Icon name="eco" /></span>}
                 <div><p className="body-md" style={{ fontWeight: 400 }}>{d.content}</p><p className="body-sm text-on-surface-variant" style={{ marginTop: 4 }}>{formatDateTime(d.created_at)} · <Link href={`/nhat-ky/${d.id}`} className="text-primary" style={{ textDecoration: "none", fontWeight: 600 }}>Xem bài</Link></p></div>
               </div>
             ))}
