@@ -121,7 +121,14 @@ export default async function FarmPage({ params }: { params: Promise<{ slug: str
             {diary.map((entry) => (
               <div key={entry.id} className="m3-list-item" style={{ alignItems: "flex-start", padding: 16, cursor: "default" }}>
                 {entry.media_urls.length ? (
-                  <MediaGallery urls={entry.media_urls} size={entry.media_urls.length > 1 ? 72 : 96} caption={`${farm.name} · ${formatDateTime(entry.created_at)}`} />
+                  <span style={{ position: "relative", flexShrink: 0 }}>
+                    <MediaGallery urls={entry.media_urls.slice(0, 1)} size={96} caption={`${farm.name} · ${formatDateTime(entry.created_at)}`} />
+                    {entry.media_urls.length > 1 && (
+                      <span className="m3-chip sm round" style={{ position: "absolute", right: 4, bottom: 4, height: 20, fontSize: 10, padding: "0 6px", background: "rgba(0,0,0,.6)", color: "#fff", boxShadow: "none", pointerEvents: "none" }}>
+                        <Icon name="photo_library" size={12} filled /> {entry.media_urls.length}
+                      </span>
+                    )}
+                  </span>
                 ) : <span className="m3-list-leading"><Icon name="eco" /></span>}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <Link href={`/nhat-ky/${entry.id}`} className="body-md text-on-surface" style={{ fontWeight: 400, lineHeight: 1.6, textDecoration: "none", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{entry.content}</Link>
