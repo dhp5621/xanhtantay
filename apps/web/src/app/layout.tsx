@@ -5,6 +5,7 @@ import "./globals.css";
 import { authOptions } from "@/lib/auth";
 import { Providers } from "@/components/layout/Providers";
 import { AppShell } from "@/components/layout/AppShell";
+import { ICON_FONT_URL } from "@/generated/fonts";
 
 export const metadata: Metadata = {
   title: { default: "Xanh Tận Tay", template: "%s · Xanh Tận Tay" },
@@ -23,6 +24,9 @@ export const viewport: Viewport = {
 };
 
 // Applies the stored theme before first paint so there is no light→dark flash.
+// Icons stay invisible (never as ligature text) until the icon font is really loaded.
+const ICONS_READY = `(function(){var d=document.documentElement;function ok(){d.classList.add('icons-ready')}if(document.fonts&&document.fonts.load){document.fonts.load('24px "Material Symbols Rounded"').then(ok,ok);setTimeout(ok,6000)}else{ok()}})();`;
+
 const THEME_INIT = `(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||t==='light'){document.documentElement.setAttribute('data-theme',t)}}catch(e){}})();`;
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -33,7 +37,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
         {/* Fonts are self-hosted (public/fonts); preload the icon subset so icons never flash as text */}
-        <link rel="preload" href="/fonts/material-symbols-rounded-subset.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+        <link rel="preload" href={ICON_FONT_URL} as="font" type="font/woff2" crossOrigin="anonymous" />
+        <script dangerouslySetInnerHTML={{ __html: ICONS_READY }} />
         <link rel="preload" href="/fonts/google-sans-flex-latin.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
         <link rel="preload" href="/fonts/google-sans-flex-vietnamese.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
       </head>

@@ -286,6 +286,8 @@ button { touch-action: manipulation; }
   user-select: none;
   flex-shrink: 0;
 }
+/* Hide icon ligature text until the font has loaded (see ICONS_READY in layout.tsx) */
+html:not(.icons-ready) .msr { visibility: hidden; }
 .msr.filled { font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24; }
 .msr.bold { font-variation-settings: "FILL" 0, "wght" 600, "GRAD" 0, "opsz" 24; }
 .msr.filled.bold { font-variation-settings: "FILL" 1, "wght" 600, "GRAD" 0, "opsz" 24; }
