@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useRef } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { SECTIONS } from "@/lib/admin-config";
 
@@ -9,6 +10,20 @@ import { SECTIONS } from "@/lib/admin-config";
 export function AdminNav() {
   const pathname = usePathname();
   const router = useRouter();
+  const listRef = useRef<HTMLDivElement>(null);
+
+  // On phones the rail is a horizontal strip: scroll the active item into view.
+  const firstRun = useRef(true);
+  useEffect(() => {
+    const c = listRef.current;
+    const el = c?.querySelector<HTMLElement>(".admin-rail-item.active");
+    if (!c || !el || c.scrollWidth <= c.clientWidth) return;
+    // Scroll the strip itself (not the page) so the active tab is centred.
+    // Instant on first paint (smooth scrolling does not run while the tab is hidden), smooth afterwards.
+    c.scrollTo({ left: el.offsetLeft - (c.clientWidth - el.offsetWidth) / 2, behavior: firstRun.current ? "auto" : "smooth" });
+    firstRun.current = false;
+  }, [pathname]);
+
   if (pathname === "/admin/login") return null;
 
   const items = [{ key: "", label: "Tổng quan", icon: "dashboard" }, ...SECTIONS.map((s) => ({ key: s.key, label: s.label, icon: s.icon }))];
@@ -25,7 +40,7 @@ export function AdminNav() {
         <span className="m3-brand-mark" style={{ background: "var(--md-tertiary)", color: "var(--md-on-tertiary)" }}><Icon name="admin_panel_settings" size={22} filled /></span>
         <span className="admin-rail-label" style={{ fontSize: 15 }}>Quản trị</span>
       </Link>
-      <div className="admin-rail-items">
+      <div className="admin-rail-items" ref={listRef}>
         {items.map((it) => {
           const href = it.key ? `/admin/${it.key}` : "/admin";
           const active = it.key ? pathname.startsWith(href) : pathname === "/admin";
@@ -37,9 +52,9 @@ export function AdminNav() {
           );
         })}
       </div>
-      <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 4 }}>
-        <Link href="/" className="admin-rail-item"><span className="admin-rail-icon"><Icon name="storefront" /></span><span className="admin-rail-label">Xem cửa hàng</span></Link>
-        <button onClick={logout} className="admin-rail-item" style={{ border: "none", background: "transparent", cursor: "pointer", font: "inherit" }}>
+      <div className="admin-rail-end">
+        <Link href="/" className="admin-rail-item" title="Xem cửa hàng"><span className="admin-rail-icon"><Icon name="storefront" /></span><span className="admin-rail-label">Xem cửa hàng</span></Link>
+        <button onClick={logout} className="admin-rail-item" title="Đăng xuất" style={{ border: "none", background: "transparent", cursor: "pointer", font: "inherit" }}>
           <span className="admin-rail-icon"><Icon name="logout" /></span><span className="admin-rail-label">Đăng xuất</span>
         </button>
       </div>

@@ -111,12 +111,12 @@ export function AdminTable({ section, rows, columns, lookups }: { section: Secti
             {filtered.map((r) => (
               <tr key={r.id}>
                 {columns.map((c) => (
-                  <td key={c.key} className={`${c.mono ? "mono" : ""} ${c.clamp ? "clamp" : ""}`} title={c.clamp ? String(r[c.key] ?? "") : undefined}>
+                  <td key={c.key} data-label={c.label} className={`${c.mono ? "mono" : ""} ${c.clamp ? "clamp" : ""}`} title={c.clamp ? String(r[c.key] ?? "") : undefined}>
                     {String(r[c.key] ?? "")}
                   </td>
                 ))}
                 {quickFields.map((f) => (
-                  <td key={f.key}>
+                  <td key={f.key} data-label={f.label} className="quick">
                     {f.type === "boolean" ? (
                       <button className={`m3-chip sm round ${r[f.key] ? "m3-chip-primary" : "m3-chip-error"}`} onClick={() => quick(r, f.key, !r[f.key])} aria-pressed={!!r[f.key]}>
                         <Icon name={r[f.key] ? "check_circle" : "cancel"} size={16} filled /> {r[f.key] ? "Có" : "Không"}
@@ -128,7 +128,7 @@ export function AdminTable({ section, rows, columns, lookups }: { section: Secti
                     )}
                   </td>
                 ))}
-                <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
+                <td className="actions" style={{ textAlign: "right", whiteSpace: "nowrap" }}>
                   {section.fields.length > 0 && <button className="m3-icon-btn sm" onClick={() => open(r)} aria-label="Sửa" title="Sửa"><Icon name="edit" size={20} /></button>}
                   {section.canDelete && <button className="m3-icon-btn sm" onClick={() => setConfirm(r)} aria-label="Xoá" title="Xoá" style={{ color: "var(--md-error)" }}><Icon name="delete" size={20} /></button>}
                 </td>
