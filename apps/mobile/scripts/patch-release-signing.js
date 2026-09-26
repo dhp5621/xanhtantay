@@ -28,7 +28,7 @@ if (!/signingConfigs\s*{/.test(content)) {
 content = content.replace(/signingConfigs\s*{/, releaseSigningConfig);
 
 // Point the release buildType at our new signing config instead of the debug one.
-const releaseBuildTypePattern = /(buildTypes\s*{[\s\S]*?release\s*{\s*\n\s*signingConfig signingConfigs\.)debug/;
+const releaseBuildTypePattern = /(buildTypes\s*{[\s\S]*?release\s*{[\s\S]*?signingConfig signingConfigs\.)debug/;
 if (!releaseBuildTypePattern.test(content)) {
   throw new Error("Could not find `release { signingConfig signingConfigs.debug }` in build.gradle");
 }

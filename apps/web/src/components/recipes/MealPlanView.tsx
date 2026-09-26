@@ -7,17 +7,22 @@ import type { MealPlanDay, RecipePrefs } from "@/db/schema";
 import { RecipeSettings } from "./RecipeSettings";
 import { GOALS, isDefaultPrefs } from "@/lib/recipe-prefs";
 
-interface Plan { id: string; days: number; summary: string | null; plan: MealPlanDay[]; source: string; created_at: Date | string }
+interface Plan { id: string; days: number; summary: string | null; plan: MealPlanDay[]; source: string; created_at: Date | string; prefs?: RecipePrefs | null }
+const samePrefs = (a?: RecipePrefs | null, b?: RecipePrefs | null) => {
+  if (!a || !b) return false;
+  return a.goal === b.goal && a.servings === b.servings && (a.notes ?? "") === (b.notes ?? "") && (a.customDiet ?? "") === (b.customDiet ?? "") && [...a.tags].sort().join() === [...b.tags].sort().join();
+};
 
 export function MealPlanView({ orderId, delivered, inventory, initial, initialPrefs }: { orderId: string; delivered: boolean; inventory: { name: string; qty: number; unit: string }[]; initial: Plan | null; initialPrefs: RecipePrefs }) {
   const [plan, setPlan] = useState<Plan | null>(initial);
   const [prefs, setPrefs] = useState<RecipePrefs>(initialPrefs);
-  const [prefsChanged, setPrefsChanged] = useState(false);
+  // "Applied" only if this plan was generated with the current preferences (they may have changed on the recipe page).
+  const [prefsChanged, setPrefsChanged] = useState(!!initial && !samePrefs(initial.prefs, initialPrefs));
 
   // Same settings as the recipe assistant: saved on the account, so both pages stay in sync.
   const savePrefs = async (p: RecipePrefs) => {
     setPrefs(p);
-    setPrefsChanged(!!plan);
+    setPrefsChanged(!!plan && !samePrefs(plan.prefs, p));
     const res = await fetch("/api/users/me", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ recipe_prefs: p }) });
     if (!res.ok) show("Không lưu được tuỳ chọn, nhưng vẫn áp dụng cho lần này", { kind: "error" });
     else show(plan ? "Đã lưu. Bấm “Lên lại kế hoạch” để áp dụng cho kế hoạch này." : "Đã lưu tuỳ chọn thực đơn", { kind: "success", duration: 2500 });

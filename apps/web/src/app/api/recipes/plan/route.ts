@@ -68,7 +68,7 @@ JSON: {"days": số ngày, "summary": "1–2 câu: ăn được mấy ngày, cá
   const days = Math.max(1, planDays.length);
 
   const [row] = await db.insert(meal_plans).values({
-    user_id: user.id, order_id: o.id, days,
+    user_id: user.id, order_id: o.id, days, prefs,
     summary: String(result.summary ?? "").slice(0, 400),
     plan: planDays.map((d, i) => {
       const meals = (d.meals ?? []).map((m) => ({ time: String(m.time ?? ""), title: String(m.title ?? ""), uses: (m.uses ?? []).map(String).slice(0, 6), note: m.note ? String(m.note).slice(0, 160) : undefined }));

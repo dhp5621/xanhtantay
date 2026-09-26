@@ -143,6 +143,8 @@ export const meal_plans = pgTable("meal_plans", {
   days: integer("days").notNull(),
   summary: text("summary"),
   plan: jsonb("plan").$type<MealPlanDay[]>().notNull().default([]),
+  /** Preferences the plan was generated with, to detect when they changed since. */
+  prefs: jsonb("prefs").$type<RecipePrefs>(),
   source: text("source").notNull().default("ai"),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
