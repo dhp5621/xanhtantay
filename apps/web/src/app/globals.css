@@ -1741,3 +1741,32 @@ input[type="number"].tabular::-webkit-inner-spin-button { -webkit-appearance: no
   .admin-table td[colspan] { display: block; text-align: center; }
   .admin-table td[colspan]::before { display: none; }
 }
+
+/* ─── Navigation progress line ───────────────────────────────── */
+.m3-nav-progress {
+  position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 60;
+  background: linear-gradient(90deg, var(--md-primary), var(--md-tertiary), var(--md-primary));
+  background-size: 200% 100%;
+  transform: scaleX(0); transform-origin: left;
+  opacity: 0; pointer-events: none;
+  transition: opacity var(--dur-short-4) var(--ease-standard);
+}
+.m3-nav-progress.active {
+  opacity: 1;
+  animation: m3-nav-progress-grow 6s var(--ease-emphasized-decel) forwards, m3-wave-x 1.2s linear infinite;
+}
+@keyframes m3-nav-progress-grow { 0% { transform: scaleX(0); } 20% { transform: scaleX(0.55); } 60% { transform: scaleX(0.85); } 100% { transform: scaleX(0.96); } }
+@keyframes m3-wave-x { to { background-position: 200% 0; } }
+
+/* ─── Loyalty tree ───────────────────────────────────────────── */
+.m3-tree-sway { transform-origin: 0 10px; animation: m3-sway 5s ease-in-out infinite alternate; }
+@keyframes m3-sway { from { transform: rotate(-2deg); } to { transform: rotate(2deg); } }
+.m3-tree-pulse { animation: m3-tree-pulse 2.4s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+@keyframes m3-tree-pulse { 50% { transform: scale(1.15); } }
+
+/* ─── Print (QR labels) ──────────────────────────────────────── */
+@media print {
+  .m3-top-bar, .m3-nav-bar, .no-print, .m3-snackbar-host { display: none !important; }
+  body { background: #fff !important; }
+  .print-label { box-shadow: none !important; }
+}

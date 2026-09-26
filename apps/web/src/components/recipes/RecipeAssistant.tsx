@@ -127,7 +127,7 @@ export function RecipeAssistant({ purchased, initial, focusOrderId, ai, initialP
                     <div className="anim-in" style={{ padding: "0 18px 18px 18px" }}>
                       {(r.tags?.length ?? 0) > 0 && (
                         <div className="flex flex-wrap gap-2" style={{ marginBottom: 10 }}>
-                          {r.tags!.map((t) => <span key={t} className={`m3-chip sm round ${t === "gym" || t === "diet" ? "m3-chip-tertiary" : "m3-chip-surface"}`}><Icon name={t === "gym" ? "fitness_center" : t === "diet" ? "monitor_weight" : "check"} size={14} /> {TAG_LABEL[t] ?? t}</span>)}
+                          {r.tags!.map((t) => <span key={t} className={`m3-chip sm round ${t === "gym" || t === "diet" ? "m3-chip-tertiary" : "m3-chip-surface"}`}><Icon name={t === "gym" ? "fitness_center" : t === "diet" ? "monitor_weight" : "check"} size={14} /> {t.startsWith("custom:") ? t.slice(7) : TAG_LABEL[t] ?? t}</span>)}
                         </div>
                       )}
                       {r.description && <p className="body-md text-on-surface-variant" style={{ marginBottom: 12, fontWeight: 400 }}>{r.description}</p>}

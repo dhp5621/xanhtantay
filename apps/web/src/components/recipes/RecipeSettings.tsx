@@ -25,7 +25,7 @@ export function RecipeSettings({ prefs, onChange, disabled }: { prefs: RecipePre
       <button type="button" className={`m3-btn m3-btn-lg ${active ? "m3-btn-tertiary" : "m3-btn-outlined"}`} onClick={show} disabled={disabled} aria-pressed={active} aria-haspopup="dialog" title="Tuỳ chọn thực đơn">
         <Icon name={active ? goal.icon : "tune"} filled={active} />
         <span>{active ? goal.label : "Tuỳ chọn"}</span>
-        {active && prefs.tags.length > 0 && <span className="m3-badge" style={{ position: "static", marginLeft: 2, border: "none", background: "var(--md-on-tertiary-container)", color: "var(--md-tertiary-container)" }}>{prefs.tags.length}</span>}
+        {active && (prefs.tags.length > 0 || prefs.customDiet) && <span className="m3-badge" style={{ position: "static", marginLeft: 2, border: "none", background: "var(--md-on-tertiary-container)", color: "var(--md-tertiary-container)" }}>{prefs.tags.length + (prefs.customDiet ? 1 : 0)}</span>}
       </button>
 
       {open && (
@@ -66,6 +66,12 @@ export function RecipeSettings({ prefs, onChange, disabled }: { prefs: RecipePre
               })}
             </div>
 
+            <div className="m3-field" style={{ marginBottom: 18 }}>
+              <label className="m3-field-label" htmlFor="rs-custom">Chế độ ăn tuỳ chỉnh</label>
+              <input id="rs-custom" className="m3-input" placeholder="Ví dụ: keto, Địa Trung Hải, low FODMAP, ăn theo Eat Clean 1500 kcal…" value={draft.customDiet ?? ""} onChange={(e) => setDraft({ ...draft, customDiet: e.target.value })} maxLength={120} />
+              <p className="body-sm text-on-surface-variant">Mô tả tự do; AI sẽ tuân theo cùng với mục tiêu và các thẻ ở trên.</p>
+            </div>
+
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 18 }}>
               <p className="m3-label">Khẩu phần</p>
               <div style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "var(--md-primary-container)", color: "var(--md-on-primary-container)", borderRadius: "var(--shape-full)", padding: 3 }}>
@@ -81,7 +87,7 @@ export function RecipeSettings({ prefs, onChange, disabled }: { prefs: RecipePre
             </div>
 
             <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginTop: 20, flexWrap: "wrap" }}>
-              <button type="button" className="m3-btn m3-btn-text" onClick={() => setDraft({ goal: "normal", tags: [], servings: 2, notes: "" })}><Icon name="restart_alt" size={18} /><span>Mặc định</span></button>
+              <button type="button" className="m3-btn m3-btn-text" onClick={() => setDraft({ goal: "normal", tags: [], servings: 2, notes: "", customDiet: "" })}><Icon name="restart_alt" size={18} /><span>Mặc định</span></button>
               <div style={{ display: "flex", gap: 8 }}>
                 <button type="button" className="m3-btn m3-btn-text" onClick={close}>Huỷ</button>
                 <button type="button" className="m3-btn m3-btn-filled" onClick={apply} disabled={saving}>{saving ? <span className="m3-loader sm on-primary" /> : <Icon name="check" />}<span>Áp dụng</span></button>

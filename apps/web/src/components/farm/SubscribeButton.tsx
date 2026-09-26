@@ -19,7 +19,8 @@ export function SubscribeButton({ farmId }: { farmId: string }) {
   const [freq, setFreq] = useState<"weekly" | "monthly">("weekly");
   const [loading, setLoading] = useState(false);
 
-  const eligible = cart.farmId === farmId && cart.lines.length > 0;
+  const farmLines = cart.linesOf(farmId);
+  const eligible = farmLines.length > 0;
   const close = () => { setClosing(true); setTimeout(() => { setClosing(false); setOpen(false); }, 250); };
 
   const start = () => {
@@ -34,10 +35,10 @@ export function SubscribeButton({ farmId }: { farmId: string }) {
       const res = await fetch("/api/subscriptions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ farm_id: farmId, frequency: freq, items: cart.lines.map((l) => ({ product_id: l.id, quantity: l.quantity })) }),
+        body: JSON.stringify({ farm_id: farmId, frequency: freq, items: farmLines.map((l) => ({ product_id: l.id, quantity: l.quantity })) }),
       });
       if (!res.ok) throw new Error((await res.json().catch(() => ({})))?.error ?? "Không đăng ký được");
-      cart.clear();
+      cart.clearFarm(farmId);
       close();
       show("Đã tạo gói giao định kỳ!", { kind: "success", action: { label: "Xem gói", onClick: () => router.push("/dang-ky") } });
       router.refresh();
@@ -59,7 +60,7 @@ export function SubscribeButton({ farmId }: { farmId: string }) {
           <div className={`m3-dialog ${closing ? "closing" : ""}`} role="dialog" aria-modal="true">
             <h2 className="headline-sm" style={{ marginBottom: 4 }}>Giao định kỳ</h2>
             <p className="body-md text-on-surface-variant" style={{ marginBottom: 20 }}>
-              {cart.count} món trong giỏ sẽ tự động được đặt lại theo lịch bạn chọn.
+              {farmLines.reduce((s, l) => s + l.quantity, 0)} món của vườn này trong giỏ sẽ tự động được đặt lại theo lịch bạn chọn.
             </p>
             <div className="m3-button-group" style={{ width: "100%", marginBottom: 24 }}>
               {(["weekly", "monthly"] as const).map((f) => (

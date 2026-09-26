@@ -69,11 +69,11 @@ export default async function FarmerDonHangPage() {
                 </p>
               )}
 
-              {order.status !== "delivered" && (
-                <div style={{ marginTop: 14 }}>
-                  <OrderStatusButton orderId={order.id} status={order.status} />
-                </div>
-              )}
+              <div className="flex flex-wrap gap-2" style={{ marginTop: 14 }}>
+                {order.status !== "delivered" && <OrderStatusButton orderId={order.id} status={order.status} />}
+                <a href={`/farmer/don-hang/${order.id}/tem`} className="m3-btn m3-btn-outlined"><Icon name="qr_code_2" size={20} /><span>In tem QR</span></a>
+                {order.delivery_mode === "pooled" && <span className="m3-chip sm round m3-chip-tertiary" style={{ alignSelf: "center" }}><Icon name="group_work" size={14} /> Ghép chuyến</span>}
+              </div>
             </article>
           ))}
         </div>

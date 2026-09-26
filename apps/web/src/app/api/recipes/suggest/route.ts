@@ -29,7 +29,7 @@ export async function POST(req: Request) {
     const [me] = await db.select({ recipe_prefs: users.recipe_prefs }).from(users).where(eq(users.id, user.id));
     if (me?.recipe_prefs) prefs = normalizePrefs(me.recipe_prefs);
   }
-  const tags = [prefs.goal === "normal" ? [] : [prefs.goal], prefs.tags].flat();
+  const tags = [prefs.goal === "normal" ? [] : [prefs.goal], prefs.tags, prefs.customDiet ? [`custom:${prefs.customDiet}`] : []].flat();
 
   const purchases = await getPurchases(user.id, { orderId: body.order_id });
   const names = distinctNames(purchases).slice(0, 12);

@@ -13,13 +13,17 @@ export const VISITOR_NAV: NavItem[] = [
 
 export const CUSTOMER_NAV: NavItem[] = [
   { href: "/", label: "Trang chủ", icon: "home", exact: true },
+  { href: "/rau-cu", label: "Rau củ", icon: "nutrition" },
   { href: "/farms", label: "Vườn rau", icon: "potted_plant" },
   { href: "/gom-don", label: "Gom đơn", icon: "groups" },
-  { href: "/cong-thuc", label: "Công thức", icon: "skillet" },
+  { href: "/cong-thuc", label: "Bếp", icon: "skillet" },
 ];
 
 export const CUSTOMER_MOBILE_NAV: NavItem[] = [
-  ...CUSTOMER_NAV,
+  { href: "/", label: "Trang chủ", icon: "home", exact: true },
+  { href: "/rau-cu", label: "Rau củ", icon: "nutrition" },
+  { href: "/farms", label: "Vườn", icon: "potted_plant" },
+  { href: "/cong-thuc", label: "Bếp", icon: "skillet" },
   { href: "/tai-khoan", label: "Tài khoản", icon: "account_circle" },
 ];
 

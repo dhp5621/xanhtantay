@@ -60,6 +60,7 @@ export default async function TaiKhoanPage() {
       { icon: "groups", label: "Nhóm gom đơn", value: g.c, href: "/gom-don" },
     ];
     menuItems = [
+      { href: "/vuon-cua-toi", icon: "park", label: "Vườn của tôi", desc: "Điểm, hạng và cây bạn đã trồng" },
       { href: "/don-hang", icon: "package_2", label: "Đơn hàng của tôi", desc: "Theo dõi hành trình rau" },
       { href: "/dang-ky", icon: "event_repeat", label: "Gói đăng ký", desc: "Giao định kỳ tuần / tháng" },
       { href: "/gom-don", icon: "groups", label: "Gom đơn chung", desc: "Mua chung, chia ship" },

@@ -53,6 +53,7 @@ export default async function DonHangPage() {
                     <p className="title-lg text-on-surface" style={{ marginBottom: 6 }}>{farm?.name ?? "Vườn rau"}</p>
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="m3-chip sm m3-chip-surface round">{ORDER_TYPE_LABELS[order.type] ?? order.type}</span>
+                      {order.delivery_mode === "pooled" && <span className="m3-chip sm m3-chip-tertiary round" title="Đơn nhỏ được ghép chuyến với hàng xóm"><Icon name="group_work" size={14} /> Ghép chuyến</span>}
                       <span className={`status-pill status-${order.status}`}>
                         <Icon name={STATUS_ICONS[order.status]} size={16} filled />
                         {stripEmoji(getOrderStatusLabel(order.status as OrderStatus, farmer?.name))}
@@ -75,13 +76,15 @@ export default async function DonHangPage() {
                     <Icon name="sticky_note_2" size={16} /> {order.note}
                   </p>
                 )}
-                {order.status === "delivered" && (
-                  <div style={{ marginTop: 12 }}>
-                    <Link href={`/cong-thuc?order=${order.id}`} className="m3-btn m3-btn-tonal-primary m3-btn-sm">
-                      <Icon name="skillet" size={18} filled /><span>Nấu gì với đơn này?</span>
-                    </Link>
-                  </div>
-                )}
+                <div className="flex flex-wrap gap-2" style={{ marginTop: 12 }}>
+                  {order.status === "delivered" && (
+                    <>
+                      <Link href={`/ke-hoach/${order.id}`} className="m3-btn m3-btn-tonal-primary m3-btn-sm"><Icon name="calendar_month" size={18} filled /><span>Kế hoạch ăn</span></Link>
+                      <Link href={`/cong-thuc?order=${order.id}`} className="m3-btn m3-btn-tonal m3-btn-sm"><Icon name="skillet" size={18} filled /><span>Nấu gì?</span></Link>
+                    </>
+                  )}
+                  <Link href={`/tra-cuu/${order.id}`} className="m3-btn m3-btn-outlined m3-btn-sm"><Icon name="qr_code_2" size={18} /><span>Mã QR gói rau</span></Link>
+                </div>
 
                 {/* Stepper */}
                 <div className="flex items-center" style={{ marginTop: 20, padding: "0 8px" }}>

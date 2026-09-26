@@ -29,7 +29,7 @@ export const users = pgTable("users", {
 });
 
 export type RecipeGoal = "normal" | "diet" | "gym";
-export interface RecipePrefs { goal: RecipeGoal; tags: string[]; servings: number; notes?: string }
+export interface RecipePrefs { goal: RecipeGoal; tags: string[]; servings: number; notes?: string; customDiet?: string }
 
 export const farms = pgTable("farms", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
@@ -71,6 +71,10 @@ export const orders = pgTable("orders", {
   type: orderTypeEnum("type").notNull().default("single"),
   total: integer("total").notNull(),
   note: text("note"),
+  /** "direct": ships on its own; "pooled": below the minimum, combined with neighbours' orders. */
+  delivery_mode: text("delivery_mode").notNull().default("direct"),
+  /** Orders placed together from one multi-farm checkout share a batch id. */
+  batch_id: text("batch_id"),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -130,6 +134,20 @@ export const user_recipes = pgTable("user_recipes", {
   tags: text("tags").array().notNull().default([]),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
+
+/** AI meal plan built from one delivered order: how many days the produce lasts and what to cook each day. */
+export const meal_plans = pgTable("meal_plans", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  user_id: text("user_id").notNull().references(() => users.id),
+  order_id: text("order_id").notNull().references(() => orders.id),
+  days: integer("days").notNull(),
+  summary: text("summary"),
+  plan: jsonb("plan").$type<MealPlanDay[]>().notNull().default([]),
+  source: text("source").notNull().default("ai"),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+export interface MealPlanMeal { time: string; title: string; uses: string[]; note?: string }
+export interface MealPlanDay { day: number; meals: MealPlanMeal[]; leftover?: string }
 
 /** Curated fallback recipes (used only when the AI service is not configured). */
 export const recipes = pgTable("recipes", {

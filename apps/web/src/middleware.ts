@@ -30,6 +30,7 @@ export async function middleware(req: NextRequest) {
     pathname.startsWith("/farmer") ||
     pathname === "/tai-khoan" ||
     pathname === "/dang-nhap" ||
+    pathname.startsWith("/tra-cuu/") ||
     (ownFarm !== null && pathname === ownFarm);
 
   if (allowed) return NextResponse.next();

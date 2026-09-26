@@ -15,15 +15,17 @@
   "dependencies": {
     "@neondatabase/serverless": "^0.10.4",
     "@vercel/blob": "^0.27.0",
+    "@xanhtantay/types": "workspace:*",
     "drizzle-orm": "^0.38.3",
     "next": "^15.5.26",
     "next-auth": "^4.24.15",
+    "qrcode": "1.5.4",
     "react": "19.1.0",
-    "react-dom": "19.1.0",
-    "@xanhtantay/types": "workspace:*"
+    "react-dom": "19.1.0"
   },
   "devDependencies": {
     "@types/node": "^20",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.5",
     "autoprefixer": "^10.4.20",

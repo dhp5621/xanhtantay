@@ -31,15 +31,7 @@ export function AddToCartButton({ product, compact = false, max }: { product: Ca
       show(`Vườn chỉ còn ${max} ${product.unit} ${product.name}`, { kind: "info", duration: 2500 });
       return;
     }
-    const res = cart.add(product);
-    if (res === "other-farm") {
-      show(`Giỏ đang có rau của ${cart.farmName ?? "vườn khác"}. Mỗi đơn chỉ đặt từ một vườn.`, {
-        kind: "info",
-        duration: 6000,
-        action: { label: "Đổi vườn", onClick: () => { cart.replaceWith(product); show(`Đã thêm ${product.name}`, { kind: "success" }); } },
-      });
-      return;
-    }
+    cart.add(product);
     pulse();
     if (qty === 0) show(`Đã thêm ${product.name} vào giỏ`, { kind: "success", duration: 2500, action: { label: "Xem giỏ", onClick: cart.open } });
   };

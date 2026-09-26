@@ -99,7 +99,7 @@ export default async function FarmPage({ params }: { params: Promise<{ slug: str
                     )}
                   </div>
                   {!preview && product.in_stock && product.stock_qty > 0 && (
-                    <AddToCartButton compact max={product.stock_qty} product={{ id: product.id, name: product.name, unit: product.unit, price_per_unit: product.price_per_unit, farm_id: farm.id, farm_name: farm.name, farm_slug: farm.slug }} />
+                    <AddToCartButton compact max={product.stock_qty} product={{ id: product.id, name: product.name, unit: product.unit, price_per_unit: product.price_per_unit, farm_id: farm.id, farm_name: farm.name, farm_slug: farm.slug, farm_location: farm.location }} />
                   )}
                 </div>
               ))}

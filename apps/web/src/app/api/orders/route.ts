@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { orders, order_items, products } from "@/db/schema";
+import { orders, order_items, products, farms } from "@/db/schema";
+import { MIN_DIRECT_ORDER, impactFor } from "@/lib/commerce";
 import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import { getSessionUser } from "@/lib/session";
 
@@ -16,8 +17,8 @@ export async function POST(req: Request) {
   if (!user) return NextResponse.json({ error: "Chưa đăng nhập" }, { status: 401 });
 
   const body = await req.json().catch(() => null);
-  const { farm_id, items, type = "single", note } = (body ?? {}) as {
-    farm_id?: string; items?: { product_id: string; quantity: number }[]; type?: string; note?: string;
+  const { farm_id, items, type = "single", note, batch_id } = (body ?? {}) as {
+    farm_id?: string; items?: { product_id: string; quantity: number }[]; type?: string; note?: string; batch_id?: string;
   };
 
   if (!farm_id || !Array.isArray(items) || items.length === 0) {
@@ -44,6 +45,10 @@ export async function POST(req: Request) {
   }
 
   const total = lines.reduce((s, l) => s + l.unit_price * l.quantity, 0);
+  // Small single orders are pooled with neighbours' orders; subscriptions and group orders always ship on schedule.
+  const delivery_mode = type === "single" && total < MIN_DIRECT_ORDER ? "pooled" : "direct";
+  const [farm] = await db.select({ id: farms.id, name: farms.name, location: farms.location }).from(farms).where(eq(farms.id, farm_id));
+  if (!farm) return NextResponse.json({ error: "Vườn không tồn tại" }, { status: 400 });
 
   // Reserve stock with a conditional decrement so two simultaneous buyers cannot oversell.
   const reserved: { product_id: string; quantity: number }[] = [];
@@ -72,11 +77,14 @@ export async function POST(req: Request) {
     total,
     note: typeof note === "string" ? note.slice(0, 200) : undefined,
     status: "harvesting",
+    delivery_mode,
+    batch_id: typeof batch_id === "string" && /^[\w-]{6,64}$/.test(batch_id) ? batch_id : null,
   }).returning();
 
   await db.insert(order_items).values(
     lines.map((l) => ({ order_id: order.id, product_id: l.product_id, quantity: String(l.quantity), unit_price: l.unit_price }))
   );
 
-  return NextResponse.json(order, { status: 201 });
+  const impact = impactFor(lines.map((l) => ({ quantity: l.quantity, unit: byId.get(l.product_id)!.unit, price_per_unit: l.unit_price })), farm);
+  return NextResponse.json({ ...order, farm, impact }, { status: 201 });
 }
