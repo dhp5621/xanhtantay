@@ -1290,6 +1290,51 @@ input[type="number"].tabular::-webkit-inner-spin-button { -webkit-appearance: no
 @keyframes m3-dialog-in-center { from { transform: translate(-50%, -50%) scale(0.9); opacity: 0; } to { transform: translate(-50%, -50%) scale(1); opacity: 1; } }
 @keyframes m3-dialog-out-center { from { transform: translate(-50%, -50%) scale(1); opacity: 1; } to { transform: translate(-50%, -50%) scale(0.95); opacity: 0; } }
 
+/* ─── In-app camera ──────────────────────────────────────────── */
+.m3-camera {
+  position: fixed;
+  inset: 0;
+  z-index: 210;
+  display: flex;
+  flex-direction: column;
+  background: #000;
+  color: #fff;
+  animation: m3-fade-in var(--dur-medium-2) var(--ease-standard) both;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.m3-camera.closing { animation: m3-fade-out var(--dur-short-4) var(--ease-standard-accel) both; }
+.m3-camera-top { display: flex; align-items: center; gap: 8px; padding: 8px 12px; }
+.m3-camera-view { position: relative; flex: 1; min-height: 0; background: #000; overflow: hidden; }
+.m3-camera-bottom { display: flex; flex-direction: column; align-items: center; padding: 20px 16px 24px; }
+@media (min-width: 640px) {
+  .m3-camera { inset: auto; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(720px, calc(100vw - 32px)); height: min(720px, calc(100dvh - 32px)); border-radius: var(--shape-xl-inc); overflow: hidden; box-shadow: var(--elev-5); animation: m3-dialog-in-center var(--dur-long-2) var(--spring-default-spatial) both; }
+  .m3-camera.closing { animation: m3-dialog-out-center var(--dur-medium-2) var(--ease-emphasized-accel) both; }
+}
+.m3-shutter {
+  position: relative;
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  border: 4px solid #fff;
+  background: transparent;
+  cursor: pointer;
+  display: grid; place-items: center;
+  transition: transform var(--dur-medium-2) var(--spring-fast-spatial), border-color var(--dur-short-4) var(--ease-standard);
+}
+.m3-shutter:disabled { opacity: 0.4; cursor: not-allowed; }
+.m3-shutter:active { transform: scale(0.92); }
+.m3-shutter.video { border-color: transparent; }
+.m3-shutter-ring { position: absolute; inset: -4px; width: 88px; height: 88px; }
+.m3-shutter-core {
+  width: 60px; height: 60px;
+  border-radius: 50%;
+  background: #fff;
+  transition: border-radius var(--dur-medium-4) var(--spring-default-spatial), transform var(--dur-medium-4) var(--spring-default-spatial), background-color var(--dur-short-4) var(--ease-standard);
+}
+.m3-shutter.video .m3-shutter-core { background: var(--md-error); }
+.m3-shutter.recording .m3-shutter-core { border-radius: var(--shape-sm); transform: scale(0.5); }
+@keyframes m3-blink { 50% { opacity: 0.2; } }
+
 /* ─── Snackbar ─────────────────────────────────────────────── */
 .m3-snackbar-host {
   position: fixed;
@@ -1368,6 +1413,72 @@ input[type="number"].tabular::-webkit-inner-spin-button { -webkit-appearance: no
 .m3-tint-tile {
   background: color-mix(in srgb, currentColor 9%, transparent);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 10%, transparent);
+}
+
+/* ─── Marquee: continuous auto-scroll, pauses on hover/focus ──── */
+.m3-marquee {
+  overflow: hidden;
+  margin: 0 -16px;
+  padding: 12px 0 16px;
+  mask-image: linear-gradient(to right, transparent, #000 48px, #000 calc(100% - 48px), transparent);
+}
+.m3-marquee-track {
+  display: flex;
+  width: max-content;
+  animation: m3-marquee 48s linear infinite;
+  will-change: transform;
+}
+.m3-marquee:hover .m3-marquee-track,
+.m3-marquee:focus-within .m3-marquee-track { animation-play-state: paused; }
+.m3-marquee-item {
+  flex: 0 0 min(300px, 78vw);
+  margin-right: 12px; /* margin, not gap, so the track is exactly two equal halves */
+  transition: transform var(--dur-medium-2) var(--spring-default-spatial), box-shadow var(--dur-medium-2) var(--ease-standard);
+}
+@media (hover: hover) { .m3-marquee-item:hover { transform: translateY(-4px) scale(1.02); box-shadow: var(--elev-3); } }
+@keyframes m3-marquee { to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) {
+  .m3-marquee { overflow-x: auto; }
+  .m3-marquee-track { animation: none; }
+}
+
+/* ─── Rich tooltip (M3) on hover / focus ─────────────────────── */
+.m3-hover-card { position: relative; cursor: default; outline: none; }
+.m3-hover-card:focus-visible { box-shadow: 0 0 0 3px var(--md-primary); }
+.m3-rich-tip {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 10px);
+  z-index: 40;
+  width: min(340px, calc(100vw - 48px));
+  background: var(--md-surface-container-high);
+  color: var(--md-on-surface);
+  border-radius: var(--shape-md);
+  padding: 12px 16px 14px;
+  box-shadow: var(--elev-3);
+  opacity: 0;
+  transform: translateY(8px) scale(0.96);
+  transform-origin: bottom left;
+  pointer-events: none;
+  transition: opacity var(--dur-short-4) var(--ease-standard), transform var(--dur-medium-2) var(--spring-default-spatial);
+  transition-delay: 0s;
+  text-align: left;
+  white-space: normal;
+}
+.m3-rich-tip::after {
+  content: "";
+  position: absolute;
+  left: 24px; top: 100%;
+  border: 8px solid transparent;
+  border-top-color: var(--md-surface-container-high);
+}
+.m3-hover-card:hover .m3-rich-tip,
+.m3-hover-card:focus .m3-rich-tip,
+.m3-hover-card:focus-within .m3-rich-tip {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+  transition-delay: 180ms;
 }
 
 /* ─── Carousel (M3 multi-browse) with scroll-driven depth ────── */

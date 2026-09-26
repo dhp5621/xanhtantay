@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Icon } from "@/components/ui/Icon";
 import { useSnackbar } from "@/components/ui/Snackbar";
 import { compressImage, compressVideo, canCompressVideo, getVideoDuration, VIDEO_MAX_SECONDS } from "@/lib/media";
+import { CameraCapture, hasCameraApi } from "@/components/ui/CameraCapture";
 
 const SUGGESTIONS = [
   { icon: "eco", text: "Hôm nay thu hoạch được lứa rau xanh mướt." },
@@ -25,6 +26,7 @@ export function DiaryComposer() {
   const [processing, setProcessing] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  const [camera, setCamera] = useState<null | "photo" | "video">(null);
   const pickRef = useRef<HTMLInputElement>(null);
   const photoRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLInputElement>(null);
@@ -38,12 +40,17 @@ export function DiaryComposer() {
   useEffect(() => () => media.forEach((m) => URL.revokeObjectURL(m.url)), [media]);
 
   /** Compress each picked/captured file before it is added to the post. */
-  const ingest = async (list: FileList | null) => {
+  const ingest = async (list: FileList | File[] | null, opts?: { precompressed?: boolean }) => {
     if (!list?.length) return;
     const files = Array.from(list).slice(0, MAX_FILES - media.length);
     if (files.length < list.length) show(`Tối đa ${MAX_FILES} tệp mỗi bài`, { kind: "info" });
     for (const f of files) {
       try {
+        if (opts?.precompressed) {
+          // Captured by the in-app camera at ≤720p / 25 fps / 30 s already.
+          setMedia((m) => [...m, { file: f, url: URL.createObjectURL(f), kind: f.type.startsWith("video/") ? "video" : "image", originalSize: f.size }]);
+          continue;
+        }
         if (f.type.startsWith("video/")) {
           const dur = await getVideoDuration(f);
           if (canCompressVideo()) {
@@ -141,15 +148,15 @@ export function DiaryComposer() {
 
         <div className="grid grid-cols-3 gap-2">
           {[
-            { ref: photoRef, icon: "photo_camera", label: "Chụp ảnh", hint: "Mở camera" },
-            { ref: videoRef, icon: "videocam", label: "Quay video", hint: `Tối đa ${VIDEO_MAX_SECONDS}s` },
-            { ref: pickRef, icon: "add_photo_alternate", label: "Chọn từ máy", hint: "Ảnh hoặc video" },
+            { icon: "photo_camera", label: "Chụp ảnh", hint: "Camera trong app", act: () => (hasCameraApi() ? setCamera("photo") : photoRef.current?.click()) },
+            { icon: "videocam", label: "Quay video", hint: `Tối đa ${VIDEO_MAX_SECONDS}s`, act: () => (hasCameraApi() ? setCamera("video") : videoRef.current?.click()) },
+            { icon: "add_photo_alternate", label: "Chọn từ máy", hint: "Ảnh hoặc video", act: () => pickRef.current?.click() },
           ].map((b) => (
             <button
               key={b.label}
               type="button"
               disabled={full || !!processing}
-              onClick={() => b.ref.current?.click()}
+              onClick={b.act}
               className="m3-card-outlined lift"
               style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 96, gap: 4, borderRadius: "var(--shape-xl)", boxShadow: "none", border: "2px dashed var(--md-outline-variant)", background: "var(--md-surface-container)", cursor: full ? "not-allowed" : "pointer", opacity: full ? 0.5 : 1 }}
             >
@@ -198,6 +205,16 @@ export function DiaryComposer() {
         <div className="anim-in-scale m3-chip m3-chip-primary" style={{ height: "auto", padding: "12px 16px", borderRadius: "var(--shape-md)", whiteSpace: "normal" }}>
           <Icon name="check_circle" filled /> Đã đăng nhật ký thành công!
         </div>
+      )}
+
+      {camera && (
+        <CameraCapture
+          modes={camera === "photo" ? ["photo", "video"] : ["video", "photo"]}
+          initialFacing="environment"
+          title="Nhật ký vườn"
+          onClose={() => setCamera(null)}
+          onCapture={(f) => void ingest([f], { precompressed: true })}
+        />
       )}
 
       <button type="submit" disabled={submitting || !!processing || !content.trim() || !farm} className="m3-btn m3-btn-filled m3-btn-lg" style={{ alignSelf: "flex-start" }}>

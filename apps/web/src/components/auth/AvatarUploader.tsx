@@ -7,12 +7,17 @@ import { Icon } from "@/components/ui/Icon";
 import { Avatar } from "@/components/ui/Avatar";
 import { useSnackbar } from "@/components/ui/Snackbar";
 import { makeAvatarDataUrl } from "@/lib/media";
+import { Portal } from "@/components/ui/Portal";
+import { CameraCapture, hasCameraApi } from "@/components/ui/CameraCapture";
 
 /** Avatar with a change menu: take a photo, pick from device, or remove. Stores a 96×96 WebP in the DB. */
 export function AvatarUploader({ name, src, tone = "primary" }: { name?: string | null; src?: string | null; tone?: "primary" | "tertiary" }) {
   const [current, setCurrent] = useState<string | null>(src ?? null);
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState(false);
+  const [closingMenu, setClosingMenu] = useState(false);
+  const [camera, setCamera] = useState(false);
+  const closeMenu = () => { setClosingMenu(true); setTimeout(() => { setClosingMenu(false); setOpen(false); }, 220); };
   const pickRef = useRef<HTMLInputElement>(null);
   const camRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
@@ -33,6 +38,17 @@ export function AvatarUploader({ name, src, tone = "primary" }: { name?: string 
     } finally {
       setBusy(false);
       setOpen(false);
+    }
+  };
+
+  const useFile = async (f: File) => {
+    setBusy(true);
+    try {
+      const dataUrl = await makeAvatarDataUrl(f, 96);
+      await save(dataUrl);
+    } catch {
+      show("Không đọc được ảnh này", { kind: "error" });
+      setBusy(false);
     }
   };
 
@@ -69,19 +85,34 @@ export function AvatarUploader({ name, src, tone = "primary" }: { name?: string 
       </button>
 
       {open && (
-        <div className="m3-card-elevated anim-in-scale" role="menu" style={{ position: "absolute", top: "100%", left: 0, marginTop: 8, zIndex: 20, minWidth: 220, padding: 6, borderRadius: "var(--shape-lg)", background: "var(--md-surface-container-high)" }}>
-          {[
-            { icon: "photo_camera", label: "Chụp ảnh mới", act: () => camRef.current?.click() },
-            { icon: "image", label: "Chọn từ máy", act: () => pickRef.current?.click() },
-            ...(current ? [{ icon: "delete", label: "Gỡ ảnh", act: () => save(null) }] : []),
-          ].map((m) => (
-            <button key={m.label} type="button" role="menuitem" className="m3-list-item" onClick={() => { setOpen(false); m.act(); }} style={{ width: "100%", background: "transparent", border: "none", padding: "10px 12px", gap: 12, fontSize: 14, borderRadius: "var(--shape-md)", cursor: "pointer", textAlign: "left" }}>
-              <Icon name={m.icon} size={20} className={m.icon === "delete" ? "text-error" : "text-primary"} />
-              {m.label}
-            </button>
-          ))}
-          <p className="body-sm text-on-surface-variant" style={{ padding: "6px 12px 4px" }}>Ảnh được nén còn 96×96, vài KB.</p>
-        </div>
+        <Portal>
+          <div className={`m3-scrim ${closingMenu ? "closing" : ""}`} onClick={closeMenu} aria-hidden />
+          <div className={`m3-sheet ${closingMenu ? "closing" : ""}`} role="menu" aria-label="Đổi ảnh đại diện">
+            <div className="m3-sheet-handle" />
+            <div className="m3-sheet-body" style={{ paddingTop: 12 }}>
+              <p className="title-md text-on-surface" style={{ padding: "0 4px 10px" }}>Ảnh đại diện</p>
+              <div className="m3-list-group">
+                {[
+                  { icon: "photo_camera", label: "Chụp ảnh mới", desc: hasCameraApi() ? "Mở camera trong ứng dụng" : "Mở camera của máy", act: () => (hasCameraApi() ? setCamera(true) : camRef.current?.click()) },
+                  { icon: "image", label: "Chọn từ máy", desc: "Ảnh có sẵn trong thư viện", act: () => pickRef.current?.click() },
+                  ...(current ? [{ icon: "delete", label: "Gỡ ảnh", desc: "Quay về chữ cái đầu tên", act: () => save(null) }] : []),
+                ].map((m) => (
+                  <button key={m.label} type="button" role="menuitem" className="m3-list-item" onClick={() => { closeMenu(); m.act(); }} style={{ width: "100%", border: "none", cursor: "pointer", textAlign: "left" }}>
+                    <span className="m3-list-leading" style={m.icon === "delete" ? { background: "var(--md-error-container)", color: "var(--md-on-error-container)" } : undefined}><Icon name={m.icon} /></span>
+                    <span>
+                      <span style={{ display: "block" }}>{m.label}</span>
+                      <span className="body-sm text-on-surface-variant" style={{ fontWeight: 400 }}>{m.desc}</span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+              <p className="body-sm text-on-surface-variant" style={{ padding: "12px 4px 0" }}>Ảnh được cắt vuông và nén còn 96×96, chỉ vài KB.</p>
+            </div>
+          </div>
+        </Portal>
+      )}
+      {camera && (
+        <CameraCapture modes={["photo"]} initialFacing="user" title="Chụp ảnh đại diện" onClose={() => setCamera(false)} onCapture={(f) => void useFile(f)} />
       )}
     </div>
   );

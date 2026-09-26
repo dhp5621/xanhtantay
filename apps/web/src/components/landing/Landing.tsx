@@ -21,8 +21,8 @@ const PILLARS = [
     eyebrow: "Minh bạch nguồn gốc",
     title: "Thấy vườn trước khi thấy rau",
     items: [
-      { icon: "auto_stories", t: "Nhật ký nông trại", d: "Ảnh, video ngắn mỗi ngày từ vườn: gieo hạt, tưới nước, thu hoạch." },
-      { icon: "videocam", t: "Livestream tại vườn", d: "Xem bác nông dân thu hoạch trực tiếp và chốt đơn ngay trên phiên live." },
+      { icon: "auto_stories", t: "Nhật ký nông trại", d: "Ảnh, video ngắn mỗi ngày từ vườn: gieo hạt, tưới nước, thu hoạch.", more: "Mỗi bài có giờ đăng chính xác. Bạn thấy luống rau mình sắp ăn lớn lên từng ngày, và biết ai đang chăm nó. Video giới hạn 30 giây để xem nhanh, tải nhẹ." },
+      { icon: "videocam", t: "Livestream tại vườn", d: "Xem bác nông dân thu hoạch trực tiếp và chốt đơn ngay trên phiên live.", more: "Theo dõi vườn để nhận thông báo khi lên sóng. Trong phiên live, món đang hái hiện ngay dưới màn hình để bạn thêm vào giỏ mà không rời khỏi video. (Sắp ra mắt)" },
     ],
   },
   {
@@ -30,8 +30,8 @@ const PILLARS = [
     eyebrow: "Đặt hàng thông minh",
     title: "Mua theo cách hợp với nhà bạn",
     items: [
-      { icon: "event_repeat", t: "Hộp rau gia đình định kỳ", d: "Một mức giá cố định mỗi tuần hoặc mỗi tháng, tự lên đơn, đổi món linh hoạt trước ngày giao 24h." },
-      { icon: "groups", t: "Gom đơn chung", d: "Rủ hàng xóm cùng toà nhà mua chung một chuyến xe để chia phí gom. Đủ nhóm là miễn phí ship." },
+      { icon: "event_repeat", t: "Hộp rau gia đình định kỳ", d: "Một mức giá cố định mỗi tuần hoặc mỗi tháng, tự lên đơn, đổi món linh hoạt trước ngày giao 24h.", more: "Chọn món một lần từ trang vườn rồi bấm “Giao định kỳ”. Hệ thống tự lên đơn mỗi kỳ và trừ tồn kho của vườn. Tạm dừng, bật lại hay đổi món bất cứ lúc nào trong mục Gói đăng ký." },
+      { icon: "groups", t: "Gom đơn chung", d: "Rủ hàng xóm cùng toà nhà mua chung một chuyến xe để chia phí gom. Đủ nhóm là miễn phí ship.", more: "Tạo nhóm, đặt số người tối thiểu và hạn chốt, chia link mời. Thanh tiến độ hiện ngay cần thêm mấy người. Đủ người trước hạn là cả nhóm được miễn phí vận chuyển về một điểm nhận chung." },
     ],
   },
   {
@@ -39,9 +39,9 @@ const PILLARS = [
     eyebrow: "Theo dõi có cảm xúc",
     title: "Không còn “đang giao” khô khan",
     items: [
-      { icon: "agriculture", t: stripEmoji(ORDER_STATUS_LABELS.harvesting), d: "" },
-      { icon: "local_shipping", t: stripEmoji(ORDER_STATUS_LABELS.loaded), d: "" },
-      { icon: "home", t: stripEmoji(ORDER_STATUS_LABELS.delivered), d: "" },
+      { icon: "agriculture", t: stripEmoji(ORDER_STATUS_LABELS.harvesting), d: "", more: "Bước 1. Nhà vườn nhận đơn và hái đúng phần của bạn vào sáng hôm giao. Rau chưa bao giờ nằm kho." },
+      { icon: "local_shipping", t: stripEmoji(ORDER_STATUS_LABELS.loaded), d: "", more: "Bước 2. Nhà vườn bấm một nút khi xe lạnh rời vườn. Bạn thấy trạng thái đổi ngay trong mục Đơn hàng." },
+      { icon: "home", t: stripEmoji(ORDER_STATUS_LABELS.delivered), d: "", more: "Bước 3. Giao tận cửa, thanh toán khi nhận. Từ đây app gợi ý luôn hôm nay nấu gì với những món vừa về." },
     ],
   },
   {
@@ -49,16 +49,25 @@ const PILLARS = [
     eyebrow: "Tiện ích bếp núc",
     title: "Mua gì, gợi ý nấu nấy",
     items: [
-      { icon: "restaurant", t: "Gợi ý mâm cơm", d: "Mua bí đỏ và thịt băm, app gợi ý ngay canh bí đỏ thịt băm với công thức từng bước." },
+      { icon: "restaurant", t: "Gợi ý mâm cơm", d: "Mua bí đỏ và thịt băm, app gợi ý ngay canh bí đỏ thịt băm với công thức từng bước.", more: "Công thức được ghép từ chính những món trong đơn của bạn: nguyên liệu, số bước, cách làm ngắn gọn kiểu bếp nhà. Không có công thức khớp thì AI gợi ý thêm 2–3 món đơn giản." },
     ],
   },
 ];
 
 const FARMER_POINTS = [
-  { icon: "storefront", t: "Bán thẳng cho người ăn", d: "Thay 3–5 khâu trung gian bằng một nền tảng. Bạn tự đặt giá bán; Xanh Tận Tay chỉ thu 5–10% trên mỗi đơn giao thành công." },
-  { icon: "photo_camera", t: "Đăng bán theo đợt thu hoạch", d: "Có gì bán nấy, hái theo đơn đã chốt. Không tồn kho, không hao hụt." },
-  { icon: "mic", t: "Đơn giản như nói chuyện", d: "Đăng nhật ký bằng ảnh, sắp tới bằng giọng nói. Không cần rành công nghệ." },
-  { icon: "event_repeat", t: "Đầu ra ổn định", d: "Khách đăng ký “hộp rau gia đình” tuần / tháng nghĩa là đơn đều, dễ lên kế hoạch gieo trồng." },
+  { icon: "storefront", t: "Bán thẳng cho người ăn", d: "Thay 3–5 khâu trung gian bằng một nền tảng. Bạn tự đặt giá bán; Xanh Tận Tay chỉ thu 5–10% trên mỗi đơn giao thành công.", more: "Ví dụ: bó cải bạn bán 8.000₫, khách trả 8.000₫ cộng phí vận chuyển gom. Nền tảng giữ lại tối đa 800₫, phần còn lại về bạn khi đơn giao xong. Đơn huỷ hoặc không giao được thì không mất phí." },
+  { icon: "photo_camera", t: "Đăng bán theo đợt thu hoạch", d: "Có gì bán nấy, hái theo đơn đã chốt. Không tồn kho, không hao hụt.", more: "Mỗi sản phẩm có số lượng còn bán. Khách đặt là tự trừ, về 0 là tự ẩn “hết hàng”. Nhập lại số lượng khi có lứa mới, bấm một nút là mở bán lại." },
+  { icon: "mic", t: "Đơn giản như nói chuyện", d: "Đăng nhật ký bằng ảnh, sắp tới bằng giọng nói. Không cần rành công nghệ.", more: "Chụp ảnh thẳng từ camera, chọn một câu gợi ý sẵn, bấm đăng. Ảnh và video tự nén trên điện thoại nên mạng yếu vẫn đăng được. Nhập bằng giọng nói đang được phát triển." },
+  { icon: "event_repeat", t: "Đầu ra ổn định", d: "Khách đăng ký “hộp rau gia đình” tuần / tháng nghĩa là đơn đều, dễ lên kế hoạch gieo trồng.", more: "Mục Khách đăng ký cho bạn thấy ai nhận rau kỳ tới, món gì, bao nhiêu. Nhìn vào đó để biết tuần sau cần hái gì, tháng sau nên gieo gì." },
+];
+
+const DAY_STEPS = [
+  { icon: "wb_twilight", time: "05:30", t: "Ra vườn, chụp một tấm ảnh", d: "Sương còn đọng trên lá. 30 giây trên điện thoại, khách thấy ngay." },
+  { icon: "photo_camera", time: "06:00", t: "Đăng nhật ký", d: "Kể hôm nay hái gì, cây nào đang lớn. Khách tin hơn mỗi ngày." },
+  { icon: "notifications_active", time: "07:00", t: "Đơn về", d: "Đơn lẻ, đơn gói, đơn gom của cả toà nhà, gom lại thành một danh sách hái." },
+  { icon: "agriculture", time: "08:00", t: "Hái theo đơn đã chốt", d: "Không thừa, không thiếu, không tồn kho. Tồn kho tự trừ theo đơn." },
+  { icon: "local_shipping", time: "11:00", t: "Bấm “đã lên xe”", d: "Xe lạnh về phố. Khách nhận thông báo “hàng đã lên xe lạnh về phố”." },
+  { icon: "payments", time: "17:00", t: "Bấm “đã giao”, tiền về", d: "Khách trả khi nhận. Cuối ngày xem tổng doanh thu trên trang tổng quan." },
 ];
 
 /** Fee model from the business plan, stated plainly on both sides. */
@@ -134,7 +143,7 @@ export function Landing({ farms, stats }: { farms: FarmCard[]; stats: { farms: n
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 stagger">
           {PILLARS.map((p, i) => (
-            <div key={p.eyebrow} className="m3-card-filled lift" style={{ padding: 24, borderRadius: "var(--shape-xl-inc)", background: `var(--md-${PILLAR_TONES[i % PILLAR_TONES.length]}-container)`, color: `var(--md-on-${PILLAR_TONES[i % PILLAR_TONES.length]}-container)` }}>
+            <div key={p.eyebrow} className="m3-card-filled lift" style={{ padding: 24, overflow: "visible", borderRadius: "var(--shape-xl-inc)", background: `var(--md-${PILLAR_TONES[i % PILLAR_TONES.length]}-container)`, color: `var(--md-on-${PILLAR_TONES[i % PILLAR_TONES.length]}-container)` }}>
               <div className="flex items-center gap-3" style={{ marginBottom: 14 }}>
                 <span style={{ width: 48, height: 48, borderRadius: "var(--shape-lg)", background: "color-mix(in srgb, currentColor 14%, transparent)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}><Icon name={p.icon} size={26} filled /></span>
                 <div>
@@ -144,11 +153,15 @@ export function Landing({ farms, stats }: { farms: FarmCard[]; stats: { farms: n
               </div>
               <div className="flex flex-col gap-2">
                 {p.items.map((it) => (
-                  <div key={it.t} className="m3-tint-tile" style={{ display: "flex", gap: 12, alignItems: "flex-start", borderRadius: "var(--shape-md)", padding: "10px 14px" }}>
+                  <div key={it.t} className="m3-tint-tile m3-hover-card" tabIndex={0} style={{ display: "flex", gap: 12, alignItems: "flex-start", borderRadius: "var(--shape-md)", padding: "10px 14px" }}>
                     <Icon name={it.icon} size={22} filled />
                     <div>
                       <p className="title-sm">{it.t}</p>
                       {it.d && <p className="body-sm" style={{ opacity: 0.85 }}>{it.d}</p>}
+                    </div>
+                    <div className="m3-rich-tip" role="tooltip">
+                      <p className="title-sm" style={{ marginBottom: 4, display: "inline-flex", alignItems: "center", gap: 6 }}><Icon name={it.icon} size={18} filled className="text-primary" /> {it.t}</p>
+                      <p className="body-sm">{it.more}</p>
                     </div>
                   </div>
                 ))}
@@ -170,35 +183,36 @@ export function Landing({ farms, stats }: { farms: FarmCard[]; stats: { farms: n
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 stagger">
           {FARMER_POINTS.map((p) => (
-            <div key={p.t} className="m3-card lift" style={{ padding: "20px 22px", display: "flex", gap: 14, alignItems: "flex-start", borderRadius: "var(--shape-xl)", background: "var(--md-surface-container-lowest)" }}>
+            <div key={p.t} className="m3-card lift m3-hover-card" tabIndex={0} style={{ padding: "20px 22px", display: "flex", gap: 14, alignItems: "flex-start", borderRadius: "var(--shape-xl)", background: "var(--md-surface-container-lowest)", overflow: "visible" }}>
               <span className="m3-list-leading" style={{ background: "var(--md-tertiary-container)", color: "var(--md-on-tertiary-container)" }}><Icon name={p.icon} filled /></span>
               <div>
                 <p className="title-md text-on-surface">{p.t}</p>
                 <p className="body-sm text-on-surface-variant" style={{ marginTop: 2, lineHeight: 1.55 }}>{p.d}</p>
               </div>
+              <div className="m3-rich-tip" role="tooltip">
+                <p className="title-sm" style={{ marginBottom: 4, display: "inline-flex", alignItems: "center", gap: 6 }}><Icon name="info" size={18} filled className="text-primary" /> Cụ thể hơn</p>
+                <p className="body-sm">{p.more}</p>
+              </div>
             </div>
           ))}
         </div>
         <p className="label-md text-on-surface-variant" style={{ marginTop: 24, marginBottom: 10, textTransform: "uppercase" }}>Một ngày của nhà vườn</p>
-        <div className="m3-carousel" aria-label="Một ngày của nhà vườn">
-          {[
-            { icon: "wb_twilight", time: "05:30", t: "Ra vườn, chụp một tấm ảnh", d: "Sương còn đọng trên lá. 30 giây trên điện thoại, khách thấy ngay." },
-            { icon: "photo_camera", time: "06:00", t: "Đăng nhật ký", d: "Kể hôm nay hái gì, cây nào đang lớn. Khách tin hơn mỗi ngày." },
-            { icon: "notifications_active", time: "07:00", t: "Đơn về", d: "Đơn lẻ, đơn gói, đơn gom của cả toà nhà, gom lại thành một danh sách hái." },
-            { icon: "agriculture", time: "08:00", t: "Hái theo đơn đã chốt", d: "Không thừa, không thiếu, không tồn kho. Tồn kho tự trừ theo đơn." },
-            { icon: "local_shipping", time: "11:00", t: "Bấm “đã lên xe”", d: "Xe lạnh về phố. Khách nhận thông báo “hàng đã lên xe lạnh về phố”." },
-            { icon: "payments", time: "17:00", t: "Bấm “đã giao”, tiền về", d: "Khách trả khi nhận. Cuối ngày xem tổng doanh thu trên trang tổng quan." },
-          ].map((x, i) => (
-            <article key={x.t} className="m3-carousel-item m3-card-elevated" style={{ padding: "20px 20px 18px", borderRadius: "var(--shape-xl)", background: "var(--md-surface-container-lowest)" }}>
-              <div className="flex items-center justify-between" style={{ marginBottom: 12 }}>
-                <span className="m3-list-leading" style={{ background: "var(--md-tertiary-container)", color: "var(--md-on-tertiary-container)" }}><Icon name={x.icon} filled /></span>
-                <span className="m3-chip sm round m3-chip-surface tabular">{x.time}</span>
-              </div>
-              <p className="label-sm text-primary" style={{ marginBottom: 2 }}>BƯỚC {i + 1}</p>
-              <p className="title-md text-on-surface">{x.t}</p>
-              <p className="body-sm text-on-surface-variant" style={{ marginTop: 4, lineHeight: 1.55 }}>{x.d}</p>
-            </article>
-          ))}
+        <div className="m3-marquee" aria-label="Một ngày của nhà vườn">
+          <div className="m3-marquee-track">
+            {[0, 1].map((copy) =>
+              DAY_STEPS.map((x, i) => (
+                <article key={`${copy}-${x.t}`} aria-hidden={copy === 1 || undefined} className="m3-marquee-item m3-card-elevated" style={{ padding: "20px 20px 18px", borderRadius: "var(--shape-xl)", background: "var(--md-surface-container-lowest)" }}>
+                  <div className="flex items-center justify-between" style={{ marginBottom: 12 }}>
+                    <span className="m3-list-leading" style={{ background: "var(--md-tertiary-container)", color: "var(--md-on-tertiary-container)" }}><Icon name={x.icon} filled /></span>
+                    <span className="m3-chip sm round m3-chip-surface tabular">{x.time}</span>
+                  </div>
+                  <p className="label-sm text-primary" style={{ marginBottom: 2 }}>BƯỚC {i + 1}</p>
+                  <p className="title-md text-on-surface">{x.t}</p>
+                  <p className="body-sm text-on-surface-variant" style={{ marginTop: 4, lineHeight: 1.55 }}>{x.d}</p>
+                </article>
+              ))
+            )}
+          </div>
         </div>
       </section>
 
