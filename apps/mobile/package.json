@@ -17,9 +17,10 @@
     "react-dom": "19.1.0",
     "react-native": "0.81.5"
   },
-  "devDependencies": {
+   "devDependencies": {
     "@babel/core": "^7.25.0",
     "@types/react": "~19.1.0",
+    "@types/react-dom": "~19.1.0",
     "typescript": "^5.9.2"
   }
 }
