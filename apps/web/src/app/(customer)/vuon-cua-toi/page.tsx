@@ -29,12 +29,12 @@ export default async function VuonCuaToiPage() {
     <div className="flex flex-col gap-8">
       <PageHeader icon="park" eyebrow="Tích điểm · Trồng cây" title="Vườn của tôi" subtitle="Mỗi đơn giao xong là thêm điểm, cây lớn thêm một chút" />
 
-      <section className="m3-hero anim-in-scale" style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: 24, alignItems: "center" }}>
+      <section className="m3-hero m3-rank-hero anim-in-scale">
         <span className="m3-hero-blob" style={{ width: 260, height: 260, right: -80, top: -100 }} />
-        <div style={{ position: "relative" }}><GrowingTree stage={l.level.stage} /></div>
-        <div style={{ position: "relative" }}>
+        <div className="m3-rank-hero-art"><GrowingTree stage={l.level.stage} size={200} /></div>
+        <div className="m3-rank-hero-body">
           <p className="m3-eyebrow">Hạng hiện tại</p>
-          <h2 className="display-sm" style={{ color: "var(--md-on-primary-container)", display: "inline-flex", alignItems: "center", gap: 10 }}><Icon name={l.level.icon} size={36} filled /> {l.level.name}</h2>
+          <h2 className="display-sm" style={{ color: "var(--md-on-primary-container)", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", overflowWrap: "anywhere" }}><Icon name={l.level.icon} size={36} filled /> <span>{l.level.name}</span></h2>
           <p className="body-md" style={{ color: "var(--md-on-secondary-container)", marginTop: 4 }}>{l.level.desc}</p>
           <p className="headline-md tabular" style={{ color: "var(--md-on-primary-container)", marginTop: 14 }}>{l.points} điểm</p>
           {l.next ? (

@@ -1859,3 +1859,14 @@ input[type="number"].tabular::-webkit-inner-spin-button { -webkit-appearance: no
 .m3-level-art svg { max-width: 100%; height: auto; }
 .m3-tree-bird { animation: m3-bird 6s ease-in-out infinite; }
 @keyframes m3-bird { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(-6px, -4px); } }
+
+/* ─── Loyalty hero: side by side on wide screens, stacked on phones ─ */
+.m3-rank-hero { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 24px; align-items: center; overflow: hidden; }
+.m3-rank-hero-art, .m3-rank-hero-body { position: relative; min-width: 0; }
+.m3-rank-hero-art svg { max-width: 100%; height: auto; }
+@media (max-width: 639px) {
+  .m3-rank-hero { grid-template-columns: 1fr; gap: 8px; text-align: center; }
+  .m3-rank-hero-art { display: flex; justify-content: center; }
+  .m3-rank-hero-art svg { width: 160px; }
+  .m3-rank-hero-body h2 { justify-content: center; }
+}
