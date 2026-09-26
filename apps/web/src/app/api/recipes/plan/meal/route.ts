@@ -26,8 +26,17 @@ export async function POST(req: Request) {
   const [me] = await db.select({ recipe_prefs: users.recipe_prefs }).from(users).where(eq(users.id, user.id));
   const prefs = me?.recipe_prefs ? normalizePrefs(me.recipe_prefs) : DEFAULT_PREFS;
 
+  // Reuse a how-to already generated for the same dish (same title) anywhere in this user's plans,
+  // so the AI is only asked once per dish, not once per day or per regenerated plan.
+  const norm = (s: string) => s.trim().toLowerCase().replace(/\s+/g, " ");
+  const wanted = norm(meal.title);
   let recipe: AiRecipe | null = null;
-  if (aiConfigured()) {
+  const mine = await db.select({ plan: meal_plans.plan }).from(meal_plans).where(eq(meal_plans.user_id, user.id));
+  outer: for (const p of mine) for (const d of p.plan) for (const m of d.meals) {
+    if (m.recipe && norm(m.title) === wanted) { recipe = m.recipe; break outer; }
+  }
+
+  if (!recipe && aiConfigured()) {
     recipe = await chatJSON<AiRecipe>(
       "Bạn là đầu bếp gia đình Việt Nam. Trả về JSON thuần.",
       `Viết cách làm món "${meal.title}" dùng nguyên liệu: ${meal.uses.join(", ") || "rau vừa mua"}. ${prefsToPrompt(prefs)}
