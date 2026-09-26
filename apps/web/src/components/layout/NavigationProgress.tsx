@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
+import { PageLoader } from "@/components/ui/PageLoader";
 
 /**
  * Thin expressive progress line under the top bar while a client navigation is in flight.
@@ -11,8 +12,16 @@ export function NavigationProgress() {
   const pathname = usePathname();
   const search = useSearchParams();
   const [active, setActive] = useState(false);
+  const [overlay, setOverlay] = useState(false);
 
-  useEffect(() => { setActive(false); }, [pathname, search]);
+  useEffect(() => { setActive(false); setOverlay(false); }, [pathname, search]);
+
+  // Fast navigations only get the thin line; slower ones (>350 ms) also get the centered spinner.
+  useEffect(() => {
+    if (!active) { setOverlay(false); return; }
+    const t = setTimeout(() => setOverlay(true), 350);
+    return () => clearTimeout(t);
+  }, [active]);
 
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
@@ -30,5 +39,10 @@ export function NavigationProgress() {
     return () => document.removeEventListener("click", onClick, true);
   }, []);
 
-  return <div className={`m3-nav-progress ${active ? "active" : ""}`} aria-hidden />;
+  return (
+    <>
+      <div className={`m3-nav-progress ${active ? "active" : ""}`} aria-hidden />
+      {overlay && <PageLoader fullscreen />}
+    </>
+  );
 }
