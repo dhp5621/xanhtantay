@@ -1,12 +1,27 @@
 export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { db } from "@/db";
-import { farms, farm_diary, group_orders } from "@/db/schema";
-import { desc, eq } from "drizzle-orm";
+import { farms, farm_diary, group_orders, products } from "@/db/schema";
+import { count, desc, eq } from "drizzle-orm";
 import { Icon } from "@/components/ui/Icon";
 import { formatDate, daysUntil } from "@/lib/format";
+import { getSessionUser } from "@/lib/session";
+import { Landing } from "@/components/landing/Landing";
 
 export default async function HomePage() {
+  const user = await getSessionUser();
+
+  // Visitors get the marketing landing page; signed-in users get their feed.
+  if (!user) {
+    const [teaser, [f], [p], [g]] = await Promise.all([
+      db.select({ id: farms.id, name: farms.name, slug: farms.slug, location: farms.location, cover_url: farms.cover_url }).from(farms).limit(3),
+      db.select({ c: count() }).from(farms),
+      db.select({ c: count() }).from(products),
+      db.select({ c: count() }).from(group_orders).where(eq(group_orders.status, "open")),
+    ]);
+    return <Landing farms={teaser} stats={{ farms: f.c, products: p.c, groups: g.c }} />;
+  }
+
   const [allFarms, diaryFeed, openGroups] = await Promise.all([
     db.select().from(farms).limit(6),
     // Join the farm so the feed never falls back to "Vườn rau" when a farm is outside the first 6.
@@ -31,7 +46,7 @@ export default async function HomePage() {
         <span className="m3-hero-blob" style={{ width: 320, height: 320, right: -80, top: -120 }} />
         <span className="m3-hero-blob" style={{ width: 220, height: 220, right: 160, bottom: -120, animationDelay: "-5s" }} />
         <div style={{ position: "relative", maxWidth: 560 }}>
-          <p className="m3-eyebrow anim-in" style={{ marginBottom: 12 }}>Nông sản tươi từ vườn</p>
+          <p className="m3-eyebrow anim-in" style={{ marginBottom: 12 }}>Chào {user.name?.split(" ").pop()}, hôm nay ăn gì?</p>
           <h1 className="display-md anim-in delay-1" style={{ color: "var(--md-on-primary-container)", marginBottom: 16 }}>
             Biết rõ từng cây rau trước khi lên bàn ăn
           </h1>

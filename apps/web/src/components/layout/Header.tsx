@@ -163,7 +163,7 @@ function HeaderImpl() {
                 </Link>
                 <span className="hidden md:inline-flex">
                   <button
-                    onClick={() => signOut({ callbackUrl: "/dang-nhap" })}
+                    onClick={() => signOut({ callbackUrl: "/" })}
                     className="m3-icon-btn"
                     title="Đăng xuất"
                     aria-label="Đăng xuất"
