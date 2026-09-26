@@ -30,8 +30,8 @@ export function Catalog({ items, initialQuery, initialCategory, initialProduct }
 
   const farms = useMemo(() => Array.from(new Map(items.map((i) => [i.farm.id, i.farm])).values()).sort((a, b) => a.name.localeCompare(b.name, "vi")), [items]);
   const units = useMemo(() => Array.from(new Set(items.map((i) => i.unit))).sort(), [items]);
-  const activeFilters = [farmId, price, unit].filter(Boolean).length + (onlyStock ? 0 : 1);
-  const clearFilters = () => { setFarmId(""); setPrice(""); setUnit(""); setOnlyStock(true); };
+  const activeFilters = [farmId, price, unit, cat, product].filter(Boolean).length + (onlyStock ? 0 : 1);
+  const clearFilters = () => { setFarmId(""); setPrice(""); setUnit(""); setOnlyStock(true); setCat(""); setProduct(""); };
 
   // Product "aisles": distinct base names, e.g. Cà rốt, Cải xanh, Mồng tơi…
   const aisles = useMemo(() => {
