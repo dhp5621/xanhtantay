@@ -1851,12 +1851,10 @@ input[type="number"].tabular::-webkit-inner-spin-button { -webkit-appearance: no
   flex: 0 0 100%;
   scroll-snap-align: start;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
   padding: 0 2px;
 }
-@media (max-width: 767px) { .m3-pager-page { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-.m3-level-card { display: flex; flex-direction: column; padding: 14px 16px 16px; border-radius: var(--shape-xl); overflow: visible; min-width: 0; }
+.m3-level-card { display: flex; flex-direction: column; padding: 12px 12px 14px; border-radius: var(--shape-xl); overflow: visible; min-width: 0; }
 .m3-level-art { display: flex; justify-content: center; align-items: flex-end; height: 132px; margin-bottom: 6px; overflow: visible; }
 .m3-level-art svg { max-width: 100%; height: auto; }
 .m3-tree-bird { animation: m3-bird 6s ease-in-out infinite; }

@@ -5,15 +5,34 @@ import { Icon } from "@/components/ui/Icon";
 import { GrowingTree } from "./GrowingTree";
 import type { Level } from "@/lib/commerce";
 
-const PER_PAGE = 4;
+/** Cards per page by available width: 2 on small phones, 3 on large phones, 4 on tablets, 6 on desktop. */
+const perPageFor = (w: number) => (w < 480 ? 2 : w < 768 ? 3 : w < 1100 ? 4 : 6);
 
-/** Levels shown four at a time; swipe on phones, prev/next buttons everywhere. Cards are never cropped. */
+/** Levels shown a page at a time; swipe on phones, prev/next buttons everywhere. Cards are never cropped. */
 export function LevelPager({ levels, points, currentIndex }: { levels: Level[]; points: number; currentIndex: number }) {
+  const [perPage, setPerPage] = useState(4);
   const pages: Level[][] = [];
-  for (let i = 0; i < levels.length; i += PER_PAGE) pages.push(levels.slice(i, i + PER_PAGE));
-  const [page, setPage] = useState(Math.floor(currentIndex / PER_PAGE));
+  for (let i = 0; i < levels.length; i += perPage) pages.push(levels.slice(i, i + perPage));
+  const [page, setPage] = useState(Math.floor(currentIndex / 4));
   const trackRef = useRef<HTMLDivElement>(null);
   const programmatic = useRef(false);
+
+  // Re-layout on resize and keep the current level on screen.
+  useEffect(() => {
+    const t = trackRef.current;
+    if (!t) return;
+    const apply = () => {
+      const pp = perPageFor(t.clientWidth);
+      setPerPage(pp);
+      const target = Math.floor(currentIndex / pp);
+      setPage(target);
+      requestAnimationFrame(() => t.scrollTo({ left: target * t.clientWidth, behavior: "auto" }));
+    };
+    apply();
+    const ro = new ResizeObserver(apply);
+    ro.observe(t);
+    return () => ro.disconnect();
+  }, [currentIndex]);
 
   const go = (p: number) => {
     const next = Math.max(0, Math.min(pages.length - 1, p));
@@ -22,11 +41,10 @@ export function LevelPager({ levels, points, currentIndex }: { levels: Level[]; 
     if (t) { programmatic.current = true; t.scrollTo({ left: next * t.clientWidth, behavior: "smooth" }); setTimeout(() => { programmatic.current = false; }, 500); }
   };
 
-  // Start on the page holding the current level, and keep `page` in sync with swipes.
+  // Keep `page` in sync with swipes.
   useEffect(() => {
     const t = trackRef.current;
     if (!t) return;
-    t.scrollTo({ left: page * t.clientWidth, behavior: "auto" });
     const onScroll = () => { if (programmatic.current) return; setPage(Math.round(t.scrollLeft / t.clientWidth)); };
     t.addEventListener("scroll", onScroll, { passive: true });
     return () => t.removeEventListener("scroll", onScroll);
@@ -36,7 +54,7 @@ export function LevelPager({ levels, points, currentIndex }: { levels: Level[]; 
   return (
     <div className="m3-pager">
       <div className="m3-pager-head">
-        <p className="body-sm text-on-surface-variant">Hạng {page * PER_PAGE + 1}–{Math.min(levels.length, (page + 1) * PER_PAGE)} / {levels.length}</p>
+        <p className="body-sm text-on-surface-variant">Hạng {page * perPage + 1}–{Math.min(levels.length, (page + 1) * perPage)} / {levels.length}</p>
         <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
           <button className="m3-icon-btn tonal" onClick={() => go(page - 1)} disabled={page === 0} aria-label="Trang trước"><Icon name="chevron_left" /></button>
           <div className="m3-pager-dots" aria-hidden>
@@ -48,9 +66,9 @@ export function LevelPager({ levels, points, currentIndex }: { levels: Level[]; 
 
       <div ref={trackRef} className="m3-pager-track" aria-live="polite">
         {pages.map((pg, pi) => (
-          <div key={pi} className="m3-pager-page">
+          <div key={pi} className="m3-pager-page" style={{ gridTemplateColumns: `repeat(${perPage}, minmax(0, 1fr))` }}>
             {pg.map((lv, j) => {
-              const idx = pi * PER_PAGE + j;
+              const idx = pi * perPage + j;
               const reached = points >= lv.min;
               const current = idx === currentIndex;
               return (
