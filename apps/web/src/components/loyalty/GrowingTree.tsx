@@ -1,5 +1,5 @@
 /**
- * SVG tree/garden that grows with the customer's level (stage 0–12).
+ * SVG tree/garden that grows with the customer's level (stage 0–11).
  * The viewBox has headroom so the biggest canopy is never cropped.
  */
 const STAGES = [
@@ -13,9 +13,8 @@ const STAGES = [
   { trunk: 92, canopy: 58, fruits: 6, flowers: 0, side: 0, bird: true },
   { trunk: 92, canopy: 58, fruits: 6, flowers: 0, side: 1, bird: true },
   { trunk: 96, canopy: 60, fruits: 7, flowers: 3, side: 2, bird: true },
-  { trunk: 96, canopy: 60, fruits: 7, flowers: 3, side: 3, bird: true },
   { trunk: 100, canopy: 62, fruits: 8, flowers: 4, side: 4, bird: true },
-  { trunk: 100, canopy: 62, fruits: 8, flowers: 4, side: 5, bird: true },
+  { trunk: 102, canopy: 63, fruits: 8, flowers: 4, side: 5, bird: true },
   { trunk: 104, canopy: 64, fruits: 9, flowers: 5, side: 6, bird: true },
 ];
 const FRUIT_POS = [[-18, -10], [14, -22], [-4, 6], [22, 4], [-26, 12], [6, -34], [-30, -22], [28, -20], [0, 22]];
