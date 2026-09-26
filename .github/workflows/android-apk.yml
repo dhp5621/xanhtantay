@@ -32,6 +32,11 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      - name: Setup Gradle (caches Gradle Home + dependencies + build cache)
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-home-cache-cleanup: true
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
@@ -57,7 +62,7 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           chmod +x ./gradlew
-          ./gradlew assembleRelease --no-daemon
+          ./gradlew assembleRelease --no-daemon --build-cache
 
       - name: Rename APK
         run: cp apps/mobile/android/app/build/outputs/apk/release/app-release.apk xanhtantay.apk
