@@ -171,8 +171,6 @@ export function MediaLightbox({ items, index, onClose, onDelete, tag }: { items:
                 <button className="m3-icon-btn" onClick={reset} aria-label="Đặt lại"><Icon name="restart_alt" size={20} /></button>
               </div>
             )}
-            <a className="m3-btn m3-btn-filled" href={item.url} download={fileName} target="_blank" rel="noopener"><Icon name="download" /><span>Tải về</span></a>
-            <button className="m3-btn m3-btn-tonal" onClick={copyLink}><Icon name="content_copy" /><span>Sao chép link</span></button>
           </div>
         </div>
       </div>
