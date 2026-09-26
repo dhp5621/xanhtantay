@@ -3,127 +3,83 @@ import Link from "next/link";
 import { db } from "@/db";
 import { farms, farm_diary, group_orders } from "@/db/schema";
 import { desc, eq } from "drizzle-orm";
+import { Icon } from "@/components/ui/Icon";
+import { formatDate, daysUntil } from "@/lib/format";
 
 export default async function HomePage() {
   const [allFarms, diaryFeed, openGroups] = await Promise.all([
     db.select().from(farms).limit(6),
-    db.select().from(farm_diary).orderBy(desc(farm_diary.created_at)).limit(6),
-    db.select().from(group_orders).where(eq(group_orders.status, "open")).limit(3),
+    // Join the farm so the feed never falls back to "Vườn rau" when a farm is outside the first 6.
+    db.select({ entry: farm_diary, farm: { id: farms.id, name: farms.name, slug: farms.slug } })
+      .from(farm_diary).leftJoin(farms, eq(farm_diary.farm_id, farms.id))
+      .orderBy(desc(farm_diary.created_at)).limit(6),
+    db.select({ group: group_orders, farm: { name: farms.name } })
+      .from(group_orders).leftJoin(farms, eq(group_orders.farm_id, farms.id))
+      .where(eq(group_orders.status, "open")).limit(3),
   ]);
 
+  const features = [
+    { icon: "visibility", title: "Thấy tận gốc", text: "Nhật ký canh tác mỗi ngày từ chính bác nông dân." },
+    { icon: "local_shipping", title: "Tươi trong ngày", text: "Thu hoạch sáng, xe lạnh về phố, giao chiều." },
+    { icon: "groups", title: "Gom đơn freeship", text: "Rủ hàng xóm cùng mua, đủ nhóm là miễn ship." },
+  ];
+
   return (
-    <div className="flex flex-col gap-10">
+    <div className="flex flex-col gap-12">
       {/* Hero */}
-      <section
-        style={{
-          background: "linear-gradient(135deg, var(--md-primary-container) 0%, var(--md-secondary-container) 100%)",
-          borderRadius: "var(--radius-xl)",
-          padding: "40px 32px",
-        }}
-      >
-        <p
-          style={{
-            fontSize: 12,
-            fontWeight: 600,
-            letterSpacing: ".08em",
-            textTransform: "uppercase",
-            color: "var(--md-primary)",
-            marginBottom: 8,
-          }}
-        >
-          Nông sản tươi từ vườn
-        </p>
-        <h1
-          style={{
-            fontSize: "clamp(28px, 5vw, 44px)",
-            fontWeight: 800,
-            color: "var(--md-on-primary-container)",
-            lineHeight: 1.15,
-            maxWidth: 480,
-            marginBottom: 16,
-          }}
-        >
-          Biết rõ từng cây rau trước khi lên bàn ăn
-        </h1>
-        <p
-          style={{
-            fontSize: 16,
-            color: "var(--md-on-secondary-container)",
-            maxWidth: 440,
-            lineHeight: 1.6,
-            marginBottom: 28,
-          }}
-        >
-          Đặt hàng trực tiếp từ vườn nhà bác Ba, cô Tư, u Thắm — xem hàng ngày
-          nhật ký canh tác, biết rau thu hoạch lúc nào, giao đến tay bạn ra sao.
-        </p>
-        <div className="flex flex-wrap gap-3">
-          <Link href="/farms" className="m3-filled-button" style={{ textDecoration: "none" }}>
-            🌱 Khám phá vườn rau
-          </Link>
-          <Link href="/gom-don" className="m3-tonal-button" style={{ textDecoration: "none" }}>
-            👥 Gom đơn cùng hàng xóm
-          </Link>
+      <section className="m3-hero anim-in-scale">
+        <span className="m3-hero-blob" style={{ width: 320, height: 320, right: -80, top: -120 }} />
+        <span className="m3-hero-blob" style={{ width: 220, height: 220, right: 160, bottom: -120, animationDelay: "-5s" }} />
+        <div style={{ position: "relative", maxWidth: 560 }}>
+          <p className="m3-eyebrow anim-in" style={{ marginBottom: 12 }}>Nông sản tươi từ vườn</p>
+          <h1 className="display-md anim-in delay-1" style={{ color: "var(--md-on-primary-container)", marginBottom: 16 }}>
+            Biết rõ từng cây rau trước khi lên bàn ăn
+          </h1>
+          <p className="body-lg anim-in delay-2" style={{ color: "var(--md-on-secondary-container)", maxWidth: 460, marginBottom: 28 }}>
+            Đặt hàng trực tiếp từ vườn nhà bác Ba, cô Tư, u Thắm. Xem nhật ký canh tác hàng ngày, biết rau thu hoạch lúc nào và đến tay bạn ra sao.
+          </p>
+          <div className="flex flex-wrap gap-3 anim-in delay-3">
+            <Link href="/farms" className="m3-btn m3-btn-filled m3-btn-lg">
+              <Icon name="potted_plant" filled /><span>Khám phá vườn rau</span>
+            </Link>
+            <Link href="/gom-don" className="m3-btn m3-btn-elevated m3-btn-lg">
+              <Icon name="groups" /><span>Gom đơn cùng hàng xóm</span>
+            </Link>
+          </div>
         </div>
+      </section>
+
+      {/* Value props */}
+      <section className="grid grid-cols-1 sm:grid-cols-3 gap-3 stagger">
+        {features.map((f, i) => (
+          <div key={f.title} className="m3-card-filled lift" style={{ padding: "20px 22px", display: "flex", gap: 14, alignItems: "flex-start", background: i === 0 ? "var(--md-primary-container)" : i === 1 ? "var(--md-tertiary-container)" : "var(--md-secondary-container)", color: i === 0 ? "var(--md-on-primary-container)" : i === 1 ? "var(--md-on-tertiary-container)" : "var(--md-on-secondary-container)", borderRadius: "var(--shape-xl)" }}>
+            <Icon name={f.icon} size={28} filled />
+            <div>
+              <p className="title-md">{f.title}</p>
+              <p className="body-sm" style={{ opacity: 0.85 }}>{f.text}</p>
+            </div>
+          </div>
+        ))}
       </section>
 
       {/* Farms */}
       <section>
-        <div className="flex items-center justify-between mb-4">
-          <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--md-on-surface)" }}>
-            Vườn rau nổi bật
-          </h2>
-          <Link href="/farms" style={{ fontSize: 14, color: "var(--md-primary)", textDecoration: "none", fontWeight: 500 }}>
-            Xem tất cả →
-          </Link>
+        <div className="m3-section-head">
+          <h2 className="headline-sm text-on-surface"><Icon name="potted_plant" filled /> Vườn rau nổi bật</h2>
+          <Link href="/farms" className="m3-btn m3-btn-text m3-btn-sm"><span>Xem tất cả</span><Icon name="arrow_forward" size={18} /></Link>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 stagger">
           {allFarms.map((farm) => (
-            <Link key={farm.id} href={`/farms/${farm.slug}`} style={{ textDecoration: "none" }}>
-              <div className="m3-card-elevated" style={{ cursor: "pointer", transition: "transform .2s" }}>
-                <div
-                  style={{
-                    height: 160,
-                    background: farm.cover_url
-                      ? `url(${farm.cover_url}) center/cover`
-                      : "var(--md-primary-container)",
-                    display: "flex",
-                    alignItems: "flex-end",
-                    padding: "12px",
-                  }}
-                >
-                  <span
-                    style={{
-                      background: "rgba(0,0,0,.5)",
-                      backdropFilter: "blur(4px)",
-                      color: "#fff",
-                      borderRadius: "var(--radius-sm)",
-                      padding: "3px 8px",
-                      fontSize: 11,
-                      fontWeight: 500,
-                    }}
-                  >
-                    📍 {farm.location}
-                  </span>
-                </div>
-                <div style={{ padding: "14px 16px" }}>
-                  <p style={{ fontWeight: 700, fontSize: 15, color: "var(--md-on-surface)", marginBottom: 4 }}>
-                    {farm.name}
-                  </p>
-                  <p
-                    style={{
-                      fontSize: 13,
-                      color: "var(--md-on-surface-variant)",
-                      lineHeight: 1.5,
-                      display: "-webkit-box",
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: "vertical",
-                      overflow: "hidden",
-                    }}
-                  >
-                    {farm.description}
-                  </p>
-                </div>
+            <Link key={farm.id} href={`/farms/${farm.slug}`} className="m3-card-elevated m3-card-action" style={{ borderRadius: "var(--shape-xl)" }}>
+              <div className="m3-media-wrap" style={{ height: 170, position: "relative" }}>
+                <div className="m3-card-media" style={{ position: "absolute", inset: 0, backgroundImage: farm.cover_url ? `url(${farm.cover_url})` : undefined, backgroundColor: "var(--md-primary-container)" }} />
+                <span className="m3-chip sm round" style={{ position: "absolute", left: 12, bottom: 12, background: "rgba(0,0,0,.55)", color: "#fff", boxShadow: "none", backdropFilter: "blur(6px)" }}>
+                  <Icon name="location_on" size={16} filled /> {farm.location}
+                </span>
+              </div>
+              <div style={{ padding: "16px 18px 18px" }}>
+                <p className="title-md text-on-surface" style={{ marginBottom: 4 }}>{farm.name}</p>
+                <p className="body-sm text-on-surface-variant" style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{farm.description}</p>
               </div>
             </Link>
           ))}
@@ -132,128 +88,61 @@ export default async function HomePage() {
 
       {/* Diary feed */}
       <section>
-        <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--md-on-surface)", marginBottom: 16 }}>
-          Nhật ký từ vườn 📖
-        </h2>
-        <div className="flex flex-col gap-3">
-          {diaryFeed.map((entry) => {
-            const farm = allFarms.find((f) => f.id === entry.farm_id);
-            return (
-              <div
-                key={entry.id}
-                className="m3-card"
-                style={{ padding: "16px", display: "flex", gap: 14 }}
-              >
-                {entry.media_urls[0] && (
-                  <div
-                    style={{
-                      width: 80,
-                      height: 80,
-                      borderRadius: "var(--radius-md)",
-                      background: `url(${entry.media_urls[0]}) center/cover`,
-                      flexShrink: 0,
-                    }}
-                  />
-                )}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p
-                    style={{
-                      fontSize: 12,
-                      fontWeight: 600,
-                      color: "var(--md-primary)",
-                      marginBottom: 4,
-                    }}
-                  >
-                    {farm?.name ?? "Vườn rau"}
-                  </p>
-                  <p style={{ fontSize: 14, color: "var(--md-on-surface)", lineHeight: 1.55 }}>
-                    {entry.content}
-                  </p>
-                  <p style={{ fontSize: 11, color: "var(--md-on-surface-variant)", marginTop: 6 }}>
-                    {new Date(entry.created_at).toLocaleDateString("vi-VN", {
-                      day: "numeric",
-                      month: "long",
-                    })}
-                  </p>
+        <div className="m3-section-head">
+          <h2 className="headline-sm text-on-surface"><Icon name="auto_stories" filled /> Nhật ký từ vườn</h2>
+        </div>
+        <div className="m3-list-group stagger">
+          {diaryFeed.map(({ entry, farm }) => (
+            <Link key={entry.id} href={farm ? `/farms/${farm.slug}` : "/farms"} className="m3-list-item" style={{ alignItems: "flex-start", padding: 16 }}>
+              {entry.media_urls[0] ? (
+                <div className="m3-media-wrap" style={{ width: 84, height: 84, borderRadius: "var(--shape-md)", flexShrink: 0 }}>
+                  <div className="m3-card-media" style={{ width: "100%", height: "100%", backgroundImage: `url(${entry.media_urls[0]})` }} />
                 </div>
+              ) : (
+                <span className="m3-list-leading"><Icon name="eco" /></span>
+              )}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p className="label-md text-primary" style={{ marginBottom: 4 }}>{farm?.name ?? "Vườn rau"}</p>
+                <p className="body-md text-on-surface" style={{ fontWeight: 400 }}>{entry.content}</p>
+                <p className="body-sm text-on-surface-variant" style={{ marginTop: 6, display: "inline-flex", alignItems: "center", gap: 4 }}>
+                  <Icon name="schedule" size={14} /> {formatDate(entry.created_at)}
+                </p>
               </div>
-            );
-          })}
+              <span className="m3-list-trailing"><Icon name="chevron_right" /></span>
+            </Link>
+          ))}
         </div>
       </section>
 
       {/* Group buying */}
       {openGroups.length > 0 && (
         <section>
-          <div className="flex items-center justify-between mb-4">
-            <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--md-on-surface)" }}>
-              Gom đơn đang mở 👥
-            </h2>
-            <Link href="/gom-don" style={{ fontSize: 14, color: "var(--md-primary)", textDecoration: "none", fontWeight: 500 }}>
-              Xem tất cả →
-            </Link>
+          <div className="m3-section-head">
+            <h2 className="headline-sm text-on-surface"><Icon name="groups" filled /> Gom đơn đang mở</h2>
+            <Link href="/gom-don" className="m3-btn m3-btn-text m3-btn-sm"><span>Xem tất cả</span><Icon name="arrow_forward" size={18} /></Link>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {openGroups.map((group) => {
-              const farm = allFarms.find((f) => f.id === group.farm_id);
-              const pct = Math.round((group.current_members / group.min_members) * 100);
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 stagger">
+            {openGroups.map(({ group, farm }) => {
+              const pct = Math.min(100, Math.round((group.current_members / group.min_members) * 100));
               const freeship = group.current_members >= group.min_members;
+              const left = daysUntil(group.deadline);
               return (
-                <Link key={group.id} href={`/gom-don/${group.id}`} style={{ textDecoration: "none" }}>
-                  <div
-                    className="m3-card-elevated"
-                    style={{ padding: "18px", cursor: "pointer" }}
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <div>
-                        <p style={{ fontWeight: 700, fontSize: 15, color: "var(--md-on-surface)", marginBottom: 2 }}>
-                          {group.title}
-                        </p>
-                        <p style={{ fontSize: 12, color: "var(--md-on-surface-variant)" }}>
-                          {farm?.name}
-                        </p>
-                      </div>
-                      {freeship && (
-                        <span
-                          className="m3-chip m3-chip-primary"
-                          style={{ fontSize: 11, padding: "2px 8px" }}
-                        >
-                          🚚 Freeship
-                        </span>
-                      )}
+                <Link key={group.id} href={`/gom-don/${group.id}`} className="m3-card-elevated m3-card-action" style={{ padding: 20, borderRadius: "var(--shape-xl)" }}>
+                  <div className="flex items-start justify-between gap-2 mb-3">
+                    <div style={{ minWidth: 0 }}>
+                      <p className="title-md text-on-surface" style={{ marginBottom: 2 }}>{group.title}</p>
+                      <p className="body-sm text-on-surface-variant">{farm?.name}</p>
                     </div>
-
-                    <div style={{ marginBottom: 8 }}>
-                      <div
-                        style={{
-                          height: 6,
-                          background: "var(--md-surface-container-highest)",
-                          borderRadius: 3,
-                          overflow: "hidden",
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: `${Math.min(pct, 100)}%`,
-                            height: "100%",
-                            background: freeship ? "var(--md-primary)" : "var(--md-secondary)",
-                            borderRadius: 3,
-                            transition: "width .4s",
-                          }}
-                        />
-                      </div>
-                      <p style={{ fontSize: 12, color: "var(--md-on-surface-variant)", marginTop: 4 }}>
-                        {group.current_members}/{group.min_members} người tham gia
-                      </p>
-                    </div>
-
-                    <p style={{ fontSize: 11, color: "var(--md-on-surface-variant)" }}>
-                      📅 Hết hạn:{" "}
-                      {new Date(group.deadline).toLocaleDateString("vi-VN", {
-                        day: "numeric",
-                        month: "short",
-                      })}
-                    </p>
+                    {freeship && <span className="m3-chip m3-chip-primary sm round"><Icon name="local_shipping" size={16} filled /> Freeship</span>}
+                  </div>
+                  <div className={`m3-progress ${freeship ? "" : "m3-progress-wavy"}`}>
+                    <div className={`m3-progress-bar ${freeship ? "" : "secondary"}`} style={{ width: `${pct}%` }} />
+                  </div>
+                  <div className="flex justify-between mt-2">
+                    <span className="body-sm text-on-surface-variant">{group.current_members}/{group.min_members} người</span>
+                    <span className="body-sm" style={{ color: left <= 1 ? "var(--md-error)" : "var(--md-on-surface-variant)", fontWeight: 600 }}>
+                      {left > 0 ? `Còn ${left} ngày` : "Chốt hôm nay"}
+                    </span>
                   </div>
                 </Link>
               );

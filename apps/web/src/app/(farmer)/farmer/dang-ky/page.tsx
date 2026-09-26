@@ -1,85 +1,46 @@
 export const dynamic = "force-dynamic";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { subscriptions, farms, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { getSessionUser } from "@/lib/session";
+import { Icon } from "@/components/ui/Icon";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { formatDate } from "@/lib/format";
+
+export const metadata = { title: "Khách đăng ký" };
 
 export default async function FarmerDangKyPage() {
-  const session = await getServerSession(authOptions);
-  if (!session) redirect("/dang-nhap");
-
-  const userId = (session.user as { id: string }).id;
-  const [myFarm] = await db.select().from(farms).where(eq(farms.owner_id, userId));
-
+  const user = (await getSessionUser())!;
+  const [myFarm] = await db.select().from(farms).where(eq(farms.owner_id, user.id));
   const subs = myFarm
-    ? await db
-        .select({ sub: subscriptions, customer: users })
-        .from(subscriptions)
-        .leftJoin(users, eq(subscriptions.user_id, users.id))
-        .where(eq(subscriptions.farm_id, myFarm.id))
+    ? await db.select({ sub: subscriptions, customer: { name: users.name, phone: users.phone } }).from(subscriptions)
+        .leftJoin(users, eq(subscriptions.user_id, users.id)).where(eq(subscriptions.farm_id, myFarm.id))
     : [];
-
   const freqLabel = { weekly: "Mỗi tuần", monthly: "Mỗi tháng" };
 
   return (
     <div>
-      <h1 style={{ fontSize: 26, fontWeight: 800, color: "var(--md-on-surface)", marginBottom: 4 }}>
-        Khách đăng ký 🗓️
-      </h1>
-      <p style={{ fontSize: 14, color: "var(--md-on-surface-variant)", marginBottom: 24 }}>
-        Danh sách khách hàng đăng ký định kỳ từ vườn bạn
-      </p>
+      <PageHeader icon="event_repeat" eyebrow={`${subs.filter((s) => s.sub.active).length} gói đang chạy`} title="Khách đăng ký" subtitle="Khách hàng nhận rau định kỳ từ vườn bạn" />
 
       {subs.length === 0 ? (
-        <div
-          style={{
-            textAlign: "center",
-            padding: "60px",
-            background: "var(--md-surface-container)",
-            borderRadius: "var(--radius-xl)",
-          }}
-        >
-          <p style={{ fontSize: 36, marginBottom: 12 }}>📭</p>
-          <p style={{ fontWeight: 600, color: "var(--md-on-surface)" }}>
-            Chưa có khách đăng ký nào
-          </p>
-        </div>
+        <EmptyState icon="event_repeat" title="Chưa có khách đăng ký nào" description="Khi khách tạo gói tuần / tháng từ vườn bạn, họ sẽ hiện ở đây." />
       ) : (
-        <div className="flex flex-col gap-3">
+        <div className="m3-list-group stagger">
           {subs.map(({ sub, customer }) => (
-            <div key={sub.id} className="m3-card" style={{ padding: "16px 20px" }}>
-              <div className="flex items-center justify-between flex-wrap gap-3">
-                <div>
-                  <p style={{ fontWeight: 700, fontSize: 15, color: "var(--md-on-surface)", marginBottom: 4 }}>
-                    {customer?.name}
-                  </p>
-                  <div className="flex gap-2 flex-wrap">
-                    <span className="m3-chip m3-chip-primary">
-                      {freqLabel[sub.frequency]}
-                    </span>
-                    <span
-                      className="m3-chip"
-                      style={{
-                        background: sub.active ? "var(--md-secondary-container)" : "var(--md-error-container)",
-                        color: sub.active ? "var(--md-on-secondary-container)" : "var(--md-on-error-container)",
-                        border: "none",
-                      }}
-                    >
-                      {sub.active ? "Đang hoạt động" : "Đã dừng"}
-                    </span>
-                  </div>
-                </div>
-                <div style={{ textAlign: "right" }}>
-                  <p style={{ fontSize: 12, color: "var(--md-on-surface-variant)" }}>Giao tiếp theo</p>
-                  <p style={{ fontWeight: 700, color: "var(--md-primary)", fontSize: 14 }}>
-                    {new Date(sub.next_delivery).toLocaleDateString("vi-VN", {
-                      day: "numeric",
-                      month: "short",
-                    })}
-                  </p>
-                </div>
+            <div key={sub.id} className="m3-list-item" style={{ cursor: "default", flexWrap: "wrap", opacity: sub.active ? 1 : 0.7 }}>
+              <span className="m3-avatar">{customer?.name?.trim()?.[0]?.toUpperCase() ?? "?"}</span>
+              <div style={{ flex: 1, minWidth: 160 }}>
+                <p className="title-sm text-on-surface">{customer?.name}</p>
+                <p className="body-sm text-on-surface-variant">{customer?.phone ?? "—"} · {sub.items.length} món</p>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                <span className="m3-chip sm m3-chip-primary round"><Icon name={sub.frequency === "weekly" ? "date_range" : "calendar_month"} size={16} /> {freqLabel[sub.frequency]}</span>
+                <span className={`m3-chip sm round ${sub.active ? "m3-chip-secondary" : "m3-chip-error"}`}>{sub.active ? "Đang hoạt động" : "Đã dừng"}</span>
+              </div>
+              <div style={{ textAlign: "right", minWidth: 110 }}>
+                <p className="body-sm text-on-surface-variant">Giao tiếp theo</p>
+                <p className="title-sm text-primary">{formatDate(sub.next_delivery, { day: "numeric", month: "short" })}</p>
               </div>
             </div>
           ))}

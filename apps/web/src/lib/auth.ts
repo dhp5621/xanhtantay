@@ -4,6 +4,14 @@ import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
+/** Demo accounts advertised on the login page. Password for all: DEMO_PASSWORD (default demo123). */
+export const DEMO_ACCOUNTS = {
+  customer: { email: "lan@gmail.com", name: "Nguyễn Thị Lan" },
+  farmer: { email: "bacba@xanhtantay.vn", name: "Bác Ba Nguyễn" },
+} as const;
+
+export const DEMO_PASSWORD = process.env.DEMO_PASSWORD ?? "demo123";
+
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -11,28 +19,19 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Mật khẩu", type: "password" },
-        role: { label: "Vai trò", type: "text" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
+        const email = credentials?.email?.trim().toLowerCase();
+        if (!email || !credentials?.password) return null;
 
-        const [user] = await db
-          .select()
-          .from(users)
-          .where(eq(users.email, credentials.email));
-
+        const [user] = await db.select().from(users).where(eq(users.email, email));
         if (!user) return null;
 
-        // In production: use bcrypt.compare(credentials.password, user.password_hash)
-        const passwordOk = credentials.password === "demo123";
-        if (!passwordOk) return null;
+        // Demo auth: every seeded account shares DEMO_PASSWORD.
+        // Production should bcrypt.compare(credentials.password, user.password_hash).
+        if (credentials.password !== DEMO_PASSWORD) return null;
 
-        return {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-        };
+        return { id: user.id, name: user.name, email: user.email, role: user.role };
       },
     }),
   ],
@@ -52,10 +51,7 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
   },
-  pages: {
-    signIn: "/dang-nhap",
-  },
-  session: {
-    strategy: "jwt",
-  },
+  pages: { signIn: "/dang-nhap" },
+  session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60 },
+  secret: process.env.NEXTAUTH_SECRET,
 };

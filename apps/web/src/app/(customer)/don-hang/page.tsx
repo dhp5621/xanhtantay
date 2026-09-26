@@ -1,137 +1,103 @@
 export const dynamic = "force-dynamic";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { db } from "@/db";
 import { orders, farms, order_items, products } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { desc, eq, inArray } from "drizzle-orm";
 import { ORDER_STATUS_LABELS } from "@xanhtantay/types";
+import { getSessionUser } from "@/lib/session";
+import { Icon } from "@/components/ui/Icon";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { formatVND, formatDate, ORDER_TYPE_LABELS, STATUS_ICONS } from "@/lib/format";
+
+export const metadata = { title: "Đơn hàng của tôi" };
+const STEPS = ["harvesting", "loaded", "delivered"] as const;
+const STEP_LABELS = ["Thu hoạch", "Lên xe", "Đã giao"];
+// Labels in the shared types end with an emoji; icons replace them on web.
+const stripEmoji = (s: string) => s.replace(/\s*(?:[\uD83C-\uDBFF][\uDC00-\uDFFF]|[\u2600-\u27BF])\uFE0F?\s*$/, "").trim();
 
 export default async function DonHangPage() {
-  const session = await getServerSession(authOptions);
-  if (!session) redirect("/dang-nhap");
+  const user = await getSessionUser();
+  if (!user) redirect("/dang-nhap?next=/don-hang");
 
-  const userId = (session.user as { id: string }).id;
   const myOrders = await db
     .select({ order: orders, farm: farms })
     .from(orders)
     .leftJoin(farms, eq(orders.farm_id, farms.id))
-    .where(eq(orders.user_id, userId))
-    .orderBy(orders.created_at);
+    .where(eq(orders.user_id, user.id))
+    .orderBy(desc(orders.created_at)); // newest first (was ascending)
 
-  const statusColors: Record<string, string> = {
-    harvesting: "status-harvesting",
-    loaded: "status-loaded",
-    delivered: "status-delivered",
-  };
-
-  const typeLabels: Record<string, string> = {
-    single: "Đơn lẻ",
-    subscription: "Đăng ký",
-    group: "Gom đơn",
-  };
+  const items = myOrders.length
+    ? await db.select({ item: order_items, product: { name: products.name, unit: products.unit } })
+        .from(order_items).leftJoin(products, eq(order_items.product_id, products.id))
+        .where(inArray(order_items.order_id, myOrders.map((o) => o.order.id)))
+    : [];
+  const itemsByOrder = new Map<string, typeof items>();
+  for (const it of items) (itemsByOrder.get(it.item.order_id) ?? itemsByOrder.set(it.item.order_id, []).get(it.item.order_id)!).push(it);
 
   return (
     <div>
-      <h1 style={{ fontSize: 28, fontWeight: 800, color: "var(--md-on-surface)", marginBottom: 4 }}>
-        Đơn hàng của tôi 📦
-      </h1>
-      <p style={{ fontSize: 14, color: "var(--md-on-surface-variant)", marginBottom: 28 }}>
-        Theo dõi hành trình rau củ từ vườn đến nhà bạn
-      </p>
+      <PageHeader icon="package_2" eyebrow="Hành trình rau củ" title="Đơn hàng của tôi" subtitle="Theo dõi rau từ vườn đến nhà bạn" />
 
       {myOrders.length === 0 ? (
-        <div
-          style={{
-            textAlign: "center",
-            padding: "60px 20px",
-            background: "var(--md-surface-container)",
-            borderRadius: "var(--radius-xl)",
-          }}
-        >
-          <p style={{ fontSize: 40, marginBottom: 12 }}>🌱</p>
-          <p style={{ fontWeight: 600, color: "var(--md-on-surface)", marginBottom: 8 }}>
-            Chưa có đơn hàng nào
-          </p>
-          <p style={{ fontSize: 13, color: "var(--md-on-surface-variant)" }}>
-            Khám phá các vườn rau và đặt đơn đầu tiên nhé!
-          </p>
-        </div>
+        <EmptyState icon="grocery" title="Chưa có đơn hàng nào" description="Khám phá các vườn rau và đặt đơn đầu tiên nhé!" action={<Link href="/farms" className="m3-btn m3-btn-filled"><Icon name="potted_plant" /><span>Chọn vườn rau</span></Link>} />
       ) : (
-        <div className="flex flex-col gap-4">
-          {myOrders.map(({ order, farm }) => (
-            <div
-              key={order.id}
-              className="m3-card-elevated"
-              style={{ padding: "20px 24px" }}
-            >
-              <div className="flex items-start justify-between gap-4 flex-wrap">
-                <div>
-                  <p style={{ fontWeight: 700, fontSize: 16, color: "var(--md-on-surface)", marginBottom: 4 }}>
-                    {farm?.name ?? "Vườn rau"}
-                  </p>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="m3-chip">{typeLabels[order.type] ?? order.type}</span>
-                    <span
-                      className={`m3-chip ${statusColors[order.status]}`}
-                      style={{ border: "none", borderRadius: "var(--radius-full)", padding: "3px 10px" }}
-                    >
-                      {ORDER_STATUS_LABELS[order.status as keyof typeof ORDER_STATUS_LABELS]}
-                    </span>
+        <div className="flex flex-col gap-4 stagger">
+          {myOrders.map(({ order, farm }) => {
+            const currentIdx = STEPS.indexOf(order.status);
+            const lines = itemsByOrder.get(order.id) ?? [];
+            return (
+              <article key={order.id} className="m3-card-elevated" style={{ padding: "22px 24px", borderRadius: "var(--shape-xl)" }}>
+                <div className="flex items-start justify-between gap-4 flex-wrap">
+                  <div style={{ minWidth: 0 }}>
+                    <p className="title-lg text-on-surface" style={{ marginBottom: 6 }}>{farm?.name ?? "Vườn rau"}</p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="m3-chip sm m3-chip-surface round">{ORDER_TYPE_LABELS[order.type] ?? order.type}</span>
+                      <span className={`status-pill status-${order.status}`}>
+                        <Icon name={STATUS_ICONS[order.status]} size={16} filled />
+                        {stripEmoji(ORDER_STATUS_LABELS[order.status as keyof typeof ORDER_STATUS_LABELS])}
+                      </span>
+                    </div>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <p className="headline-sm text-primary tabular">{formatVND(order.total)}</p>
+                    <p className="body-sm text-on-surface-variant">{formatDate(order.created_at, { day: "numeric", month: "short", year: "numeric" })}</p>
                   </div>
                 </div>
-                <div style={{ textAlign: "right" }}>
-                  <p style={{ fontSize: 18, fontWeight: 800, color: "var(--md-primary)" }}>
-                    {order.total.toLocaleString("vi-VN")}₫
-                  </p>
-                  <p style={{ fontSize: 12, color: "var(--md-on-surface-variant)", marginTop: 2 }}>
-                    {new Date(order.created_at).toLocaleDateString("vi-VN", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    })}
-                  </p>
-                </div>
-              </div>
 
-              {/* Progress bar */}
-              <div style={{ marginTop: 16 }}>
-                <div className="flex justify-between mb-2">
-                  {["harvesting", "loaded", "delivered"].map((step, i) => {
-                    const steps = ["harvesting", "loaded", "delivered"];
-                    const currentIdx = steps.indexOf(order.status);
-                    const done = i <= currentIdx;
-                    const labels = ["Thu hoạch", "Lên xe", "Đã giao"];
+                {lines.length > 0 && (
+                  <p className="body-sm text-on-surface-variant" style={{ marginTop: 10 }}>
+                    {lines.map((l) => `${Number(l.item.quantity)} ${l.product?.unit ?? ""} ${l.product?.name ?? "sản phẩm"}`).join(" · ")}
+                  </p>
+                )}
+                {order.note && (
+                  <p className="body-sm text-on-surface-variant" style={{ marginTop: 4, display: "inline-flex", gap: 4, alignItems: "center" }}>
+                    <Icon name="sticky_note_2" size={16} /> {order.note}
+                  </p>
+                )}
+
+                {/* Stepper */}
+                <div className="flex items-center" style={{ marginTop: 20, padding: "0 8px" }}>
+                  {STEPS.map((step, i) => {
+                    const done = i < currentIdx;
+                    const current = i === currentIdx;
                     return (
-                      <div key={step} style={{ textAlign: "center", flex: 1 }}>
-                        <div
-                          style={{
-                            width: 28,
-                            height: 28,
-                            borderRadius: "50%",
-                            background: done ? "var(--md-primary)" : "var(--md-surface-container-highest)",
-                            color: done ? "var(--md-on-primary)" : "var(--md-on-surface-variant)",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            margin: "0 auto 4px",
-                            fontSize: 13,
-                            fontWeight: 700,
-                            transition: "background .3s",
-                          }}
-                        >
-                          {done ? "✓" : i + 1}
+                      <div key={step} style={{ display: "contents" }}>
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, minWidth: 72 }}>
+                          <span className={`m3-step-dot ${done ? "done" : ""} ${current ? "current" : ""}`}>
+                            {done ? <Icon name="check" size={20} bold /> : <Icon name={STATUS_ICONS[step]} size={20} filled={current} />}
+                          </span>
+                          <span className="label-sm" style={{ color: done || current ? "var(--md-primary)" : "var(--md-on-surface-variant)", letterSpacing: 0 }}>{STEP_LABELS[i]}</span>
                         </div>
-                        <p style={{ fontSize: 11, color: done ? "var(--md-primary)" : "var(--md-on-surface-variant)", fontWeight: done ? 600 : 400 }}>
-                          {labels[i]}
-                        </p>
+                        {i < STEPS.length - 1 && <div className={`m3-step-line ${i < currentIdx ? "done" : ""}`} style={{ marginBottom: 22 }} />}
                       </div>
                     );
                   })}
                 </div>
-              </div>
-            </div>
-          ))}
+              </article>
+            );
+          })}
         </div>
       )}
     </div>

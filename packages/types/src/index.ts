@@ -17,6 +17,7 @@ export interface Farm {
   location: string;
   description: string | null;
   cover_url: string | null;
+  slug: string;
   created_at: Date;
 }
 
@@ -49,6 +50,7 @@ export interface Order {
   status: OrderStatus;
   type: OrderType;
   total: number;
+  note: string | null;
   created_at: Date;
 }
 

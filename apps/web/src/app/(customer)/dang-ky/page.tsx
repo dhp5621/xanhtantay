@@ -1,115 +1,83 @@
 export const dynamic = "force-dynamic";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { db } from "@/db";
-import { subscriptions, farms } from "@/db/schema";
-import { eq } from "drizzle-orm";
 import Link from "next/link";
+import { db } from "@/db";
+import { subscriptions, farms, products } from "@/db/schema";
+import { eq, inArray } from "drizzle-orm";
+import { getSessionUser } from "@/lib/session";
+import { Icon } from "@/components/ui/Icon";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { SubscriptionActions } from "@/components/subscription/SubscriptionActions";
+import { formatDate, formatVND } from "@/lib/format";
+
+export const metadata = { title: "Gói đăng ký" };
 
 export default async function DangKyPage() {
-  const session = await getServerSession(authOptions);
-  if (!session) redirect("/dang-nhap");
+  const user = await getSessionUser();
+  if (!user) redirect("/dang-nhap?next=/dang-ky");
 
-  const userId = (session.user as { id: string }).id;
-  const mySubs = await db
-    .select({ sub: subscriptions, farm: farms })
-    .from(subscriptions)
-    .leftJoin(farms, eq(subscriptions.farm_id, farms.id))
-    .where(eq(subscriptions.user_id, userId));
+  const mySubs = await db.select({ sub: subscriptions, farm: farms }).from(subscriptions)
+    .leftJoin(farms, eq(subscriptions.farm_id, farms.id)).where(eq(subscriptions.user_id, user.id));
+
+  // Resolve product names/prices (the page used to print raw product ids).
+  const productIds = Array.from(new Set(mySubs.flatMap(({ sub }) => sub.items.map((i) => i.product_id))));
+  const prods = productIds.length ? await db.select().from(products).where(inArray(products.id, productIds)) : [];
+  const byId = new Map(prods.map((p) => [p.id, p]));
 
   const freqLabel = { weekly: "Mỗi tuần", monthly: "Mỗi tháng" };
 
   return (
     <div>
-      <h1 style={{ fontSize: 28, fontWeight: 800, color: "var(--md-on-surface)", marginBottom: 4 }}>
-        Gói đăng ký 🗓️
-      </h1>
-      <p style={{ fontSize: 14, color: "var(--md-on-surface-variant)", marginBottom: 28 }}>
-        Rau củ tự động giao định kỳ, không cần đặt hàng lại
-      </p>
+      <PageHeader icon="event_repeat" eyebrow="Tự động, đúng hẹn" title="Gói đăng ký" subtitle="Rau củ giao định kỳ, không cần đặt lại" />
 
       {mySubs.length === 0 ? (
-        <div
-          style={{
-            background: "var(--md-surface-container)",
-            borderRadius: "var(--radius-xl)",
-            padding: "48px 24px",
-            textAlign: "center",
-          }}
-        >
-          <p style={{ fontSize: 36, marginBottom: 12 }}>📦</p>
-          <p style={{ fontWeight: 600, color: "var(--md-on-surface)", marginBottom: 8 }}>
-            Chưa có gói đăng ký nào
-          </p>
-          <p style={{ fontSize: 13, color: "var(--md-on-surface-variant)", marginBottom: 20 }}>
-            Đăng ký gói tuần/tháng từ vườn yêu thích để tiết kiệm thời gian và được ưu đãi giá tốt hơn.
-          </p>
-          <Link href="/farms" className="m3-filled-button" style={{ textDecoration: "none" }}>
-            Chọn vườn rau
-          </Link>
-        </div>
+        <EmptyState icon="event_repeat" title="Chưa có gói đăng ký nào" description="Thêm món vào giỏ ở trang vườn, rồi bấm “Giao định kỳ” để tạo gói tuần / tháng." action={<Link href="/farms" className="m3-btn m3-btn-filled"><Icon name="potted_plant" /><span>Chọn vườn rau</span></Link>} />
       ) : (
-        <div className="flex flex-col gap-4">
-          {mySubs.map(({ sub, farm }) => (
-            <div key={sub.id} className="m3-card-elevated" style={{ padding: "20px 24px" }}>
-              <div className="flex items-start justify-between flex-wrap gap-4">
-                <div>
-                  <p style={{ fontWeight: 700, fontSize: 16, color: "var(--md-on-surface)", marginBottom: 4 }}>
-                    {farm?.name}
-                  </p>
-                  <div className="flex gap-2 flex-wrap">
-                    <span className="m3-chip m3-chip-primary">
-                      {freqLabel[sub.frequency]}
-                    </span>
-                    <span className={`m3-chip ${sub.active ? "" : ""}`}
-                      style={{
-                        background: sub.active ? "var(--md-secondary-container)" : "var(--md-error-container)",
-                        color: sub.active ? "var(--md-on-secondary-container)" : "var(--md-on-error-container)",
-                        border: "none",
-                      }}
-                    >
-                      {sub.active ? "Đang hoạt động" : "Đã dừng"}
-                    </span>
+        <div className="flex flex-col gap-4 stagger">
+          {mySubs.map(({ sub, farm }) => {
+            const est = sub.items.reduce((s, i) => s + (byId.get(i.product_id)?.price_per_unit ?? 0) * i.quantity, 0);
+            return (
+              <article key={sub.id} className="m3-card-elevated" style={{ padding: "22px 24px", borderRadius: "var(--shape-xl)", opacity: sub.active ? 1 : 0.75 }}>
+                <div className="flex items-start justify-between flex-wrap gap-4">
+                  <div>
+                    <p className="title-lg text-on-surface" style={{ marginBottom: 6 }}>{farm?.name}</p>
+                    <div className="flex gap-2 flex-wrap">
+                      <span className="m3-chip sm m3-chip-primary round"><Icon name={sub.frequency === "weekly" ? "date_range" : "calendar_month"} size={16} /> {freqLabel[sub.frequency]}</span>
+                      <span className={`m3-chip sm round ${sub.active ? "m3-chip-secondary" : "m3-chip-error"}`}>
+                        <Icon name={sub.active ? "check_circle" : "pause_circle"} size={16} filled /> {sub.active ? "Đang hoạt động" : "Đã tạm dừng"}
+                      </span>
+                    </div>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <p className="body-sm text-on-surface-variant">Giao tiếp theo</p>
+                    <p className="title-md text-primary">{formatDate(sub.next_delivery, { weekday: "long", day: "numeric", month: "long" })}</p>
                   </div>
                 </div>
-                <div style={{ textAlign: "right" }}>
-                  <p style={{ fontSize: 12, color: "var(--md-on-surface-variant)" }}>Giao tiếp theo</p>
-                  <p style={{ fontWeight: 700, color: "var(--md-primary)", fontSize: 15 }}>
-                    {new Date(sub.next_delivery).toLocaleDateString("vi-VN", {
-                      weekday: "long",
-                      day: "numeric",
-                      month: "long",
-                    })}
-                  </p>
-                </div>
-              </div>
 
-              {(sub.items as { product_id: string; quantity: number }[]).length > 0 && (
-                <div style={{ marginTop: 12, padding: "12px", background: "var(--md-surface-container)", borderRadius: "var(--radius-md)" }}>
-                  <p style={{ fontSize: 12, color: "var(--md-on-surface-variant)", marginBottom: 8, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".04em" }}>
-                    Giỏ hàng định kỳ
-                  </p>
-                  {(sub.items as { product_id: string; quantity: number }[]).map((item, i) => (
-                    <p key={i} style={{ fontSize: 13, color: "var(--md-on-surface)" }}>
-                      • {item.quantity} × {item.product_id}
-                    </p>
-                  ))}
-                </div>
-              )}
-
-              <div className="flex gap-2 mt-3">
-                <button className="m3-outlined-button" style={{ fontSize: 13, padding: "6px 14px" }}>
-                  ✏️ Đổi món
-                </button>
-                {sub.active && (
-                  <button className="m3-outlined-button" style={{ fontSize: 13, padding: "6px 14px", color: "var(--md-error)", borderColor: "var(--md-error)" }}>
-                    Tạm dừng
-                  </button>
+                {sub.items.length > 0 && (
+                  <div className="m3-card-filled" style={{ marginTop: 14, padding: "12px 16px", borderRadius: "var(--shape-md)" }}>
+                    <p className="label-md text-on-surface-variant" style={{ marginBottom: 6, textTransform: "uppercase" }}>Giỏ hàng định kỳ · ~{formatVND(est)}</p>
+                    <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+                      {sub.items.map((item, i) => {
+                        const p = byId.get(item.product_id);
+                        return (
+                          <li key={i} className="body-md text-on-surface" style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                            <span>{item.quantity} {p?.unit ?? "×"} {p?.name ?? "Sản phẩm không còn"}</span>
+                            {p && <span className="tabular text-on-surface-variant">{formatVND(p.price_per_unit * item.quantity)}</span>}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
                 )}
-              </div>
-            </div>
-          ))}
+
+                <div style={{ marginTop: 14 }}>
+                  <SubscriptionActions id={sub.id} active={sub.active} farmSlug={farm?.slug} />
+                </div>
+              </article>
+            );
+          })}
         </div>
       )}
     </div>

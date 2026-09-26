@@ -1,51 +1,39 @@
 export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { db } from "@/db";
-import { farms } from "@/db/schema";
+import { farms, products } from "@/db/schema";
+import { count, eq } from "drizzle-orm";
+import { Icon } from "@/components/ui/Icon";
+import { PageHeader } from "@/components/ui/PageHeader";
+
+export const metadata = { title: "Vườn rau" };
 
 export default async function FarmsPage() {
-  const allFarms = await db.select().from(farms);
+  const rows = await db
+    .select({ farm: farms, productCount: count(products.id) })
+    .from(farms)
+    .leftJoin(products, eq(products.farm_id, farms.id))
+    .groupBy(farms.id);
 
   return (
     <div>
-      <h1 style={{ fontSize: 28, fontWeight: 800, color: "var(--md-on-surface)", marginBottom: 4 }}>
-        Vườn rau 🌿
-      </h1>
-      <p style={{ fontSize: 15, color: "var(--md-on-surface-variant)", marginBottom: 28 }}>
-        Đặt hàng trực tiếp từ những người nông dân thực sự
-      </p>
+      <PageHeader icon="potted_plant" eyebrow="Từ vườn đến bàn ăn" title="Vườn rau" subtitle="Đặt hàng trực tiếp từ những người nông dân thực sự" />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {allFarms.map((farm) => (
-          <Link key={farm.id} href={`/farms/${farm.slug}`} style={{ textDecoration: "none" }}>
-            <div
-              className="m3-card-elevated"
-              style={{ cursor: "pointer", height: "100%", display: "flex", flexDirection: "column" }}
-            >
-              <div
-                style={{
-                  height: 180,
-                  background: farm.cover_url
-                    ? `url(${farm.cover_url}) center/cover`
-                    : "var(--md-primary-container)",
-                }}
-              />
-              <div style={{ padding: "16px", flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
-                <h2 style={{ fontWeight: 700, fontSize: 16, color: "var(--md-on-surface)" }}>
-                  {farm.name}
-                </h2>
-                <p style={{ fontSize: 13, color: "var(--md-primary)", fontWeight: 500 }}>
-                  📍 {farm.location}
-                </p>
-                <p style={{ fontSize: 13, color: "var(--md-on-surface-variant)", lineHeight: 1.55, flex: 1 }}>
-                  {farm.description}
-                </p>
-                <span
-                  className="m3-tonal-button"
-                  style={{ alignSelf: "flex-start", padding: "6px 16px", fontSize: 13 }}
-                >
-                  Xem vườn →
-                </span>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 stagger">
+        {rows.map(({ farm, productCount }) => (
+          <Link key={farm.id} href={`/farms/${farm.slug}`} className="m3-card-elevated m3-card-action" style={{ height: "100%", display: "flex", flexDirection: "column", borderRadius: "var(--shape-xl)" }}>
+            <div className="m3-media-wrap" style={{ height: 190, position: "relative" }}>
+              <div className="m3-card-media" style={{ position: "absolute", inset: 0, backgroundImage: farm.cover_url ? `url(${farm.cover_url})` : undefined, backgroundColor: "var(--md-primary-container)" }} />
+            </div>
+            <div style={{ padding: 18, flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
+              <h2 className="title-lg text-on-surface">{farm.name}</h2>
+              <p className="body-sm text-primary" style={{ display: "inline-flex", alignItems: "center", gap: 4, fontWeight: 600 }}>
+                <Icon name="location_on" size={16} filled /> {farm.location}
+              </p>
+              <p className="body-sm text-on-surface-variant" style={{ flex: 1, lineHeight: 1.55 }}>{farm.description}</p>
+              <div className="flex items-center justify-between" style={{ marginTop: 4 }}>
+                <span className="m3-chip sm m3-chip-surface"><Icon name="eco" size={16} /> {productCount} sản phẩm</span>
+                <span className="m3-btn m3-btn-tonal m3-btn-sm"><span>Xem vườn</span><Icon name="arrow_forward" size={18} /></span>
               </div>
             </div>
           </Link>

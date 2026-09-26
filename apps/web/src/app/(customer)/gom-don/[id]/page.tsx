@@ -1,170 +1,115 @@
 export const dynamic = "force-dynamic";
 import { notFound } from "next/navigation";
+import Link from "next/link";
+import { headers } from "next/headers";
 import { db } from "@/db";
 import { group_orders, farms, group_order_members, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { Icon } from "@/components/ui/Icon";
+import { CopyButton } from "@/components/ui/CopyButton";
+import { JoinGroupButton } from "@/components/group/JoinGroupButton";
+import { getSessionUser } from "@/lib/session";
+import { formatDate, daysUntil } from "@/lib/format";
 
 export default async function GomDonDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const [group] = await db.select().from(group_orders).where(eq(group_orders.id, id));
   if (!group) notFound();
 
-  const [farm] = await db.select().from(farms).where(eq(farms.id, group.farm_id));
-  const members = await db
-    .select({ member: group_order_members, user: users })
-    .from(group_order_members)
-    .leftJoin(users, eq(group_order_members.user_id, users.id))
-    .where(eq(group_order_members.group_order_id, group.id));
+  const [[farm], members, user, h] = await Promise.all([
+    db.select().from(farms).where(eq(farms.id, group.farm_id)),
+    db.select({ member: group_order_members, user: { id: users.id, name: users.name } })
+      .from(group_order_members).leftJoin(users, eq(group_order_members.user_id, users.id))
+      .where(eq(group_order_members.group_order_id, group.id)),
+    getSessionUser(),
+    headers(),
+  ]);
 
-  const pct = Math.round((group.current_members / group.min_members) * 100);
+  const pct = Math.min(100, Math.round((group.current_members / group.min_members) * 100));
   const freeship = group.current_members >= group.min_members;
-  const daysLeft = Math.ceil(
-    (new Date(group.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-  );
-  const inviteUrl = `${process.env.NEXTAUTH_URL ?? "https://xanhtantay.vn"}/gom-don/${group.id}`;
+  const left = daysUntil(group.deadline);
+  const joined = !!user && members.some((m) => m.member.user_id === user.id);
+
+  // Build the invite link from the real request host instead of a hard-coded domain.
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "xanhtantay.vn";
+  const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
+  const inviteUrl = `${proto}://${host}/gom-don/${group.id}`;
 
   return (
     <div className="flex flex-col gap-6 max-w-2xl mx-auto">
-      <div>
-        <h1 style={{ fontSize: 26, fontWeight: 800, color: "var(--md-on-surface)", marginBottom: 4 }}>
-          {group.title}
-        </h1>
-        <p style={{ fontSize: 14, color: "var(--md-primary)", fontWeight: 500 }}>
-          {farm?.name} • {farm?.location}
+      <Link href="/gom-don" className="m3-btn m3-btn-text m3-btn-sm anim-in" style={{ alignSelf: "flex-start", marginLeft: -12 }}>
+        <Icon name="arrow_back" size={18} /><span>Tất cả nhóm</span>
+      </Link>
+
+      <div className="anim-in">
+        <h1 className="headline-md text-on-surface" style={{ marginBottom: 4 }}>{group.title}</h1>
+        <p className="body-md text-primary" style={{ fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6 }}>
+          <Icon name="potted_plant" size={18} filled /> {farm?.name} · {farm?.location}
         </p>
       </div>
 
       {/* Status card */}
-      <div
-        style={{
-          background: freeship ? "var(--md-primary-container)" : "var(--md-surface-container)",
-          borderRadius: "var(--radius-xl)",
-          padding: "24px",
-        }}
-      >
-        <div className="flex items-center gap-3 mb-4">
-          <span style={{ fontSize: 28 }}>{freeship ? "🎉" : "👥"}</span>
+      <div className="anim-in-scale delay-1" style={{ background: freeship ? "var(--md-primary-container)" : "var(--md-surface-container)", color: freeship ? "var(--md-on-primary-container)" : "var(--md-on-surface)", borderRadius: "var(--shape-xl-inc)", padding: 28 }}>
+        <div className="flex items-center gap-4 mb-5">
+          <span className="m3-list-leading" style={{ width: 60, height: 60, borderRadius: "var(--shape-lg)", background: freeship ? "var(--md-primary)" : "var(--md-secondary-container)", color: freeship ? "var(--md-on-primary)" : "var(--md-on-secondary-container)" }}>
+            <Icon name={freeship ? "celebration" : "group_add"} size={32} filled />
+          </span>
           <div>
-            <p style={{ fontWeight: 700, fontSize: 16, color: freeship ? "var(--md-on-primary-container)" : "var(--md-on-surface)" }}>
-              {freeship ? "Đủ điều kiện FREESHIP!" : `Cần thêm ${group.min_members - group.current_members} người nữa`}
-            </p>
-            <p style={{ fontSize: 13, color: freeship ? "var(--md-on-primary-container)" : "var(--md-on-surface-variant)" }}>
-              {group.current_members}/{group.min_members} người tham gia
-            </p>
+            <p className="title-lg">{freeship ? "Đủ điều kiện freeship!" : `Cần thêm ${group.min_members - group.current_members} người nữa`}</p>
+            <p className="body-md" style={{ opacity: 0.8 }}>{group.current_members}/{group.min_members} người tham gia</p>
           </div>
         </div>
-
-        <div
-          style={{
-            height: 10,
-            background: "rgba(0,0,0,.1)",
-            borderRadius: 5,
-            overflow: "hidden",
-            marginBottom: 8,
-          }}
-        >
-          <div
-            style={{
-              width: `${Math.min(pct, 100)}%`,
-              height: "100%",
-              background: freeship ? "var(--md-primary)" : "var(--md-secondary)",
-              borderRadius: 5,
-              transition: "width .5s",
-            }}
-          />
+        <div className={`m3-progress thick ${freeship ? "" : "m3-progress-wavy"}`} style={{ background: "rgba(0,0,0,.08)" }}>
+          <div className={`m3-progress-bar ${freeship ? "" : "secondary"}`} style={{ width: `${pct}%` }} />
         </div>
-        <p style={{ fontSize: 12, color: freeship ? "var(--md-on-primary-container)" : "var(--md-on-surface-variant)" }}>
-          📅 Hạn chốt đơn:{" "}
-          {new Date(group.deadline).toLocaleDateString("vi-VN", {
-            weekday: "long",
-            day: "numeric",
-            month: "long",
-          })}
-          {daysLeft > 0 ? ` (còn ${daysLeft} ngày)` : " (hôm nay)"}
-        </p>
+        <div className="flex flex-wrap gap-x-5 gap-y-1 mt-3">
+          <p className="body-sm" style={{ opacity: 0.85, display: "inline-flex", alignItems: "center", gap: 4 }}>
+            <Icon name="event" size={16} /> Chốt {formatDate(group.deadline, { weekday: "long", day: "numeric", month: "long" })}{left > 0 ? ` (còn ${left} ngày)` : " (hôm nay)"}
+          </p>
+          <p className="body-sm" style={{ opacity: 0.85, display: "inline-flex", alignItems: "center", gap: 4 }}>
+            <Icon name="location_on" size={16} /> {group.shipping_address}
+          </p>
+        </div>
       </div>
 
-      {/* Invite link */}
-      <div
-        style={{
-          background: "var(--md-surface-container)",
-          borderRadius: "var(--radius-lg)",
-          padding: "16px",
-        }}
-      >
-        <p style={{ fontSize: 13, fontWeight: 600, color: "var(--md-on-surface-variant)", marginBottom: 8, textTransform: "uppercase", letterSpacing: ".04em" }}>
-          Mời bạn bè tham gia
+      {/* Invite */}
+      <div className="m3-card-filled anim-in delay-2" style={{ padding: 18, borderRadius: "var(--shape-xl)" }}>
+        <p className="label-md text-on-surface-variant" style={{ marginBottom: 10, textTransform: "uppercase", display: "inline-flex", alignItems: "center", gap: 6 }}>
+          <Icon name="share" size={18} /> Mời bạn bè tham gia
         </p>
-        <div className="flex gap-2">
-          <code
-            style={{
-              flex: 1,
-              background: "var(--md-surface-container-highest)",
-              borderRadius: "var(--radius-sm)",
-              padding: "8px 12px",
-              fontSize: 13,
-              color: "var(--md-on-surface)",
-              fontFamily: "monospace",
-              wordBreak: "break-all",
-            }}
-          >
+        <div className="flex gap-2 flex-wrap">
+          <code style={{ flex: 1, minWidth: 200, background: "var(--md-surface-container-lowest)", borderRadius: "var(--shape-md)", padding: "10px 14px", fontSize: 13, color: "var(--md-on-surface)", wordBreak: "break-all", display: "flex", alignItems: "center" }}>
             {inviteUrl}
           </code>
-          <button className="m3-tonal-button" style={{ padding: "8px 16px", fontSize: 13, whiteSpace: "nowrap" }}>
-            Sao chép
-          </button>
+          <CopyButton text={inviteUrl} />
         </div>
       </div>
 
       {/* Members */}
-      {members.length > 0 && (
-        <div>
-          <h2 style={{ fontSize: 17, fontWeight: 700, color: "var(--md-on-surface)", marginBottom: 12 }}>
-            Thành viên ({members.length})
-          </h2>
-          <div className="flex flex-col gap-2">
-            {members.map(({ member, user }) => (
-              <div
-                key={member.id}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 12,
-                  padding: "10px 14px",
-                  background: "var(--md-surface-container-low)",
-                  borderRadius: "var(--radius-md)",
-                }}
-              >
-                <div
-                  style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: "50%",
-                    background: "var(--md-primary-container)",
-                    color: "var(--md-on-primary-container)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontWeight: 700,
-                    fontSize: 13,
-                  }}
-                >
-                  {user?.name?.[0]?.toUpperCase() ?? "?"}
-                </div>
-                <p style={{ fontSize: 14, fontWeight: 500, color: "var(--md-on-surface)" }}>
-                  {user?.name ?? "Thành viên ẩn danh"}
-                </p>
+      <div className="anim-in delay-3">
+        <h2 className="title-lg text-on-surface" style={{ marginBottom: 12, display: "inline-flex", alignItems: "center", gap: 8 }}>
+          <Icon name="group" filled /> Thành viên ({members.length})
+        </h2>
+        {members.length === 0 ? (
+          <p className="body-md text-on-surface-variant">Chưa có ai. Hãy là người đầu tiên!</p>
+        ) : (
+          <div className="m3-list-group stagger">
+            {members.map(({ member, user: m }) => (
+              <div key={member.id} className="m3-list-item" style={{ cursor: "default" }}>
+                <span className="m3-avatar sm" style={{ background: user && m?.id === user.id ? "var(--md-primary)" : undefined, color: user && m?.id === user.id ? "var(--md-on-primary)" : undefined }}>
+                  {m?.name?.trim()?.[0]?.toUpperCase() ?? "?"}
+                </span>
+                <p className="body-md">{m?.name ?? "Thành viên ẩn danh"}{user && m?.id === user.id ? " (bạn)" : ""}</p>
               </div>
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
-      {/* Join button */}
-      {group.status === "open" && (
-        <button className="m3-filled-button" style={{ alignSelf: "center", padding: "12px 32px", fontSize: 15 }}>
-          Tham gia nhóm này
-        </button>
+      {group.status === "open" && left >= 0 && (
+        <div className="anim-in delay-4" style={{ display: "flex", justifyContent: "center", paddingTop: 8 }}>
+          <JoinGroupButton groupId={group.id} joined={joined} />
+        </div>
       )}
     </div>
   );

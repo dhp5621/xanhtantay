@@ -1,147 +1,188 @@
 "use client";
 
 import Link from "next/link";
-import { useSession, signOut } from "next-auth/react";
-import { useTheme } from "./ThemeProvider";
 import { usePathname } from "next/navigation";
+import { useSession, signOut } from "next-auth/react";
+import { memo, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useTheme } from "./ThemeProvider";
+import { Icon } from "@/components/ui/Icon";
+import { CUSTOMER_NAV, FARMER_NAV, isActive } from "./nav-config";
+import { useCart } from "@/components/cart/CartProvider";
 
-export function Header() {
-  const { data: session } = useSession();
-  const { theme, setTheme, resolvedTheme } = useTheme();
-  const pathname = usePathname();
+const HIDDEN_ON = ["/dang-nhap"];
 
-  const isFarmer = (session?.user as { role?: string })?.role === "farmer";
+/** Animated pill that slides under the active nav tab. */
+function NavTabs({ items, pathname }: { items: typeof CUSTOMER_NAV; pathname: string }) {
+  const listRef = useRef<HTMLDivElement>(null);
+  const [indicator, setIndicator] = useState<{ x: number; w: number; ready: boolean }>({ x: 0, w: 0, ready: false });
+  const activeIndex = items.findIndex((i) => isActive(pathname, i));
 
-  const navLinks = isFarmer
-    ? [
-        { href: "/farmer", label: "Tổng quan" },
-        { href: "/farmer/don-hang", label: "Đơn hàng" },
-        { href: "/farmer/san-pham", label: "Sản phẩm" },
-        { href: "/farmer/nhat-ky", label: "Nhật ký" },
-      ]
-    : [
-        { href: "/", label: "Trang chủ" },
-        { href: "/farms", label: "Vườn rau" },
-        { href: "/gom-don", label: "Gom đơn" },
-        { href: "/cong-thuc", label: "Công thức" },
-      ];
+  useLayoutEffect(() => {
+    const list = listRef.current;
+    if (!list) return;
+    const measure = () => {
+      const el = list.querySelector<HTMLElement>(`[data-nav-index="${activeIndex}"]`);
+      if (!el) { setIndicator((s) => ({ ...s, ready: false })); return; }
+      setIndicator({ x: el.offsetLeft, w: el.offsetWidth, ready: true });
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(list);
+    // Fonts swapping in changes tab widths; re-measure when they load.
+    document.fonts?.ready.then(measure).catch(() => {});
+    return () => ro.disconnect();
+  }, [activeIndex, items]);
 
   return (
-    <header
-      style={{
-        background: "var(--md-surface-container)",
-        borderBottom: "1px solid var(--md-outline-variant)",
-        position: "sticky",
-        top: 0,
-        zIndex: 50,
-      }}
-    >
-      <div className="max-w-6xl mx-auto px-4 flex items-center gap-4 h-14">
-        {/* Logo */}
-        <Link
-          href={isFarmer ? "/farmer" : "/"}
-          className="flex items-center gap-2 mr-4"
-          style={{ textDecoration: "none" }}
-        >
-          <span style={{ fontSize: 20 }}>🌿</span>
-          <span
-            style={{
-              fontWeight: 700,
-              fontSize: 16,
-              color: "var(--md-primary)",
-              letterSpacing: "-0.01em",
-            }}
+    <nav ref={listRef} className="m3-nav-tabs" aria-label="Điều hướng chính">
+      <span
+        className={`m3-nav-indicator ${indicator.ready ? "ready" : ""}`}
+        style={{ transform: `translateX(${indicator.x}px)`, width: indicator.w }}
+        aria-hidden
+      />
+      {items.map((item, i) => {
+        const active = i === activeIndex;
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            data-nav-index={i}
+            className={`m3-nav-tab ${active ? "active" : ""}`}
+            aria-current={active ? "page" : undefined}
+            prefetch
           >
-            Xanh Tận Tay
-          </span>
-        </Link>
-
-        {/* Nav links */}
-        <nav className="hidden md:flex items-center gap-1 flex-1">
-          {navLinks.map((link) => {
-            const active = pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href));
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                style={{
-                  padding: "6px 14px",
-                  borderRadius: "var(--radius-full)",
-                  fontSize: 14,
-                  fontWeight: active ? 600 : 400,
-                  color: active ? "var(--md-primary)" : "var(--md-on-surface-variant)",
-                  background: active ? "var(--md-primary-container)" : "transparent",
-                  textDecoration: "none",
-                  transition: "background .15s, color .15s",
-                }}
-              >
-                {link.label}
-              </Link>
-            );
-          })}
-        </nav>
-
-        <div className="ml-auto flex items-center gap-2">
-          {/* Theme toggle */}
-          <button
-            onClick={() => {
-              if (theme === "system") setTheme("dark");
-              else if (theme === "dark") setTheme("light");
-              else setTheme("system");
-            }}
-            title="Chế độ hiển thị"
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: "var(--radius-full)",
-              border: "none",
-              background: "var(--md-surface-container-high)",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 16,
-              color: "var(--md-on-surface-variant)",
-            }}
-          >
-            {theme === "dark" ? "🌙" : theme === "light" ? "☀️" : "🖥️"}
-          </button>
-
-          {session ? (
-            <>
-              <Link
-                href="/tai-khoan"
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: "var(--radius-full)",
-                  background: "var(--md-primary-container)",
-                  color: "var(--md-on-primary-container)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 13,
-                  fontWeight: 600,
-                  textDecoration: "none",
-                }}
-              >
-                {session.user?.name?.[0]?.toUpperCase() ?? "?"}
-              </Link>
-              <button
-                onClick={() => signOut({ callbackUrl: "/dang-nhap" })}
-                className="m3-outlined-button"
-                style={{ padding: "6px 14px", fontSize: 13 }}
-              >
-                Đăng xuất
-              </button>
-            </>
-          ) : (
-            <Link href="/dang-nhap" className="m3-filled-button" style={{ padding: "6px 16px", fontSize: 13, textDecoration: "none" }}>
-              Đăng nhập
-            </Link>
-          )}
-        </div>
-      </div>
-    </header>
+            <Icon name={item.icon} size={20} filled={active} />
+            {item.label}
+          </Link>
+        );
+      })}
+    </nav>
   );
 }
+
+function ThemeToggle() {
+  const { theme, cycleTheme } = useTheme();
+  const [swap, setSwap] = useState(false);
+  const icon = theme === "dark" ? "dark_mode" : theme === "light" ? "light_mode" : "routine";
+  const title = theme === "dark" ? "Giao diện tối" : theme === "light" ? "Giao diện sáng" : "Theo hệ thống";
+
+  useEffect(() => {
+    setSwap(true);
+    const t = setTimeout(() => setSwap(false), 400);
+    return () => clearTimeout(t);
+  }, [theme]);
+
+  return (
+    <button className="m3-icon-btn" onClick={cycleTheme} title={title} aria-label={`Chế độ hiển thị: ${title}`}>
+      <span className={`m3-theme-icon ${swap ? "swap" : ""}`}>
+        <Icon name={icon} filled={theme !== "system"} />
+      </span>
+    </button>
+  );
+}
+
+function CartButton() {
+  const { count, open, hydrated } = useCart();
+  const [bump, setBump] = useState(false);
+  const prev = useRef(count);
+  useEffect(() => {
+    if (count > prev.current) { setBump(true); const t = setTimeout(() => setBump(false), 400); prev.current = count; return () => clearTimeout(t); }
+    prev.current = count;
+  }, [count]);
+  return (
+    <button className="m3-icon-btn" onClick={open} aria-label={`Giỏ hàng, ${count} món`} style={{ overflow: "visible" }}>
+      <span className={bump ? "m3-bump" : ""} style={{ display: "inline-flex", position: "relative" }}>
+        <Icon name="shopping_basket" filled={count > 0} />
+        {hydrated && count > 0 && <span className="m3-badge">{count > 99 ? "99+" : count}</span>}
+      </span>
+    </button>
+  );
+}
+
+function HeaderImpl() {
+  const pathname = usePathname();
+  const { data: session } = useSession();
+  const [scrolled, setScrolled] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  const role = (session?.user as { role?: string } | undefined)?.role;
+  const isFarmer = role === "farmer";
+  const inFarmerArea = pathname.startsWith("/farmer");
+  const items = isFarmer && inFarmerArea ? FARMER_NAV : CUSTOMER_NAV;
+
+  // Scroll elevation via IntersectionObserver instead of a scroll listener,
+  // so scrolling never triggers React re-renders.
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(([e]) => setScrolled(!e.isIntersecting), { threshold: 1 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const show = !HIDDEN_ON.includes(pathname);
+    document.body.classList.toggle("has-nav-bar", show);
+  }, [pathname]);
+
+  if (HIDDEN_ON.includes(pathname)) return null;
+
+  const initial = session?.user?.name?.trim()?.[0]?.toUpperCase() ?? "?";
+
+  return (
+    <>
+      <div ref={sentinelRef} aria-hidden style={{ position: "absolute", top: 0, height: 1, width: 1, pointerEvents: "none" }} />
+      <header className={`m3-top-bar ${scrolled ? "scrolled" : ""}`}>
+        <div className="m3-top-bar-inner">
+          <Link href={isFarmer ? "/farmer" : "/"} className="m3-brand" aria-label="Xanh Tận Tay, về trang chủ">
+            <span className="m3-brand-mark"><Icon name="eco" size={22} filled /></span>
+            <span className="hidden sm:inline">Xanh Tận Tay</span>
+          </Link>
+
+          <NavTabs items={items} pathname={pathname} />
+
+          <div className="m3-top-bar-actions">
+            {isFarmer && (
+              <span className="hidden sm:inline-flex">
+                <Link
+                  href={inFarmerArea ? "/" : "/farmer"}
+                  className="m3-btn m3-btn-tonal m3-btn-sm"
+                  title={inFarmerArea ? "Xem như khách hàng" : "Về trang quản lý vườn"}
+                >
+                  <Icon name={inFarmerArea ? "storefront" : "agriculture"} size={18} />
+                  <span>{inFarmerArea ? "Cửa hàng" : "Vườn của tôi"}</span>
+                </Link>
+              </span>
+            )}
+            {!inFarmerArea && <CartButton />}
+            <ThemeToggle />
+            {session ? (
+              <>
+                <Link href="/tai-khoan" className="m3-avatar sm" title={session.user?.name ?? "Tài khoản"} aria-label="Tài khoản của tôi">
+                  {initial}
+                </Link>
+                <span className="hidden md:inline-flex">
+                  <button
+                    onClick={() => signOut({ callbackUrl: "/dang-nhap" })}
+                    className="m3-icon-btn"
+                    title="Đăng xuất"
+                    aria-label="Đăng xuất"
+                  >
+                    <Icon name="logout" />
+                  </button>
+                </span>
+              </>
+            ) : (
+              <Link href="/dang-nhap" className="m3-btn m3-btn-filled m3-btn-sm" style={{ marginLeft: 4 }}>
+                <Icon name="login" size={18} />
+                <span>Đăng nhập</span>
+              </Link>
+            )}
+          </div>
+        </div>
+      </header>
+    </>
+  );
+}
+
+export const Header = memo(HeaderImpl);

@@ -1,96 +1,80 @@
 export const dynamic = "force-dynamic";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { orders, farms, users } from "@/db/schema";
-import { eq } from "drizzle-orm";
-import { ORDER_STATUS_LABELS } from "@xanhtantay/types";
+import { orders, farms, users, order_items, products } from "@/db/schema";
+import { desc, eq, inArray } from "drizzle-orm";
+import { getSessionUser } from "@/lib/session";
+import { Icon } from "@/components/ui/Icon";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { OrderStatusButton } from "@/components/farmer/OrderStatusButton";
+import { formatVND, formatDate, STATUS_SHORT, STATUS_ICONS, ORDER_TYPE_LABELS } from "@/lib/format";
+
+export const metadata = { title: "Đơn hàng" };
+const ORDER = { harvesting: 0, loaded: 1, delivered: 2 } as const;
 
 export default async function FarmerDonHangPage() {
-  const session = await getServerSession(authOptions);
-  if (!session) redirect("/dang-nhap");
-
-  const userId = (session.user as { id: string }).id;
-  const [myFarm] = await db.select().from(farms).where(eq(farms.owner_id, userId));
+  const user = (await getSessionUser())!;
+  const [myFarm] = await db.select().from(farms).where(eq(farms.owner_id, user.id));
 
   const farmOrders = myFarm
-    ? await db
-        .select({ order: orders, customer: users })
-        .from(orders)
-        .leftJoin(users, eq(orders.user_id, users.id))
-        .where(eq(orders.farm_id, myFarm.id))
+    ? await db.select({ order: orders, customer: { name: users.name, phone: users.phone } }).from(orders)
+        .leftJoin(users, eq(orders.user_id, users.id)).where(eq(orders.farm_id, myFarm.id)).orderBy(desc(orders.created_at))
     : [];
+  // Active orders first, then delivered.
+  farmOrders.sort((a, b) => ORDER[a.order.status] - ORDER[b.order.status]);
 
-  const nextStatus: Record<string, string> = {
-    harvesting: "loaded",
-    loaded: "delivered",
-  };
-  const nextStatusLabel: Record<string, string> = {
-    harvesting: "Đã lên xe 🚚",
-    loaded: "Đã giao 🏡",
-  };
+  const items = farmOrders.length
+    ? await db.select({ item: order_items, product: { name: products.name, unit: products.unit } }).from(order_items)
+        .leftJoin(products, eq(order_items.product_id, products.id)).where(inArray(order_items.order_id, farmOrders.map((o) => o.order.id)))
+    : [];
+  const byOrder = new Map<string, typeof items>();
+  for (const it of items) (byOrder.get(it.item.order_id) ?? byOrder.set(it.item.order_id, []).get(it.item.order_id)!).push(it);
+
+  const pending = farmOrders.filter((o) => o.order.status !== "delivered").length;
 
   return (
     <div>
-      <h1 style={{ fontSize: 26, fontWeight: 800, color: "var(--md-on-surface)", marginBottom: 4 }}>
-        Đơn hàng 📦
-      </h1>
-      <p style={{ fontSize: 14, color: "var(--md-on-surface-variant)", marginBottom: 24 }}>
-        Cập nhật trạng thái đơn để khách hàng theo dõi
-      </p>
+      <PageHeader icon="package_2" eyebrow={pending ? `${pending} đơn cần xử lý` : "Mọi đơn đã giao"} title="Đơn hàng" subtitle="Cập nhật trạng thái để khách theo dõi hành trình rau" />
 
       {farmOrders.length === 0 ? (
-        <div
-          style={{
-            textAlign: "center",
-            padding: "60px 20px",
-            background: "var(--md-surface-container)",
-            borderRadius: "var(--radius-xl)",
-          }}
-        >
-          <p style={{ fontSize: 36, marginBottom: 12 }}>📭</p>
-          <p style={{ fontWeight: 600, color: "var(--md-on-surface)" }}>Chưa có đơn hàng nào</p>
-        </div>
+        <EmptyState icon="inbox" title="Chưa có đơn hàng nào" description="Đăng nhật ký vườn để khách biết đến bạn nhiều hơn." />
       ) : (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3 stagger">
           {farmOrders.map(({ order, customer }) => (
-            <div key={order.id} className="m3-card-elevated" style={{ padding: "18px 22px" }}>
+            <article key={order.id} className="m3-card-elevated" style={{ padding: "18px 22px", borderRadius: "var(--shape-xl)", opacity: order.status === "delivered" ? 0.8 : 1 }}>
               <div className="flex items-start justify-between flex-wrap gap-3">
-                <div>
-                  <p style={{ fontWeight: 700, fontSize: 15, color: "var(--md-on-surface)", marginBottom: 4 }}>
-                    {customer?.name ?? "Khách hàng"}
-                  </p>
-                  <p
-                    style={{
-                      fontSize: 13,
-                      padding: "3px 10px",
-                      borderRadius: "var(--radius-full)",
-                      display: "inline-block",
-                    }}
-                    className={`status-${order.status}`}
-                  >
-                    {ORDER_STATUS_LABELS[order.status as keyof typeof ORDER_STATUS_LABELS]}
-                  </p>
+                <div className="flex items-center gap-3" style={{ minWidth: 0 }}>
+                  <span className="m3-avatar">{customer?.name?.trim()?.[0]?.toUpperCase() ?? "?"}</span>
+                  <div>
+                    <p className="title-md text-on-surface">{customer?.name ?? "Khách hàng"}</p>
+                    <p className="body-sm text-on-surface-variant">{customer?.phone ?? "—"} · {ORDER_TYPE_LABELS[order.type]} · {formatDate(order.created_at, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</p>
+                  </div>
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <p style={{ fontSize: 17, fontWeight: 800, color: "var(--md-primary)" }}>
-                    {order.total.toLocaleString("vi-VN")}₫
-                  </p>
-                  <p style={{ fontSize: 11, color: "var(--md-on-surface-variant)" }}>
-                    {new Date(order.created_at).toLocaleDateString("vi-VN")}
-                  </p>
+                  <p className="title-lg text-primary tabular">{formatVND(order.total)}</p>
+                  <span className={`status-pill status-${order.status}`}><Icon name={STATUS_ICONS[order.status]} size={16} filled />{STATUS_SHORT[order.status]}</span>
                 </div>
               </div>
-              {order.status !== "delivered" && (
-                <form action={`/api/orders/${order.id}/status`} method="POST" style={{ marginTop: 12 }}>
-                  <input type="hidden" name="status" value={nextStatus[order.status]} />
-                  <button type="submit" className="m3-tonal-button" style={{ fontSize: 13, padding: "6px 16px" }}>
-                    {nextStatusLabel[order.status]}
-                  </button>
-                </form>
+
+              {(byOrder.get(order.id)?.length ?? 0) > 0 && (
+                <div className="flex flex-wrap gap-2" style={{ marginTop: 12 }}>
+                  {byOrder.get(order.id)!.map((l) => (
+                    <span key={l.item.id} className="m3-chip sm m3-chip-surface"><strong>{Number(l.item.quantity)} {l.product?.unit}</strong>&nbsp;{l.product?.name}</span>
+                  ))}
+                </div>
               )}
-            </div>
+              {order.note && (
+                <p className="body-sm text-on-surface-variant" style={{ marginTop: 8, display: "inline-flex", gap: 4, alignItems: "center" }}>
+                  <Icon name="sticky_note_2" size={16} /> {order.note}
+                </p>
+              )}
+
+              {order.status !== "delivered" && (
+                <div style={{ marginTop: 14 }}>
+                  <OrderStatusButton orderId={order.id} status={order.status} />
+                </div>
+              )}
+            </article>
           ))}
         </div>
       )}
