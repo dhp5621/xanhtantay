@@ -112,7 +112,7 @@ export default async function HomePage() {
           {diaryFeed.map(({ entry, farm }) => (
             <Link key={entry.id} href={`/nhat-ky/${entry.id}`} className="m3-list-item" style={{ alignItems: "flex-start", padding: 16 }}>
               {entry.media_urls[0] ? (
-                <MediaGallery urls={entry.media_urls.slice(0, 1)} size={84} linkTo={`/nhat-ky/${entry.id}`} />
+                <MediaGallery urls={entry.media_urls.slice(0, 1)} size={84} plain />
               ) : (
                 <span className="m3-list-leading"><Icon name="eco" /></span>
               )}

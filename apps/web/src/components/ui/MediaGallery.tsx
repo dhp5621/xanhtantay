@@ -10,7 +10,7 @@ import { SmartVideo } from "./SmartVideo";
 const isVideoUrl = (u: string) => /\.(mp4|webm|mov)(\?|$)/i.test(u);
 
 /** Thumbnail strip for diary entries; tapping opens the lightbox. */
-export function MediaGallery({ urls, size = 96, caption, layout = "strip", tag, linkTo }: { urls: string[]; size?: number; caption?: string; layout?: "strip" | "post"; tag?: string; linkTo?: string }) {
+export function MediaGallery({ urls, size = 96, caption, layout = "strip", tag, linkTo, plain = false }: { urls: string[]; size?: number; caption?: string; layout?: "strip" | "post"; tag?: string; linkTo?: string; plain?: boolean }) {
   const [open, setOpen] = useState<number | null>(null);
   const items: LightboxItem[] = urls.map((url) => ({ url, kind: isVideoUrl(url) ? "video" : "image", caption }));
   if (!items.length) return null;
@@ -29,6 +29,21 @@ export function MediaGallery({ urls, size = 96, caption, layout = "strip", tag, 
         </div>
         {open !== null && <MediaLightbox items={items} index={open} onClose={() => setOpen(null)} tag={tag} />}
       </>
+    );
+  }
+
+  if (plain) {
+    // Inside an existing link (home feed): no nested anchor, no viewer.
+    return (
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", flexShrink: 0 }}>
+        {items.slice(0, 4).map((it, k) => (
+          <span key={it.url} className="m3-media-wrap" style={{ width: size, height: size, borderRadius: "var(--shape-md)", position: "relative", display: "block", background: "var(--md-surface-container-high)", overflow: "hidden" }}>
+            {it.kind === "video" ? <SmartVideo src={it.url} /> : <SmartImage src={it.url} />}
+            {it.kind === "video" && <span className="m3-thumb-play"><Icon name="play_arrow" size={22} filled /></span>}
+            {k === 3 && items.length > 4 && <span className="m3-thumb-more">+{items.length - 4}</span>}
+          </span>
+        ))}
+      </div>
     );
   }
 

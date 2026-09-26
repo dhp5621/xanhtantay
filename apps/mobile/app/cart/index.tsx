@@ -92,6 +92,39 @@ export default function CartScreen() {
         <View style={{ marginBottom: 16 }}>
           <View style={styles.groupHeader}>
             <Text style={styles.groupName}>🪴 {g.farm_name}</Text>
+            <TouchableOpacity
+              onPress={() => {
+                if (!user) {
+                  router.push("/dang-nhap");
+                  return;
+                }
+                Alert.alert("Đặt định kỳ", "Chọn tần suất giao hàng cho các món đang có trong giỏ của vườn này.", [
+                  { text: "Huỷ", style: "cancel" },
+                  {
+                    text: "Hàng tuần",
+                    onPress: () =>
+                      apiFetch("/subscriptions", {
+                        method: "POST",
+                        body: JSON.stringify({ farm_id: g.farm_id, frequency: "weekly", items: g.lines.map((l) => ({ product_id: l.id, quantity: l.quantity })) }),
+                      })
+                        .then(() => Alert.alert("Đã tạo gói định kỳ hàng tuần!"))
+                        .catch((e) => Alert.alert("Lỗi", e instanceof Error ? e.message : "Có lỗi xảy ra")),
+                  },
+                  {
+                    text: "Hàng tháng",
+                    onPress: () =>
+                      apiFetch("/subscriptions", {
+                        method: "POST",
+                        body: JSON.stringify({ farm_id: g.farm_id, frequency: "monthly", items: g.lines.map((l) => ({ product_id: l.id, quantity: l.quantity })) }),
+                      })
+                        .then(() => Alert.alert("Đã tạo gói định kỳ hàng tháng!"))
+                        .catch((e) => Alert.alert("Lỗi", e instanceof Error ? e.message : "Có lỗi xảy ra")),
+                  },
+                ]);
+              }}
+            >
+              <Text style={styles.subscribeLink}>Đặt định kỳ</Text>
+            </TouchableOpacity>
             {g.subtotal < MIN_DIRECT_ORDER ? (
               <View style={[styles.chip, { backgroundColor: colors.tertiaryContainer }]}>
                 <Text style={[styles.chipText, { color: colors.onTertiaryContainer }]}>Ghép đơn</Text>
@@ -164,8 +197,9 @@ const styles = StyleSheet.create({
   title: { ...type.headlineSmall, color: colors.onSurface, marginBottom: 16 },
   emptyTitle: { ...type.titleLarge, color: colors.onSurface, marginBottom: 4 },
   emptyBody: { ...type.bodyMedium, color: colors.onSurfaceVariant, textAlign: "center", marginBottom: 20 },
-  groupHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
-  groupName: { ...type.labelLarge, color: colors.primary, fontSize: 15 },
+  groupHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8, gap: 8 },
+  groupName: { ...type.labelLarge, color: colors.primary, fontSize: 15, flex: 1 },
+  subscribeLink: { color: colors.secondary, fontWeight: "700", fontSize: 12 },
   chip: { paddingVertical: 4, paddingHorizontal: 10, borderRadius: shape.full },
   chipText: { fontSize: 11, fontWeight: "700" },
   lineRow: {
