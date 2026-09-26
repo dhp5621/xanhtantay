@@ -13,7 +13,7 @@ const HIDDEN_ON = ["/dang-nhap"];
 function NavBarImpl() {
   const pathname = usePathname();
   const { data: session } = useSession();
-  if (HIDDEN_ON.includes(pathname) || !session) return null;
+  if (HIDDEN_ON.includes(pathname) || pathname.startsWith("/admin") || !session) return null;
 
   const isFarmer = (session?.user as { role?: string } | undefined)?.role === "farmer";
   // Farmers only ever get farm navigation; buyer options are not part of the farmer app.

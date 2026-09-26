@@ -124,11 +124,11 @@ function HeaderImpl() {
 
   useEffect(() => {
     // The mobile navigation bar only exists for signed-in users.
-    const show = !HIDDEN_ON.includes(pathname) && !!session;
+    const show = !HIDDEN_ON.includes(pathname) && !pathname.startsWith("/admin") && !!session;
     document.body.classList.toggle("has-nav-bar", show);
   }, [pathname, session]);
 
-  if (HIDDEN_ON.includes(pathname)) return null;
+  if (HIDDEN_ON.includes(pathname) || pathname.startsWith("/admin")) return null;
 
 
   return (

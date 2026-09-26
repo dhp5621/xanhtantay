@@ -1637,3 +1637,57 @@ input[type="number"].tabular::-webkit-inner-spin-button { -webkit-appearance: no
   }
   .m3-nav-indicator { transition: none; }
 }
+
+/* ─── Admin area ─────────────────────────────────────────────── */
+.admin-shell { display: flex; min-height: 100dvh; }
+.admin-main { flex: 1; min-width: 0; padding: 24px 16px 48px; max-width: 1280px; }
+@media (min-width: 900px) { .admin-main { padding: 32px 32px 64px; } }
+.admin-rail {
+  position: sticky; top: 0; height: 100dvh;
+  display: flex; flex-direction: column;
+  width: 88px; padding: 12px 8px 16px;
+  background: var(--md-surface-container-low);
+  flex-shrink: 0;
+  overflow-y: auto;
+}
+@media (min-width: 1100px) { .admin-rail { width: 232px; padding: 12px 12px 16px; } }
+@media (max-width: 899px) {
+  .admin-shell { flex-direction: column; }
+  .admin-rail { position: sticky; top: 0; z-index: 40; height: auto; width: 100%; flex-direction: row; align-items: center; gap: 4px; padding: 6px 8px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+  .admin-rail > .m3-brand { margin: 0 8px 0 0 !important; }
+  .admin-rail > div:last-child { margin-top: 0 !important; flex-direction: row !important; }
+}
+.admin-rail-items { display: flex; flex-direction: column; gap: 4px; }
+@media (max-width: 899px) { .admin-rail-items { flex-direction: row; } }
+.admin-rail-item {
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 8px 6px; border-radius: var(--shape-lg); text-decoration: none;
+  color: var(--md-on-surface-variant); font-size: 12px; font-weight: 500; white-space: nowrap;
+  transition: color var(--dur-short-4) var(--ease-standard);
+}
+@media (min-width: 1100px) { .admin-rail-item { flex-direction: row; gap: 12px; padding: 10px 14px; font-size: 14px; } }
+.admin-rail-icon {
+  position: relative; width: 56px; height: 32px; border-radius: var(--shape-full);
+  display: inline-flex; align-items: center; justify-content: center; overflow: hidden; isolation: isolate;
+  transition: transform var(--dur-medium-2) var(--spring-fast-spatial);
+}
+.admin-rail-icon::before { content: ""; position: absolute; inset: 0; background: var(--md-tertiary-container); border-radius: inherit; transform: scaleX(0.3); opacity: 0; transition: transform var(--dur-medium-4) var(--spring-default-spatial), opacity var(--dur-short-4) var(--ease-standard); }
+.admin-rail-icon .msr { position: relative; z-index: 1; }
+@media (hover: hover) { .admin-rail-item:hover .admin-rail-icon::before { opacity: 0.5; transform: scaleX(1); } }
+.admin-rail-item:active .admin-rail-icon { transform: scale(0.9); }
+.admin-rail-item.active { color: var(--md-on-surface); font-weight: 700; }
+.admin-rail-item.active .admin-rail-icon { color: var(--md-on-tertiary-container); }
+.admin-rail-item.active .admin-rail-icon::before { opacity: 1; transform: scaleX(1); }
+.admin-rail-label { display: none; }
+@media (min-width: 1100px) { .admin-rail-label { display: inline; } }
+@media (max-width: 899px) { .admin-rail-label { display: inline; } .admin-rail-item { flex-direction: row; gap: 8px; padding: 6px 10px; } .admin-rail-icon { width: 36px; } }
+
+.admin-table-wrap { overflow-x: auto; border-radius: var(--shape-xl); background: var(--md-surface-container-lowest); }
+.admin-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.admin-table th { text-align: left; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--md-on-surface-variant); padding: 14px 14px; background: var(--md-surface-container-low); position: sticky; top: 0; white-space: nowrap; }
+.admin-table td { padding: 12px 14px; border-top: 1px solid var(--md-outline-variant); vertical-align: middle; max-width: 320px; }
+.admin-table td.mono { font-family: ui-monospace, monospace; font-size: 12px; color: var(--md-on-surface-variant); }
+.admin-table td.clamp { max-width: 360px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admin-table tbody tr { transition: background-color var(--dur-short-3) var(--ease-standard); }
+@media (hover: hover) { .admin-table tbody tr:hover { background: var(--md-surface-container-low); } }
+.admin-select { background: var(--md-surface-container-highest); color: var(--md-on-surface); border: none; border-radius: var(--shape-full); padding: 6px 12px; font: inherit; font-size: 13px; font-weight: 500; cursor: pointer; }
