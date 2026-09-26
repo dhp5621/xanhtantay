@@ -5,8 +5,9 @@ import Link from "next/link";
 import { Icon } from "@/components/ui/Icon";
 import { AddToCartButton } from "@/components/cart/AddToCartButton";
 import { CATEGORY_LABELS, CATEGORY_ICONS, formatVND } from "@/lib/format";
+import { ProductThumb } from "./ProductThumb";
 
-export interface CatalogItem { id: string; name: string; unit: string; price_per_unit: number; category: string; in_stock: boolean; stock_qty: number; farm: { id: string; name: string; slug: string; location: string } }
+export interface CatalogItem { id: string; name: string; unit: string; price_per_unit: number; category: string; in_stock: boolean; stock_qty: number; image_url?: string | null; farm: { id: string; name: string; slug: string; location: string } }
 
 /** Normalise Vietnamese for search: lowercase, strip diacritics. */
 const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/đ/g, "d");
@@ -23,9 +24,9 @@ export function Catalog({ items, initialQuery, initialCategory, initialProduct }
 
   // Product "aisles": distinct base names, e.g. Cà rốt, Cải xanh, Mồng tơi…
   const aisles = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const it of items) { const k = baseName(it.name); m.set(k, (m.get(k) ?? 0) + 1); }
-    return Array.from(m.entries()).sort((a, b) => a[0].localeCompare(b[0], "vi")).map(([name, n]) => ({ name, n }));
+    const m = new Map<string, { n: number; image?: string | null }>();
+    for (const it of items) { const k = baseName(it.name); const cur = m.get(k) ?? { n: 0, image: null }; m.set(k, { n: cur.n + 1, image: cur.image ?? it.image_url }); }
+    return Array.from(m.entries()).sort((a, b) => a[0].localeCompare(b[0], "vi")).map(([name, v]) => ({ name, n: v.n, image: v.image }));
   }, [items]);
 
   const filtered = useMemo(() => {
@@ -70,7 +71,7 @@ export function Catalog({ items, initialQuery, initialCategory, initialProduct }
         <button role="tab" aria-selected={!product} className={`m3-chip round ${!product ? "m3-chip-primary" : "m3-chip-surface"}`} style={{ height: 40 }} onClick={() => setProduct("")}><Icon name="apps" size={18} /> Mọi mặt hàng</button>
         {aisles.map((a) => (
           <button key={a.name} role="tab" aria-selected={product === a.name} className={`m3-chip round ${product === a.name ? "m3-chip-primary" : "m3-chip-surface"}`} style={{ height: 40 }} onClick={() => setProduct(product === a.name ? "" : a.name)}>
-            <Icon name="eco" size={18} filled={product === a.name} /> {a.name} <span style={{ opacity: 0.6 }}>· {a.n}</span>
+            {a.image ? <span style={{ width: 22, height: 22, borderRadius: "50%", background: `url(${a.image}) center/cover`, flexShrink: 0, marginLeft: -4 }} /> : <Icon name="eco" size={18} filled={product === a.name} />} {a.name} <span style={{ opacity: 0.6 }}>· {a.n}</span>
           </button>
         ))}
       </div>
@@ -91,7 +92,8 @@ export function Catalog({ items, initialQuery, initialCategory, initialProduct }
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {list.map((it) => (
-                    <div key={it.id} className="m3-card lift" style={{ padding: "14px 14px 14px 18px", display: "flex", alignItems: "center", gap: 12, borderRadius: "var(--shape-lg-inc)", opacity: it.in_stock ? 1 : 0.6 }}>
+                    <div key={it.id} className="m3-card lift" style={{ padding: "12px 14px 12px 12px", display: "flex", alignItems: "center", gap: 12, borderRadius: "var(--shape-lg-inc)", opacity: it.in_stock ? 1 : 0.6 }}>
+                      <ProductThumb image_url={it.image_url} category={it.category} name={it.name} size={76} radius="var(--shape-lg)" />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <p className="title-sm text-on-surface" style={{ marginBottom: 2 }}>{it.name}</p>
                         <Link href={`/farms/${it.farm.slug}`} className="body-sm text-primary" style={{ display: "inline-flex", alignItems: "center", gap: 4, textDecoration: "none", fontWeight: 600 }}><Icon name="potted_plant" size={14} filled /> {it.farm.name}</Link>

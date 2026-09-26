@@ -9,6 +9,7 @@ import { FollowFarmButton } from "@/components/farm/FollowFarmButton";
 import { SubscribeButton } from "@/components/farm/SubscribeButton";
 import { getSessionUser } from "@/lib/session";
 import { MediaGallery } from "@/components/ui/MediaGallery";
+import { ProductThumb } from "@/components/catalog/ProductThumb";
 import { Icon } from "@/components/ui/Icon";
 import { CATEGORY_LABELS, CATEGORY_ICONS, formatVND, formatDateTime, timeAgo } from "@/lib/format";
 
@@ -87,7 +88,8 @@ export default async function FarmPage({ params }: { params: Promise<{ slug: str
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 stagger">
               {items.map((product) => (
-                <div key={product.id} className="m3-card lift" style={{ padding: "14px 14px 14px 18px", opacity: product.in_stock && product.stock_qty > 0 ? 1 : 0.6, display: "flex", alignItems: "center", gap: 12, borderRadius: "var(--shape-lg-inc)" }}>
+                <div key={product.id} className="m3-card lift" style={{ padding: "12px 14px 12px 12px", opacity: product.in_stock && product.stock_qty > 0 ? 1 : 0.6, display: "flex", alignItems: "center", gap: 12, borderRadius: "var(--shape-lg-inc)" }}>
+                  <ProductThumb image_url={product.image_url} category={product.category} name={product.name} size={76} radius="var(--shape-lg)" />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p className="title-sm text-on-surface" style={{ marginBottom: 2 }}>{product.name}</p>
                     <p className="label-lg text-primary tabular">{formatVND(product.price_per_unit)} <span className="body-sm text-on-surface-variant" style={{ fontWeight: 400 }}>/ {product.unit}</span></p>

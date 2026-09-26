@@ -7,9 +7,12 @@ import { Portal } from "@/components/ui/Portal";
 import { useSnackbar } from "@/components/ui/Snackbar";
 import { CATEGORY_LABELS, CATEGORY_ICONS, formatVND } from "@/lib/format";
 import { QtyInput } from "@/components/cart/QtyInput";
+import { ProductThumb } from "@/components/catalog/ProductThumb";
+import { compressImage } from "@/lib/media";
+import { CameraCapture, hasCameraApi } from "@/components/ui/CameraCapture";
 
-interface Product { id: string; name: string; unit: string; price_per_unit: number; category: string; in_stock: boolean; stock_qty: number }
-const EMPTY = { name: "", unit: "kg", price_per_unit: 10000, category: "rau_la", stock_qty: 20 };
+interface Product { id: string; name: string; unit: string; price_per_unit: number; category: string; in_stock: boolean; stock_qty: number; image_url?: string | null }
+const EMPTY = { name: "", unit: "kg", price_per_unit: 10000, category: "rau_la", stock_qty: 20, image_url: null as string | null };
 
 export function ProductManager({ farmId, initial }: { farmId: string; initial: Product[] }) {
   const [items, setItems] = useState(initial);
@@ -21,7 +24,22 @@ export function ProductManager({ farmId, initial }: { farmId: string; initial: P
   const { show } = useSnackbar();
 
   const openNew = () => { setForm(EMPTY); setEditing("new"); };
-  const openEdit = (p: Product) => { setForm({ name: p.name, unit: p.unit, price_per_unit: p.price_per_unit, category: p.category, stock_qty: p.stock_qty }); setEditing(p); };
+  const openEdit = (p: Product) => { setForm({ name: p.name, unit: p.unit, price_per_unit: p.price_per_unit, category: p.category, stock_qty: p.stock_qty, image_url: p.image_url ?? null }); setEditing(p); };
+  const [uploading, setUploading] = useState(false);
+  const [camera, setCamera] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const uploadImage = async (f: File) => {
+    setUploading(true);
+    try {
+      const small = await compressImage(f);
+      const fd = new FormData(); fd.append("file", small);
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error ?? "Không tải được ảnh");
+      setForm((x) => ({ ...x, image_url: data.url }));
+    } catch (e) { show(e instanceof Error ? e.message : "Lỗi tải ảnh", { kind: "error" }); }
+    finally { setUploading(false); }
+  };
 
   // Debounced stock adjustment: quick +/- taps, one PATCH after the taps stop.
   const pendingRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
