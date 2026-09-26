@@ -66,7 +66,7 @@ export function LoginForm({ next, demoPassword }: { next?: string; demoPassword:
               >
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
                   <Icon name={d.icon} size={28} filled />
-                  {busy ? <span className="m3-loader sm" style={{ background: "currentColor" }} /> : <Icon name="arrow_forward" size={20} />}
+                  {busy ? <span className="m3-loader sm current" /> : <Icon name="arrow_forward" size={20} />}
                 </div>
                 <p className="title-sm">{d.label}</p>
                 <p className="body-sm" style={{ opacity: 0.8 }}>{d.who} · {d.blurb}</p>

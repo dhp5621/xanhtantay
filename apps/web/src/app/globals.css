@@ -283,7 +283,6 @@ button { touch-action: manipulation; }
   font-feature-settings: "liga";
   -webkit-font-smoothing: antialiased;
   font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
-  transition: font-variation-settings var(--dur-short-4) var(--ease-standard);
   user-select: none;
   flex-shrink: 0;
 }
@@ -809,16 +808,32 @@ button.m3-chip:active { transform: scale(0.95); border-radius: var(--shape-md); 
 @keyframes m3-grow-x { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 @keyframes m3-wave { to { background-position: 16px 0; } }
 
-/* Expressive loading indicator: morphing blob */
+/* Expressive loading indicator: rotates while morphing through
+   circle → clover → pentagon → cookie → pill → burst → triangle (M3 Expressive) */
 .m3-loader {
+  position: relative;
   width: 48px;
   height: 48px;
-  background: var(--md-primary);
-  animation: m3-morph 1.6s var(--ease-standard) infinite, m3-spin 2.4s linear infinite;
   display: inline-block;
+  flex-shrink: 0;
+  animation: m3-spin 4.5s linear infinite;
+  will-change: transform;
+}
+.m3-loader::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0;
+  width: 48px; height: 48px;
+  background: var(--md-primary);
+  clip-path: path("M44 24 L43.9 25.96 L43.6 27.9 L43.1 29.8 L42.4 31.65 L41.5 33.42 L40.4 35.1 L39.2 36.66 L37.8 38.1 L36.2 39.4 L34.5 40.5 L32.7 41.4 L30.8 42.1 L28.9 42.7 L26.9 43 L24.9 43 L22.9 43 L21 42.7 L19.1 42.1 L17.2 41.4 L15.4 40.5 L13.7 39.4 L12.2 38.1 L10.8 36.66 L9.6 35.1 L8.5 33.42 L7.6 31.65 L6.9 29.8 L6.4 27.9 L6.1 25.96 L6 24 L6.1 22.04 L6.4 20.1 L6.9 18.2 L7.6 16.35 L8.5 14.58 L9.6 12.9 L10.8 11.34 L12.2 9.9 L13.7 8.6 L15.4 7.5 L17.2 6.6 L19.1 5.9 L21 5.3 L22.9 5 L24.9 5 L26.9 5 L28.9 5.3 L30.8 5.9 L32.7 6.6 L34.5 7.5 L36.2 8.6 L37.8 9.9 L39.2 11.34 L40.4 12.9 L41.5 14.58 L42.4 16.35 L43.1 18.2 L43.6 20.1 L43.9 22.04 Z");
+  animation: m3-loader-morph 7s var(--ease-standard) infinite;
+  transform-origin: 0 0;
 }
 .m3-loader.sm { width: 24px; height: 24px; }
-.m3-loader.on-primary { background: var(--md-on-primary); }
+.m3-loader.sm::before { transform: scale(0.5); }
+.m3-loader.on-primary::before { background: var(--md-on-primary); }
+.m3-loader.current::before { background: currentColor; }
+/* Backwards-compatible blob for the empty-state icon */
 @keyframes m3-morph {
   0%   { border-radius: 50% 50% 50% 50%; }
   25%  { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
@@ -827,6 +842,17 @@ button.m3-chip:active { transform: scale(0.95); border-radius: var(--shape-md); 
   100% { border-radius: 50% 50% 50% 50%; }
 }
 @keyframes m3-spin { to { transform: rotate(360deg); } }
+@keyframes m3-loader-morph {
+  0.0% { clip-path: path("M44.00 24.00 L43.90 25.96 L43.62 27.90 L43.14 29.81 L42.48 31.65 L41.64 33.43 L40.63 35.11 L39.46 36.69 L38.14 38.14 L36.69 39.46 L35.11 40.63 L33.43 41.64 L31.65 42.48 L29.81 43.14 L27.90 43.62 L25.96 43.90 L24.00 44.00 L22.04 43.90 L20.10 43.62 L18.19 43.14 L16.35 42.48 L14.57 41.64 L12.89 40.63 L11.31 39.46 L9.86 38.14 L8.54 36.69 L7.37 35.11 L6.36 33.43 L5.52 31.65 L4.86 29.81 L4.38 27.90 L4.10 25.96 L4.00 24.00 L4.10 22.04 L4.38 20.10 L4.86 18.19 L5.52 16.35 L6.36 14.57 L7.37 12.89 L8.54 11.31 L9.86 9.86 L11.31 8.54 L12.89 7.37 L14.57 6.36 L16.35 5.52 L18.19 4.86 L20.10 4.38 L22.04 4.10 L24.00 4.00 L25.96 4.10 L27.90 4.38 L29.81 4.86 L31.65 5.52 L33.43 6.36 L35.11 7.37 L36.69 8.54 L38.14 9.86 L39.46 11.31 L40.63 12.89 L41.64 14.57 L42.48 16.35 L43.14 18.19 L43.62 20.10 L43.90 22.04 Z"); }
+  14.29% { clip-path: path("M48.40 24.00 L47.95 26.36 L46.67 28.51 L44.75 30.29 L42.48 31.65 L40.15 32.63 L38.04 33.38 L36.32 34.11 L35.03 35.03 L34.11 36.32 L33.38 38.04 L32.63 40.15 L31.65 42.48 L30.29 44.75 L28.51 46.67 L26.36 47.95 L24.00 48.40 L21.64 47.95 L19.49 46.67 L17.71 44.75 L16.35 42.48 L15.37 40.15 L14.62 38.04 L13.89 36.32 L12.97 35.03 L11.68 34.11 L9.96 33.38 L7.85 32.63 L5.52 31.65 L3.25 30.29 L1.33 28.51 L0.05 26.36 L-0.40 24.00 L0.05 21.64 L1.33 19.49 L3.25 17.71 L5.52 16.35 L7.85 15.37 L9.96 14.62 L11.68 13.89 L12.97 12.97 L13.89 11.68 L14.62 9.96 L15.37 7.85 L16.35 5.52 L17.71 3.25 L19.49 1.33 L21.64 0.05 L24.00 -0.40 L26.36 0.05 L28.51 1.33 L30.29 3.25 L31.65 5.52 L32.63 7.85 L33.38 9.96 L34.11 11.68 L35.03 12.97 L36.32 13.89 L38.04 14.62 L40.15 15.37 L42.48 16.35 L44.75 17.71 L46.67 19.49 L47.95 21.64 Z"); }
+  28.57% { clip-path: path("M42.91 24.00 L42.55 25.83 L42.12 27.60 L41.61 29.34 L41.03 31.05 L40.37 32.75 L39.62 34.44 L38.79 36.14 L37.86 37.86 L36.83 39.63 L35.31 40.93 L33.29 41.39 L31.35 41.76 L29.47 42.04 L27.63 42.24 L25.81 42.36 L24.00 42.40 L22.19 42.36 L20.37 42.24 L18.53 42.04 L16.65 41.76 L14.71 41.39 L12.69 40.93 L11.17 39.63 L10.14 37.86 L9.21 36.14 L8.38 34.44 L7.63 32.75 L6.97 31.05 L6.39 29.34 L5.88 27.60 L5.45 25.83 L5.09 24.00 L4.79 22.11 L4.55 20.13 L4.37 18.04 L5.44 16.31 L6.80 14.81 L8.15 13.41 L9.52 12.11 L10.90 10.90 L12.32 9.76 L13.77 8.69 L15.28 7.69 L16.85 6.74 L18.49 5.83 L20.21 4.97 L22.04 4.14 L24.00 3.33 L25.96 4.14 L27.79 4.97 L29.51 5.83 L31.15 6.74 L32.72 7.69 L34.23 8.69 L35.68 9.76 L37.10 10.90 L38.48 12.11 L39.85 13.41 L41.20 14.81 L42.56 16.31 L43.63 18.04 L43.45 20.13 L43.21 22.11 Z"); }
+  42.86% { clip-path: path("M46.40 24.00 L45.75 26.14 L44.07 27.99 L42.06 29.48 L40.43 30.81 L39.61 32.35 L39.52 34.37 L39.64 36.84 L39.34 39.34 L38.20 41.31 L36.22 42.29 L33.76 42.25 L31.30 41.63 L29.19 41.11 L27.44 41.31 L25.81 42.39 L24.00 44.00 L21.89 45.42 L19.64 45.92 L17.58 45.16 L15.99 43.33 L14.90 41.02 L14.00 38.97 L12.83 37.61 L11.06 36.94 L8.72 36.54 L6.26 35.85 L4.34 34.51 L3.47 32.50 L3.78 30.13 L4.84 27.81 L5.94 25.78 L6.40 24.00 L5.94 22.22 L4.84 20.19 L3.78 17.87 L3.47 15.50 L4.34 13.49 L6.26 12.15 L8.72 11.46 L11.06 11.06 L12.83 10.39 L14.00 9.03 L14.90 6.98 L15.99 4.67 L17.58 2.84 L19.64 2.08 L21.89 2.58 L24.00 4.00 L25.81 5.61 L27.44 6.69 L29.19 6.89 L31.30 6.37 L33.76 5.75 L36.22 5.71 L38.20 6.69 L39.34 8.66 L39.64 11.16 L39.52 13.63 L39.61 15.65 L40.43 17.19 L42.06 18.52 L44.07 20.01 L45.75 21.86 Z"); }
+  57.14% { clip-path: path("M48.32 24.00 L48.01 26.36 L47.12 28.60 L45.77 30.60 L44.11 32.33 L42.28 33.77 L40.39 34.95 L38.50 35.90 L36.66 36.66 L34.88 37.25 L33.17 37.73 L31.53 38.09 L29.95 38.37 L28.42 38.57 L26.93 38.71 L25.46 38.79 L24.00 38.82 L22.54 38.79 L21.07 38.71 L19.58 38.57 L18.05 38.37 L16.47 38.09 L14.83 37.73 L13.12 37.25 L11.34 36.66 L9.50 35.90 L7.61 34.95 L5.72 33.77 L3.89 32.33 L2.23 30.60 L0.88 28.60 L-0.01 26.36 L-0.32 24.00 L-0.01 21.64 L0.88 19.40 L2.23 17.40 L3.89 15.67 L5.72 14.23 L7.61 13.05 L9.50 12.10 L11.34 11.34 L13.12 10.75 L14.83 10.27 L16.47 9.91 L18.05 9.63 L19.58 9.43 L21.07 9.29 L22.54 9.21 L24.00 9.18 L25.46 9.21 L26.93 9.29 L28.42 9.43 L29.95 9.63 L31.53 9.91 L33.17 10.27 L34.88 10.75 L36.66 11.34 L38.50 12.10 L40.39 13.05 L42.28 14.23 L44.11 15.67 L45.77 17.40 L47.12 19.40 L48.01 21.64 Z"); }
+  71.43% { clip-path: path("M47.60 24.00 L46.18 26.18 L42.93 27.76 L40.10 28.88 L39.40 30.38 L40.72 32.94 L42.29 36.22 L42.23 38.96 L39.94 39.94 L36.46 39.19 L33.45 38.14 L31.80 38.60 L31.13 41.20 L30.30 44.76 L28.59 47.08 L26.23 46.67 L24.00 44.00 L22.31 41.13 L20.79 40.15 L18.69 41.51 L15.82 43.75 L12.95 44.68 L11.23 43.12 L11.09 39.73 L11.66 36.34 L11.31 34.42 L9.03 34.00 L5.44 33.92 L2.45 32.93 L1.82 30.73 L3.70 28.04 L6.37 25.74 L7.60 24.00 L6.37 22.26 L3.70 19.96 L1.82 17.27 L2.45 15.07 L5.44 14.08 L9.03 14.00 L11.31 13.58 L11.66 11.66 L11.09 8.27 L11.23 4.88 L12.95 3.32 L15.82 4.25 L18.69 6.49 L20.79 7.85 L22.31 6.87 L24.00 4.00 L26.23 1.33 L28.59 0.92 L30.30 3.24 L31.13 6.80 L31.80 9.40 L33.45 9.86 L36.46 8.81 L39.94 8.06 L42.23 9.04 L42.29 11.78 L40.72 15.06 L39.40 17.62 L40.10 19.12 L42.93 20.24 L46.18 21.82 Z"); }
+  85.71% { clip-path: path("M42.06 24.00 L42.46 25.82 L42.80 27.74 L43.09 29.79 L43.35 32.01 L43.60 34.48 L42.09 36.09 L39.91 37.06 L37.90 37.90 L36.02 38.64 L34.21 39.27 L32.45 39.81 L30.73 40.24 L29.03 40.57 L27.34 40.81 L25.67 40.95 L24.00 41.00 L22.33 40.95 L20.66 40.81 L18.97 40.57 L17.27 40.24 L15.55 39.81 L13.79 39.27 L11.98 38.64 L10.10 37.90 L8.09 37.06 L5.91 36.09 L4.40 34.48 L4.65 32.01 L4.91 29.79 L5.20 27.74 L5.54 25.82 L5.94 24.00 L6.41 22.27 L6.94 20.61 L7.55 19.01 L8.24 17.47 L9.00 15.98 L9.85 14.55 L10.78 13.15 L11.80 11.80 L12.91 10.49 L14.11 9.20 L15.42 7.94 L16.83 6.69 L18.37 5.43 L20.05 4.14 L21.91 2.77 L24.00 1.26 L26.09 2.77 L27.95 4.14 L29.63 5.43 L31.17 6.69 L32.58 7.94 L33.89 9.20 L35.09 10.49 L36.20 11.80 L37.22 13.15 L38.15 14.55 L39.00 15.98 L39.76 17.47 L40.45 19.01 L41.06 20.61 L41.59 22.27 Z"); }
+  100.0% { clip-path: path("M44.00 24.00 L43.90 25.96 L43.62 27.90 L43.14 29.81 L42.48 31.65 L41.64 33.43 L40.63 35.11 L39.46 36.69 L38.14 38.14 L36.69 39.46 L35.11 40.63 L33.43 41.64 L31.65 42.48 L29.81 43.14 L27.90 43.62 L25.96 43.90 L24.00 44.00 L22.04 43.90 L20.10 43.62 L18.19 43.14 L16.35 42.48 L14.57 41.64 L12.89 40.63 L11.31 39.46 L9.86 38.14 L8.54 36.69 L7.37 35.11 L6.36 33.43 L5.52 31.65 L4.86 29.81 L4.38 27.90 L4.10 25.96 L4.00 24.00 L4.10 22.04 L4.38 20.10 L4.86 18.19 L5.52 16.35 L6.36 14.57 L7.37 12.89 L8.54 11.31 L9.86 9.86 L11.31 8.54 L12.89 7.37 L14.57 6.36 L16.35 5.52 L18.19 4.86 L20.10 4.38 L22.04 4.10 L24.00 4.00 L25.96 4.10 L27.90 4.38 L29.81 4.86 L31.65 5.52 L33.43 6.36 L35.11 7.37 L36.69 8.54 L38.14 9.86 L39.46 11.31 L40.63 12.89 L41.64 14.57 L42.48 16.35 L43.14 18.19 L43.62 20.10 L43.90 22.04 Z"); }
+}
+
 
 /* ─── Skeletons ────────────────────────────────────────────── */
 .m3-skeleton {
@@ -891,9 +917,11 @@ button.m3-chip:active { transform: scale(0.95); border-radius: var(--shape-md); 
   width: 44px; height: 44px; border-radius: var(--shape-md);
   background: var(--md-primary-container); color: var(--md-on-primary-container);
   display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
-  transition: border-radius var(--dur-medium-2) var(--spring-fast-spatial);
+  will-change: border-radius;
+  transform: translateZ(0);
+  transition: border-radius var(--dur-medium-2) var(--ease-emphasized-decel);
 }
-.m3-list-item:hover .m3-list-leading { border-radius: var(--shape-full); }
+@media (hover: hover) { .m3-list-item:hover .m3-list-leading { border-radius: var(--shape-full); } }
 .m3-list-trailing { margin-left: auto; color: var(--md-on-surface-variant); transition: transform var(--dur-medium-2) var(--spring-fast-spatial); }
 /* Grouped list: connected corners like M3 Expressive */
 .m3-list-group { display: flex; flex-direction: column; gap: 3px; }
@@ -962,9 +990,11 @@ button.m3-chip:active { transform: scale(0.95); border-radius: var(--shape-md); 
   width: 36px; height: 36px; border-radius: var(--shape-md);
   background: var(--md-primary); color: var(--md-on-primary);
   display: inline-flex; align-items: center; justify-content: center;
-  transition: border-radius var(--dur-medium-4) var(--spring-default-spatial), transform var(--dur-medium-4) var(--spring-default-spatial);
+  will-change: border-radius, transform;
+  transform: translateZ(0);
+  transition: border-radius var(--dur-medium-2) var(--spring-default-spatial), transform var(--dur-medium-2) var(--spring-default-spatial);
 }
-.m3-brand:hover .m3-brand-mark { border-radius: var(--shape-full); transform: rotate(-12deg) scale(1.05); }
+@media (hover: hover) { .m3-brand:hover .m3-brand-mark { border-radius: var(--shape-full); transform: translateZ(0) rotate(-10deg); } }
 
 .m3-nav-tabs {
   position: relative;
