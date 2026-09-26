@@ -36,16 +36,22 @@ export const authOptions: NextAuthOptions = {
           const [farm] = await db.select({ slug: farms.slug }).from(farms).where(eq(farms.owner_id, user.id));
           farmSlug = farm?.slug ?? null;
         }
-        return { id: user.id, name: user.name, email: user.email, role: user.role, farmSlug };
+        return { id: user.id, name: user.name, email: user.email, role: user.role, farmSlug, image: user.avatar_url };
       },
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
         token.role = (user as unknown as { role: string }).role;
         token.id = user.id;
         token.farmSlug = (user as unknown as { farmSlug?: string | null }).farmSlug ?? null;
+        token.picture = user.image ?? null;
+      }
+      // useSession().update() after an avatar/name change: re-read from the database.
+      if (trigger === "update" && token.id) {
+        const [row] = await db.select({ name: users.name, avatar_url: users.avatar_url }).from(users).where(eq(users.id, token.id as string));
+        if (row) { token.name = row.name; token.picture = row.avatar_url; }
       }
       return token;
     },
@@ -54,6 +60,8 @@ export const authOptions: NextAuthOptions = {
         (session.user as { role: string; id: string }).role = token.role as string;
         (session.user as { id: string }).id = token.id as string;
         (session.user as { farmSlug?: string | null }).farmSlug = (token.farmSlug as string | null) ?? null;
+        session.user.image = (token.picture as string | null) ?? null;
+        if (token.name) session.user.name = token.name;
       }
       return session;
     },

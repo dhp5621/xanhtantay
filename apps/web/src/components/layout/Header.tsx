@@ -6,6 +6,7 @@ import { useSession, signOut } from "next-auth/react";
 import { memo, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTheme } from "./ThemeProvider";
 import { Icon } from "@/components/ui/Icon";
+import { Avatar } from "@/components/ui/Avatar";
 import { CUSTOMER_NAV, FARMER_NAV, VISITOR_NAV, isActive } from "./nav-config";
 import { useCart } from "@/components/cart/CartProvider";
 
@@ -129,7 +130,6 @@ function HeaderImpl() {
 
   if (HIDDEN_ON.includes(pathname)) return null;
 
-  const initial = session?.user?.name?.trim()?.[0]?.toUpperCase() ?? "?";
 
   return (
     <>
@@ -148,8 +148,8 @@ function HeaderImpl() {
             <ThemeToggle />
             {session ? (
               <>
-                <Link href="/tai-khoan" className="m3-avatar sm" title={session.user?.name ?? "Tài khoản"} aria-label="Tài khoản của tôi">
-                  {initial}
+                <Link href="/tai-khoan" title={session.user?.name ?? "Tài khoản"} aria-label="Tài khoản của tôi" style={{ display: "inline-flex", borderRadius: "var(--shape-full)" }}>
+                  <Avatar name={session.user?.name} src={session.user?.image} size="sm" />
                 </Link>
                 <span className="hidden md:inline-flex">
                   <button

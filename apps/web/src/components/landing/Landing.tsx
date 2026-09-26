@@ -1,8 +1,19 @@
 import Link from "next/link";
 import { Icon } from "@/components/ui/Icon";
 import { ORDER_STATUS_LABELS } from "@xanhtantay/types";
+import { stripEmoji } from "@/lib/format";
 
 interface FarmCard { id: string; name: string; slug: string; location: string; cover_url: string | null }
+
+/** "Vườn nhà bác Ba, Trang trại cô Tư và Vườn quê u Thắm" from real farms, with a fallback. */
+function farmNames(farms: FarmCard[]) {
+  const names = farms.slice(0, 3).map((f) => f.name.replace(/^(Vườn|Trang trại)\s+/i, (m) => m.toLowerCase()));
+  if (names.length === 0) return "những vườn rau gần bạn";
+  if (names.length === 1) return names[0];
+  return `${names.slice(0, -1).join(", ")} và ${names[names.length - 1]}`;
+}
+
+const PILLAR_TONES = ["primary", "tertiary", "secondary", "primary"] as const;
 
 const PILLARS = [
   {
@@ -19,8 +30,8 @@ const PILLARS = [
     eyebrow: "Đặt hàng thông minh",
     title: "Mua theo cách hợp với nhà bạn",
     items: [
-      { icon: "event_repeat", t: "Gói đăng ký định kỳ", d: "“Thùng rau mẹ gửi” mỗi tuần hoặc mỗi tháng, tự lên đơn, đổi món trước ngày giao." },
-      { icon: "groups", t: "Gom đơn chung", d: "Rủ hàng xóm cùng toà nhà mua chung một chuyến xe. Đủ nhóm là freeship." },
+      { icon: "event_repeat", t: "Hộp rau gia đình định kỳ", d: "Một mức giá cố định mỗi tuần hoặc mỗi tháng, tự lên đơn, đổi món linh hoạt trước ngày giao 24h." },
+      { icon: "groups", t: "Gom đơn chung", d: "Rủ hàng xóm cùng toà nhà mua chung một chuyến xe để chia phí gom. Đủ nhóm là miễn phí ship." },
     ],
   },
   {
@@ -28,9 +39,9 @@ const PILLARS = [
     eyebrow: "Theo dõi có cảm xúc",
     title: "Không còn “đang giao” khô khan",
     items: [
-      { icon: "agriculture", t: ORDER_STATUS_LABELS.harvesting, d: "" },
-      { icon: "local_shipping", t: ORDER_STATUS_LABELS.loaded, d: "" },
-      { icon: "home", t: ORDER_STATUS_LABELS.delivered, d: "" },
+      { icon: "agriculture", t: stripEmoji(ORDER_STATUS_LABELS.harvesting), d: "" },
+      { icon: "local_shipping", t: stripEmoji(ORDER_STATUS_LABELS.loaded), d: "" },
+      { icon: "home", t: stripEmoji(ORDER_STATUS_LABELS.delivered), d: "" },
     ],
   },
   {
@@ -44,10 +55,17 @@ const PILLARS = [
 ];
 
 const FARMER_POINTS = [
-  { icon: "storefront", t: "Bán thẳng cho người ăn", d: "Không qua 3–5 khâu trung gian, không bị ép giá. Giá do bạn quyết, được mùa không mất giá." },
+  { icon: "storefront", t: "Bán thẳng cho người ăn", d: "Thay 3–5 khâu trung gian bằng một nền tảng. Bạn tự đặt giá bán; Xanh Tận Tay chỉ thu 5–10% trên mỗi đơn giao thành công." },
   { icon: "photo_camera", t: "Đăng bán theo đợt thu hoạch", d: "Có gì bán nấy, hái theo đơn đã chốt. Không tồn kho, không hao hụt." },
   { icon: "mic", t: "Đơn giản như nói chuyện", d: "Đăng nhật ký bằng ảnh, sắp tới bằng giọng nói. Không cần rành công nghệ." },
-  { icon: "event_repeat", t: "Đầu ra ổn định", d: "Khách đăng ký gói tuần / tháng nghĩa là đơn đều, dễ lên kế hoạch gieo trồng." },
+  { icon: "event_repeat", t: "Đầu ra ổn định", d: "Khách đăng ký “hộp rau gia đình” tuần / tháng nghĩa là đơn đều, dễ lên kế hoạch gieo trồng." },
+];
+
+/** Fee model from the business plan, stated plainly on both sides. */
+const FEES = [
+  { icon: "percent", who: "Nhà vườn", t: "5–10% mỗi đơn thành công", d: "Không phí đăng bán, không phí tháng. Đơn không giao được thì không thu." },
+  { icon: "package_2", who: "Người mua", t: "Phí đóng gói & vận chuyển gom", d: "Tính theo chuyến xe gom. Gom đơn đủ nhóm là được miễn." },
+  { icon: "event_repeat", who: "Người mua", t: "Hộp rau gia đình giá cố định", d: "Gói tuần / tháng một mức giá, giao đúng hẹn, đổi món trước 24h." },
 ];
 
 export function Landing({ farms, stats }: { farms: FarmCard[]; stats: { farms: number; products: number; groups: number } }) {
@@ -65,7 +83,7 @@ export function Landing({ farms, stats }: { farms: FarmCard[]; stats: { farms: n
             Rau tươi gom thẳng từ vườn, có tên người trồng
           </h1>
           <p className="body-lg anim-in delay-2" style={{ color: "var(--md-on-secondary-container)", maxWidth: 620, marginBottom: 28, fontSize: 18 }}>
-            Đặt mua nông sản tươi gom trực tiếp từ vườn nhà bác Ba, cô Tư, u Thắm. Xem nhật ký và livestream nông trại, đặt theo gói định kỳ hoặc gom đơn cùng hàng xóm, biết rau đang ở đâu, và được gợi ý nấu gì tối nay.
+            Đặt mua nông sản tươi gom trực tiếp từ {farmNames(farms)}. Xem nhật ký và livestream nông trại, đặt theo gói định kỳ hoặc gom đơn cùng hàng xóm, biết rau đang ở đâu, và được gợi ý nấu gì tối nay.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 anim-in delay-3" style={{ maxWidth: 820 }}>
@@ -116,9 +134,9 @@ export function Landing({ farms, stats }: { farms: FarmCard[]; stats: { farms: n
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 stagger">
           {PILLARS.map((p, i) => (
-            <div key={p.eyebrow} className="m3-card-filled lift" style={{ padding: 24, borderRadius: "var(--shape-xl-inc)", background: i % 3 === 0 ? "var(--md-primary-container)" : i % 3 === 1 ? "var(--md-tertiary-container)" : "var(--md-secondary-container)", color: i % 3 === 0 ? "var(--md-on-primary-container)" : i % 3 === 1 ? "var(--md-on-tertiary-container)" : "var(--md-on-secondary-container)" }}>
+            <div key={p.eyebrow} className="m3-card-filled lift" style={{ padding: 24, borderRadius: "var(--shape-xl-inc)", background: `var(--md-${PILLAR_TONES[i % PILLAR_TONES.length]}-container)`, color: `var(--md-on-${PILLAR_TONES[i % PILLAR_TONES.length]}-container)` }}>
               <div className="flex items-center gap-3" style={{ marginBottom: 14 }}>
-                <span style={{ width: 48, height: 48, borderRadius: "var(--shape-lg)", background: "rgba(255,255,255,.35)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}><Icon name={p.icon} size={26} filled /></span>
+                <span style={{ width: 48, height: 48, borderRadius: "var(--shape-lg)", background: "color-mix(in srgb, currentColor 14%, transparent)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}><Icon name={p.icon} size={26} filled /></span>
                 <div>
                   <p className="label-md" style={{ opacity: 0.75, textTransform: "uppercase" }}>{p.eyebrow}</p>
                   <p className="title-lg">{p.title}</p>
@@ -126,7 +144,7 @@ export function Landing({ farms, stats }: { farms: FarmCard[]; stats: { farms: n
               </div>
               <div className="flex flex-col gap-2">
                 {p.items.map((it) => (
-                  <div key={it.t} style={{ display: "flex", gap: 12, alignItems: "flex-start", background: "rgba(255,255,255,.35)", borderRadius: "var(--shape-md)", padding: "10px 14px" }}>
+                  <div key={it.t} className="m3-tint-tile" style={{ display: "flex", gap: 12, alignItems: "flex-start", borderRadius: "var(--shape-md)", padding: "10px 14px" }}>
                     <Icon name={it.icon} size={22} filled />
                     <div>
                       <p className="title-sm">{it.t}</p>
@@ -161,18 +179,45 @@ export function Landing({ farms, stats }: { farms: FarmCard[]; stats: { farms: n
             </div>
           ))}
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 stagger" style={{ marginTop: 16 }}>
+        <p className="label-md text-on-surface-variant" style={{ marginTop: 24, marginBottom: 10, textTransform: "uppercase" }}>Một ngày của nhà vườn</p>
+        <div className="m3-carousel" aria-label="Một ngày của nhà vườn">
           {[
-            { icon: "photo_camera", t: "Sáng: đăng một tấm ảnh vườn", d: "30 giây trên điện thoại, khách thấy ngay." },
-            { icon: "agriculture", t: "Trưa: hái theo đơn đã chốt", d: "Không thừa, không thiếu, không tồn kho." },
-            { icon: "local_shipping", t: "Chiều: bấm “đã lên xe”", d: "Khách nhận thông báo, tiền về khi giao xong." },
-          ].map((x) => (
-            <div key={x.t} className="m3-card-outlined" style={{ padding: "16px 18px", display: "flex", gap: 12, alignItems: "flex-start", borderRadius: "var(--shape-lg-inc)" }}>
-              <Icon name={x.icon} className="text-primary" filled />
-              <div>
-                <p className="title-sm text-on-surface">{x.t}</p>
-                <p className="body-sm text-on-surface-variant">{x.d}</p>
+            { icon: "wb_twilight", time: "05:30", t: "Ra vườn, chụp một tấm ảnh", d: "Sương còn đọng trên lá. 30 giây trên điện thoại, khách thấy ngay." },
+            { icon: "photo_camera", time: "06:00", t: "Đăng nhật ký", d: "Kể hôm nay hái gì, cây nào đang lớn. Khách tin hơn mỗi ngày." },
+            { icon: "notifications_active", time: "07:00", t: "Đơn về", d: "Đơn lẻ, đơn gói, đơn gom của cả toà nhà, gom lại thành một danh sách hái." },
+            { icon: "agriculture", time: "08:00", t: "Hái theo đơn đã chốt", d: "Không thừa, không thiếu, không tồn kho. Tồn kho tự trừ theo đơn." },
+            { icon: "local_shipping", time: "11:00", t: "Bấm “đã lên xe”", d: "Xe lạnh về phố. Khách nhận thông báo “hàng đã lên xe lạnh về phố”." },
+            { icon: "payments", time: "17:00", t: "Bấm “đã giao”, tiền về", d: "Khách trả khi nhận. Cuối ngày xem tổng doanh thu trên trang tổng quan." },
+          ].map((x, i) => (
+            <article key={x.t} className="m3-carousel-item m3-card-elevated" style={{ padding: "20px 20px 18px", borderRadius: "var(--shape-xl)", background: "var(--md-surface-container-lowest)" }}>
+              <div className="flex items-center justify-between" style={{ marginBottom: 12 }}>
+                <span className="m3-list-leading" style={{ background: "var(--md-tertiary-container)", color: "var(--md-on-tertiary-container)" }}><Icon name={x.icon} filled /></span>
+                <span className="m3-chip sm round m3-chip-surface tabular">{x.time}</span>
               </div>
+              <p className="label-sm text-primary" style={{ marginBottom: 2 }}>BƯỚC {i + 1}</p>
+              <p className="title-md text-on-surface">{x.t}</p>
+              <p className="body-sm text-on-surface-variant" style={{ marginTop: 4, lineHeight: 1.55 }}>{x.d}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      {/* Fees, transparent */}
+      <section>
+        <div style={{ textAlign: "center", marginBottom: 24 }}>
+          <p className="m3-eyebrow">Chi phí minh bạch</p>
+          <h2 className="headline-lg text-on-surface">Ai trả gì, nói rõ từ đầu</h2>
+          <p className="body-md text-on-surface-variant" style={{ marginTop: 6, maxWidth: 560, marginInline: "auto" }}>Không có phí ẩn. Nhà vườn giữ trọn giá bán sau một khoản phí giao dịch nhỏ; người mua chỉ trả phần vận chuyển, và gom đơn là cách để không phải trả.</p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 stagger">
+          {FEES.map((f) => (
+            <div key={f.t} className="m3-card-outlined lift" style={{ padding: "20px 22px", borderRadius: "var(--shape-xl)" }}>
+              <div className="flex items-center justify-between" style={{ marginBottom: 12 }}>
+                <span className="m3-list-leading"><Icon name={f.icon} filled /></span>
+                <span className="m3-chip sm round m3-chip-surface">{f.who}</span>
+              </div>
+              <p className="title-md text-on-surface">{f.t}</p>
+              <p className="body-sm text-on-surface-variant" style={{ marginTop: 4, lineHeight: 1.55 }}>{f.d}</p>
             </div>
           ))}
         </div>

@@ -9,13 +9,11 @@ import { getSessionUser } from "@/lib/session";
 import { Icon } from "@/components/ui/Icon";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { formatVND, formatDate, ORDER_TYPE_LABELS, STATUS_ICONS } from "@/lib/format";
+import { formatVND, formatDate, ORDER_TYPE_LABELS, STATUS_ICONS, stripEmoji } from "@/lib/format";
 
 export const metadata = { title: "Đơn hàng của tôi" };
 const STEPS = ["harvesting", "loaded", "delivered"] as const;
 const STEP_LABELS = ["Thu hoạch", "Lên xe", "Đã giao"];
-// Labels in the shared types end with an emoji; icons replace them on web.
-const stripEmoji = (s: string) => s.replace(/\s*(?:[\uD83C-\uDBFF][\uDC00-\uDFFF]|[\u2600-\u27BF])\uFE0F?\s*$/, "").trim();
 
 export default async function DonHangPage() {
   const user = await getSessionUser();

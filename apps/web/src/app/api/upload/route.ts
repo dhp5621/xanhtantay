@@ -2,7 +2,11 @@ import { NextResponse } from "next/server";
 import { put } from "@vercel/blob";
 import { getSessionUser } from "@/lib/session";
 
-const ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/gif", "video/mp4", "video/webm"];
+const ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/gif", "video/mp4", "video/webm", "video/quicktime"];
+// The client compresses before upload (images ≤1280px WebP, video ≤720p/25fps/30s);
+// these caps only stop uncompressed uploads from eating the 1 GB store.
+const MAX_IMAGE = 3 * 1024 * 1024;
+const MAX_VIDEO = 12 * 1024 * 1024;
 
 export async function POST(req: Request) {
   const user = await getSessionUser();
@@ -12,8 +16,11 @@ export async function POST(req: Request) {
   const file = formData.get("file");
   if (!(file instanceof File)) return NextResponse.json({ error: "Không có file" }, { status: 400 });
 
-  if (file.size > 10 * 1024 * 1024) return NextResponse.json({ error: "File quá lớn (tối đa 10MB)" }, { status: 400 });
   if (!ALLOWED.includes(file.type)) return NextResponse.json({ error: "Chỉ nhận ảnh hoặc video" }, { status: 400 });
+  const isVideo = file.type.startsWith("video/");
+  if (file.size > (isVideo ? MAX_VIDEO : MAX_IMAGE)) {
+    return NextResponse.json({ error: isVideo ? "Video quá lớn (tối đa 12MB sau khi nén, ≤30 giây)" : "Ảnh quá lớn (tối đa 3MB)" }, { status: 400 });
+  }
   if (!process.env.BLOB_READ_WRITE_TOKEN) return NextResponse.json({ error: "Chưa cấu hình lưu trữ ảnh" }, { status: 503 });
 
   const safeName = file.name.replace(/[^\w.\-]+/g, "_").slice(-80);

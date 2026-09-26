@@ -2,11 +2,12 @@ export const dynamic = "force-dynamic";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { db } from "@/db";
-import { orders, subscriptions, group_order_members, farms, products } from "@/db/schema";
+import { orders, subscriptions, group_order_members, farms, products, users } from "@/db/schema";
 import { and, count, eq } from "drizzle-orm";
 import { getSessionUser } from "@/lib/session";
 import { Icon } from "@/components/ui/Icon";
 import { SignOutButton } from "@/components/auth/SignOutButton";
+import { AvatarUploader } from "@/components/auth/AvatarUploader";
 
 export const metadata = { title: "Tài khoản" };
 
@@ -16,6 +17,8 @@ interface MenuItem { href: string; icon: string; label: string; desc: string }
 export default async function TaiKhoanPage() {
   const user = await getSessionUser();
   if (!user) redirect("/dang-nhap?next=/tai-khoan");
+
+  const [me] = await db.select({ name: users.name, avatar_url: users.avatar_url }).from(users).where(eq(users.id, user.id));
 
   let stats: Stat[];
   let menuItems: MenuItem[];
@@ -68,9 +71,9 @@ export default async function TaiKhoanPage() {
   return (
     <div className="max-w-md mx-auto flex flex-col gap-5">
       <div className="anim-in-scale" style={{ background: isFarmer ? "linear-gradient(135deg, var(--md-tertiary-container), var(--md-primary-container))" : "linear-gradient(135deg, var(--md-primary-container), var(--md-tertiary-container))", borderRadius: "var(--shape-xl-inc)", padding: "28px 24px", display: "flex", alignItems: "center", gap: 18 }}>
-        <div className="m3-avatar xl" style={{ background: isFarmer ? "var(--md-tertiary)" : "var(--md-primary)", color: isFarmer ? "var(--md-on-tertiary)" : "var(--md-on-primary)" }}>{user.name?.trim()?.[0]?.toUpperCase() ?? "?"}</div>
+        <AvatarUploader name={me?.name ?? user.name} src={me?.avatar_url} tone={isFarmer ? "tertiary" : "primary"} />
         <div style={{ minWidth: 0 }}>
-          <p className="headline-sm" style={{ color: "var(--md-on-primary-container)" }}>{user.name}</p>
+          <p className="headline-sm" style={{ color: "var(--md-on-primary-container)" }}>{me?.name ?? user.name}</p>
           <p className="body-sm" style={{ color: "var(--md-on-primary-container)", opacity: 0.8, overflow: "hidden", textOverflow: "ellipsis" }}>{subtitle ?? user.email}</p>
           <span className="m3-chip sm round" style={{ marginTop: 8, background: "var(--md-surface-container-lowest)", boxShadow: "none" }}>
             <Icon name={isFarmer ? "agriculture" : "shopping_basket"} size={16} filled />

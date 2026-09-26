@@ -26,6 +26,9 @@ export const timeAgo = (d: Date | string) => {
   return new Date(d).toLocaleDateString("vi-VN", { day: "numeric", month: "long", timeZone: TZ });
 };
 
+/** Shared status labels end with an emoji for mobile; the web uses icons instead. */
+export const stripEmoji = (s: string) => s.replace(/\s*(?:[\uD83C-\uDBFF][\uDC00-\uDFFF]|[\u2600-\u27BF])\uFE0F?\s*$/, "").trim();
+
 export const daysUntil = (d: Date | string) =>
   Math.ceil((new Date(d).getTime() - Date.now()) / 86_400_000);
 

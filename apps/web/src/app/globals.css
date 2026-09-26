@@ -1364,6 +1364,50 @@ input[type="number"].tabular::-webkit-inner-spin-button { -webkit-appearance: no
   background: linear-gradient(to top, rgba(0,0,0,.72) 0%, rgba(0,0,0,.2) 55%, transparent 100%);
 }
 
+/* Translucent tile that inherits the parent's on-color (works on any container tone) */
+.m3-tint-tile {
+  background: color-mix(in srgb, currentColor 9%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 10%, transparent);
+}
+
+/* ─── Carousel (M3 multi-browse) with scroll-driven depth ────── */
+.m3-carousel {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 16px;
+  padding: 12px 16px 20px;
+  margin: 0 -16px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  perspective: 900px;
+  mask-image: linear-gradient(to right, transparent, #000 16px, #000 calc(100% - 16px), transparent);
+}
+.m3-carousel::-webkit-scrollbar { display: none; }
+.m3-carousel-item {
+  flex: 0 0 min(300px, 78vw);
+  scroll-snap-align: center;
+  transform-origin: center;
+  transition: transform var(--dur-medium-2) var(--spring-default-spatial);
+}
+/* Items far from the viewport centre sit "deeper": smaller, dimmer, tilted */
+@supports (animation-timeline: view()) {
+  .m3-carousel-item {
+    animation: m3-carousel-depth linear both;
+    animation-timeline: view(inline);
+    animation-range: entry 0% exit 100%;
+  }
+  @keyframes m3-carousel-depth {
+    0%   { transform: scale(0.86) rotateY(14deg) translateZ(-60px); opacity: 0.55; }
+    45%  { transform: scale(1) rotateY(0) translateZ(0); opacity: 1; }
+    55%  { transform: scale(1) rotateY(0) translateZ(0); opacity: 1; }
+    100% { transform: scale(0.86) rotateY(-14deg) translateZ(-60px); opacity: 0.55; }
+  }
+}
+@media (hover: hover) { .m3-carousel-item:hover { transform: translateY(-4px); } }
+
 /* ─── Section header ───────────────────────────────────────── */
 .m3-section-head {
   display: flex;
