@@ -1,0 +1,26 @@
+{
+  "expo": {
+    "name": "Xanh Tận Tay",
+    "slug": "xanhtantay",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "xanhtantay",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#F6FBF4"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "vn.xanhtantay.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#F6FBF4"
+      },
+      "package": "vn.xanhtantay.app"
+    },
+    "plugins": ["expo-router"]
+  }
+}

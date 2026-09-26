@@ -1,0 +1,113 @@
+import {
+  pgTable,
+  text,
+  timestamp,
+  boolean,
+  integer,
+  numeric,
+  jsonb,
+  pgEnum,
+} from "drizzle-orm/pg-core";
+
+export const userRoleEnum = pgEnum("user_role", ["customer", "farmer"]);
+export const orderStatusEnum = pgEnum("order_status", ["harvesting", "loaded", "delivered"]);
+export const orderTypeEnum = pgEnum("order_type", ["single", "subscription", "group"]);
+export const subscriptionFrequencyEnum = pgEnum("subscription_frequency", ["weekly", "monthly"]);
+export const groupOrderStatusEnum = pgEnum("group_order_status", ["open", "locked", "delivered", "cancelled"]);
+
+export const users = pgTable("users", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  name: text("name").notNull(),
+  phone: text("phone"),
+  email: text("email").unique(),
+  role: userRoleEnum("role").notNull().default("customer"),
+  avatar_url: text("avatar_url"),
+  password_hash: text("password_hash"),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const farms = pgTable("farms", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  owner_id: text("owner_id").notNull().references(() => users.id),
+  name: text("name").notNull(),
+  location: text("location").notNull(),
+  description: text("description"),
+  cover_url: text("cover_url"),
+  slug: text("slug").unique().notNull(),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const products = pgTable("products", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  farm_id: text("farm_id").notNull().references(() => farms.id),
+  name: text("name").notNull(),
+  unit: text("unit").notNull(),
+  price_per_unit: integer("price_per_unit").notNull(),
+  category: text("category").notNull(),
+  image_url: text("image_url"),
+  in_stock: boolean("in_stock").notNull().default(true),
+});
+
+export const farm_diary = pgTable("farm_diary", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  farm_id: text("farm_id").notNull().references(() => farms.id),
+  content: text("content").notNull(),
+  media_urls: text("media_urls").array().notNull().default([]),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const orders = pgTable("orders", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  user_id: text("user_id").notNull().references(() => users.id),
+  farm_id: text("farm_id").notNull().references(() => farms.id),
+  status: orderStatusEnum("status").notNull().default("harvesting"),
+  type: orderTypeEnum("type").notNull().default("single"),
+  total: integer("total").notNull(),
+  note: text("note"),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const order_items = pgTable("order_items", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  order_id: text("order_id").notNull().references(() => orders.id),
+  product_id: text("product_id").notNull().references(() => products.id),
+  quantity: numeric("quantity").notNull(),
+  unit_price: integer("unit_price").notNull(),
+});
+
+export const subscriptions = pgTable("subscriptions", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  user_id: text("user_id").notNull().references(() => users.id),
+  farm_id: text("farm_id").notNull().references(() => farms.id),
+  frequency: subscriptionFrequencyEnum("frequency").notNull().default("weekly"),
+  next_delivery: timestamp("next_delivery").notNull(),
+  items: jsonb("items").$type<{ product_id: string; quantity: number }[]>().notNull().default([]),
+  active: boolean("active").notNull().default(true),
+});
+
+export const group_orders = pgTable("group_orders", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  farm_id: text("farm_id").notNull().references(() => farms.id),
+  title: text("title").notNull(),
+  min_members: integer("min_members").notNull(),
+  current_members: integer("current_members").notNull().default(0),
+  deadline: timestamp("deadline").notNull(),
+  status: groupOrderStatusEnum("status").notNull().default("open"),
+  shipping_address: text("shipping_address").notNull(),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const group_order_members = pgTable("group_order_members", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  group_order_id: text("group_order_id").notNull().references(() => group_orders.id),
+  user_id: text("user_id").notNull().references(() => users.id),
+  items: jsonb("items").$type<{ product_id: string; quantity: number }[]>().notNull().default([]),
+});
+
+export const recipes = pgTable("recipes", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  title: text("title").notNull(),
+  ingredients: text("ingredients").array().notNull().default([]),
+  steps: text("steps").array().notNull().default([]),
+  image_url: text("image_url"),
+});
