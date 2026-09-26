@@ -58,7 +58,7 @@ importers:
         version: link:../../packages/types
       drizzle-orm:
         specifier: ^0.38.3
-        version: 0.38.4(@neondatabase/serverless@0.10.4)(@types/pg@8.11.6)(@types/react@19.1.0)(react@19.1.0)
+        version: 0.38.4(@neondatabase/serverless@0.10.4)(@types/pg@8.11.6)(@types/react@19.1.17)(react@19.1.0)
       next:
         specifier: ^15.5.26
         version: 15.5.26(@types/node@20.19.43)(babel-plugin-react-compiler@1.0.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -76,11 +76,11 @@ importers:
         specifier: ^20
         version: 20.19.43
       '@types/react':
-        specifier: 19.1.0
-        version: 19.1.0
+        specifier: ^19.1.8
+        version: 19.1.17
       '@types/react-dom':
-        specifier: 19.1.0
-        version: 19.1.0(@types/react@19.1.0)
+        specifier: ^19.1.5
+        version: 19.1.11(@types/react@19.1.17)
       autoprefixer:
         specifier: ^10.4.20
         version: 10.6.1(postcss@8.5.28)
@@ -1851,8 +1851,10 @@ packages:
     peerDependencies:
       '@types/react': ^19.0.0
 
-  '@types/react@19.1.0':
-    resolution: {integrity: sha512-UaicktuQI+9UKyA4njtDOGBD/67t8YEBt2xdfqu8+gP9hqPUPsiXlNPcpS2gVdjmis5GKPG3fCxbQLVgxsQZ8w==}
+  '@types/react-dom@19.1.11':
+    resolution: {integrity: sha512-3BKc/yGdNTYQVVw4idqHtSOcFsgGuBbMveKCOgF8wQ5QtrYOc3jDIlzg3jef04zcXFIHLelyGlj0T+BJ8+KN+w==}
+    peerDependencies:
+      '@types/react': ^19.0.0
 
   '@types/react@19.1.17':
     resolution: {integrity: sha512-Qec1E3mhALmaspIrhWt9jkQMNdw6bReVu64mjvhbhq2NFPftLPVr+l1SZgmw/66WwBNpDh7ao5AT6gF5v41PFA==}
@@ -6134,17 +6136,13 @@ snapshots:
       pg-protocol: 1.16.0
       pg-types: 4.1.0
 
-  '@types/react-dom@19.1.0(@types/react@19.1.0)':
-    dependencies:
-      '@types/react': 19.1.0
-
   '@types/react-dom@19.1.0(@types/react@19.1.17)':
     dependencies:
       '@types/react': 19.1.17
 
-  '@types/react@19.1.0':
+  '@types/react-dom@19.1.11(@types/react@19.1.17)':
     dependencies:
-      csstype: 3.2.3
+      '@types/react': 19.1.17
 
   '@types/react@19.1.17':
     dependencies:
@@ -6655,11 +6653,11 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  drizzle-orm@0.38.4(@neondatabase/serverless@0.10.4)(@types/pg@8.11.6)(@types/react@19.1.0)(react@19.1.0):
+  drizzle-orm@0.38.4(@neondatabase/serverless@0.10.4)(@types/pg@8.11.6)(@types/react@19.1.17)(react@19.1.0):
     optionalDependencies:
       '@neondatabase/serverless': 0.10.4
       '@types/pg': 8.11.6
-      '@types/react': 19.1.0
+      '@types/react': 19.1.17
       react: 19.1.0
 
   ee-first@1.1.1: {}
