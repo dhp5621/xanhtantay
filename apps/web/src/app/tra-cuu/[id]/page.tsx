@@ -74,7 +74,12 @@ export default async function TraCuuPage({ params }: { params: Promise<{ id: str
           <div className="m3-list-group">
             {diary.map((d) => (
               <div key={d.id} className="m3-list-item" style={{ cursor: "default", alignItems: "flex-start" }}>
-                {d.media_urls.length ? <MediaGallery urls={d.media_urls} size={72} linkTo={`/nhat-ky/${d.id}`} /> : <span className="m3-list-leading"><Icon name="eco" /></span>}
+                {d.media_urls.length ? (
+                  <span style={{ position: "relative", flexShrink: 0 }}>
+                    <MediaGallery urls={d.media_urls.slice(0, 1)} size={72} linkTo={`/nhat-ky/${d.id}`} />
+                    {d.media_urls.length > 1 && <span className="m3-chip sm round" style={{ position: "absolute", right: 4, bottom: 4, height: 20, fontSize: 10, padding: "0 6px", background: "rgba(0,0,0,.6)", color: "#fff", boxShadow: "none", pointerEvents: "none" }}><Icon name="photo_library" size={12} filled /> {d.media_urls.length}</span>}
+                  </span>
+                ) : <span className="m3-list-leading"><Icon name="eco" /></span>}
                 <div><p className="body-md" style={{ fontWeight: 400 }}>{d.content}</p><p className="body-sm text-on-surface-variant" style={{ marginTop: 4 }}>{formatDateTime(d.created_at)} · <Link href={`/nhat-ky/${d.id}`} className="text-primary" style={{ textDecoration: "none", fontWeight: 600 }}>Xem bài</Link></p></div>
               </div>
             ))}
