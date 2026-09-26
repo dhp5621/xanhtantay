@@ -1829,3 +1829,35 @@ input[type="number"].tabular::-webkit-inner-spin-button { -webkit-appearance: no
 }
 .m3-scroll-row::-webkit-scrollbar { display: none; }
 .m3-scroll-card { flex: 0 0 min(220px, 68vw); scroll-snap-align: start; }
+
+/* ─── Paged cards (levels): 4 per page, swipe or buttons ─────── */
+.m3-pager { display: flex; flex-direction: column; gap: 10px; }
+.m3-pager-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.m3-pager-dots { display: flex; gap: 6px; padding: 0 4px; }
+.m3-pager-dot { width: 8px; height: 8px; border-radius: 4px; border: none; padding: 0; background: var(--md-outline-variant); cursor: pointer; transition: width var(--dur-medium-2) var(--spring-default-spatial), background-color var(--dur-short-4) var(--ease-standard); }
+.m3-pager-dot.active { width: 22px; background: var(--md-primary); }
+.m3-pager-track {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  margin: 0 -4px;
+  padding: 4px;
+}
+.m3-pager-track::-webkit-scrollbar { display: none; }
+.m3-pager-page {
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  padding: 0 2px;
+}
+@media (max-width: 767px) { .m3-pager-page { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.m3-level-card { display: flex; flex-direction: column; padding: 14px 16px 16px; border-radius: var(--shape-xl); overflow: visible; min-width: 0; }
+.m3-level-art { display: flex; justify-content: center; align-items: flex-end; height: 132px; margin-bottom: 6px; overflow: visible; }
+.m3-level-art svg { max-width: 100%; height: auto; }
+.m3-tree-bird { animation: m3-bird 6s ease-in-out infinite; }
+@keyframes m3-bird { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(-6px, -4px); } }

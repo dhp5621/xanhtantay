@@ -15,8 +15,15 @@ export const LEVELS: Level[] = [
   { name: "Mầm non", icon: "grass", min: 100, stage: 1, desc: "Đã nhú lá đầu" },
   { name: "Cây non", icon: "potted_plant", min: 300, stage: 2, desc: "Vươn cao mỗi tuần" },
   { name: "Cây xanh", icon: "park", min: 700, stage: 3, desc: "Đã cho bóng mát" },
-  { name: "Cây trĩu quả", icon: "nutrition", min: 1500, stage: 4, desc: "Mùa nào cũng có quả" },
-  { name: "Cổ thụ", icon: "forest", min: 3000, stage: 5, desc: "Nuôi cả một khu vườn" },
+  { name: "Cây ra hoa", icon: "local_florist", min: 1100, stage: 4, desc: "Ong bướm ghé thăm" },
+  { name: "Cây trĩu quả", icon: "nutrition", min: 1500, stage: 5, desc: "Mùa nào cũng có quả" },
+  { name: "Cổ thụ", icon: "forest", min: 3000, stage: 6, desc: "Chim về làm tổ" },
+  { name: "Vườn nhỏ", icon: "yard", min: 5000, stage: 7, desc: "Thêm cây bên cạnh" },
+  { name: "Vườn xanh", icon: "nature", min: 8000, stage: 8, desc: "Cả hàng cây xanh" },
+  { name: "Trang trại", icon: "agriculture", min: 12000, stage: 9, desc: "Nuôi cả xóm" },
+  { name: "Đồi rau", icon: "landscape", min: 17000, stage: 10, desc: "Xanh cả một quả đồi" },
+  { name: "Người giữ rừng", icon: "nature_people", min: 23000, stage: 11, desc: "Rừng nhỏ của riêng bạn" },
+  { name: "Huyền thoại", icon: "workspace_premium", min: 30000, stage: 12, desc: "Tên bạn trên bảng vàng" },
 ];
 
 export function levelFor(points: number) {

@@ -10,6 +10,7 @@ import { LEVELS, pointsFor, FARMER_SHARE } from "@/lib/commerce";
 import { Icon } from "@/components/ui/Icon";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { GrowingTree } from "@/components/loyalty/GrowingTree";
+import { LevelPager } from "@/components/loyalty/LevelPager";
 import { formatVND, formatDate } from "@/lib/format";
 
 export const metadata = { title: "Vườn của tôi" };
@@ -63,19 +64,7 @@ export default async function VuonCuaToiPage() {
 
       <section>
         <div className="m3-section-head"><h2 className="title-lg text-on-surface"><Icon name="trending_up" filled /> Các hạng</h2></div>
-        <div className="m3-scroll-row" aria-label="Các hạng">
-          {LEVELS.map((lv, i) => {
-            const reached = l.points >= lv.min;
-            return (
-              <div key={lv.name} className="m3-scroll-card m3-card-elevated" style={{ padding: 18, borderRadius: "var(--shape-xl)", opacity: reached ? 1 : 0.6, background: i === l.index ? "var(--md-primary-container)" : undefined, color: i === l.index ? "var(--md-on-primary-container)" : undefined }}>
-                <div style={{ display: "flex", justifyContent: "center" }}><GrowingTree stage={lv.stage} size={110} /></div>
-                <p className="title-md" style={{ marginTop: 6, display: "inline-flex", alignItems: "center", gap: 6 }}><Icon name={lv.icon} size={18} filled /> {lv.name}</p>
-                <p className="body-sm" style={{ opacity: 0.8 }}>{lv.min === 0 ? "Bắt đầu" : `từ ${lv.min} điểm`} · {lv.desc}</p>
-                {i === l.index && <span className="m3-chip sm round" style={{ marginTop: 8, background: "var(--md-surface-container-lowest)", boxShadow: "none" }}><Icon name="my_location" size={14} /> Bạn đang ở đây</span>}
-              </div>
-            );
-          })}
-        </div>
+        <LevelPager levels={LEVELS} points={l.points} currentIndex={l.index} />
       </section>
 
       <section>
