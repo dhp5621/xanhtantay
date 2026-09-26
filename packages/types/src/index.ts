@@ -30,6 +30,7 @@ export interface Product {
   category: string;
   image_url: string | null;
   in_stock: boolean;
+  stock_qty: number;
 }
 
 export interface FarmDiaryEntry {

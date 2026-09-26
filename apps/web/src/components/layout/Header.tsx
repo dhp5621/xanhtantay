@@ -144,18 +144,6 @@ function HeaderImpl() {
           <NavTabs items={items} pathname={pathname} />
 
           <div className="m3-top-bar-actions">
-            {isFarmer && (
-              <span className="hidden sm:inline-flex">
-                <Link
-                  href={inFarmerArea ? "/" : "/farmer"}
-                  className="m3-btn m3-btn-tonal m3-btn-sm"
-                  title={inFarmerArea ? "Xem như khách hàng" : "Về trang quản lý vườn"}
-                >
-                  <Icon name={inFarmerArea ? "storefront" : "agriculture"} size={18} />
-                  <span>{inFarmerArea ? "Cửa hàng" : "Vườn của tôi"}</span>
-                </Link>
-              </span>
-            )}
             {!isFarmer && session && <CartButton />}
             <ThemeToggle />
             {session ? (

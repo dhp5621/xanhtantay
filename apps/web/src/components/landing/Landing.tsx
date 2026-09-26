@@ -69,7 +69,7 @@ export function Landing({ farms, stats }: { farms: FarmCard[]; stats: { farms: n
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 anim-in delay-3" style={{ maxWidth: 820 }}>
-            <Link href="/dang-nhap" className="m3-card-elevated m3-card-action" style={{ padding: "22px 22px 20px", borderRadius: "var(--shape-xl)", background: "var(--md-surface-container-lowest)" }}>
+            <Link href="/dang-nhap?role=customer" className="m3-card-elevated m3-card-action" style={{ padding: "22px 22px 20px", borderRadius: "var(--shape-xl)", background: "var(--md-surface-container-lowest)" }}>
               <div className="flex items-center gap-3" style={{ marginBottom: 10 }}>
                 <span className="m3-list-leading" style={{ width: 48, height: 48 }}><Icon name="shopping_basket" size={26} filled /></span>
                 <div>
@@ -80,7 +80,7 @@ export function Landing({ farms, stats }: { farms: FarmCard[]; stats: { farms: n
               <p className="body-md text-on-surface-variant" style={{ marginBottom: 12 }}>Mua rau biết gốc. Đặt lẻ, đăng ký định kỳ hay gom đơn chung, theo dõi rau từ luống đến cửa.</p>
               <span className="m3-btn m3-btn-filled m3-btn-sm"><span>Dùng thử tài khoản khách</span><Icon name="arrow_forward" size={18} /></span>
             </Link>
-            <Link href="/dang-nhap" className="m3-card-elevated m3-card-action" style={{ padding: "22px 22px 20px", borderRadius: "var(--shape-xl)", background: "var(--md-surface-container-lowest)" }}>
+            <Link href="/dang-nhap?role=farmer" className="m3-card-elevated m3-card-action" style={{ padding: "22px 22px 20px", borderRadius: "var(--shape-xl)", background: "var(--md-surface-container-lowest)" }}>
               <div className="flex items-center gap-3" style={{ marginBottom: 10 }}>
                 <span className="m3-list-leading" style={{ width: 48, height: 48, background: "var(--md-tertiary-container)", color: "var(--md-on-tertiary-container)" }}><Icon name="agriculture" size={26} filled /></span>
                 <div>
@@ -148,7 +148,7 @@ export function Landing({ farms, stats }: { farms: FarmCard[]; stats: { farms: n
             <h2 className="headline-lg text-on-surface">Bạn trồng, chúng tôi nối bạn với người ăn</h2>
             <p className="body-md text-on-surface-variant" style={{ marginTop: 6 }}>Giao diện cực kỳ đơn giản, thao tác bằng ảnh và sắp tới bằng giọng nói, dành cho người chưa quen công nghệ.</p>
           </div>
-          <Link href="/dang-nhap" className="m3-btn m3-btn-tertiary"><Icon name="agriculture" /><span>Xem trang quản lý vườn</span></Link>
+          <Link href="/dang-nhap?role=farmer" className="m3-btn m3-btn-tertiary"><Icon name="agriculture" /><span>Xem trang quản lý vườn</span></Link>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 stagger">
           {FARMER_POINTS.map((p) => (
@@ -210,10 +210,10 @@ export function Landing({ farms, stats }: { farms: FarmCard[]; stats: { farms: n
             Tài khoản khách có sẵn đơn hàng, gói định kỳ và nhóm gom đơn. Tài khoản nhà vườn có đơn chờ hái và nhật ký để bạn đăng thử.
           </p>
           <div className="flex flex-wrap gap-3 justify-center">
-            <Link href="/dang-nhap" className="m3-btn m3-btn-lg" style={{ background: "var(--md-on-primary)", color: "var(--md-primary)" }}>
+            <Link href="/dang-nhap?role=customer" className="m3-btn m3-btn-lg" style={{ background: "var(--md-on-primary)", color: "var(--md-primary)" }}>
               <Icon name="shopping_basket" filled /><span>Tôi là khách hàng</span>
             </Link>
-            <Link href="/dang-nhap" className="m3-btn m3-btn-lg" style={{ background: "var(--md-primary-container)", color: "var(--md-on-primary-container)" }}>
+            <Link href="/dang-nhap?role=farmer" className="m3-btn m3-btn-lg" style={{ background: "var(--md-primary-container)", color: "var(--md-on-primary-container)" }}>
               <Icon name="agriculture" filled /><span>Tôi là nhà vườn</span>
             </Link>
           </div>

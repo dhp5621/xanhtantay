@@ -6,8 +6,9 @@ import { useRouter, usePathname } from "next/navigation";
 import { useCart, type CartProduct } from "./CartProvider";
 import { useSnackbar } from "@/components/ui/Snackbar";
 import { Icon } from "@/components/ui/Icon";
+import { QtyInput } from "./QtyInput";
 
-export function AddToCartButton({ product, compact = false }: { product: CartProduct; compact?: boolean }) {
+export function AddToCartButton({ product, compact = false, max }: { product: CartProduct; compact?: boolean; max?: number }) {
   const cart = useCart();
   const { show } = useSnackbar();
   const { data: session } = useSession();
@@ -24,6 +25,10 @@ export function AddToCartButton({ product, compact = false }: { product: CartPro
         kind: "info",
         action: { label: "Đăng nhập", onClick: () => router.push(`/dang-nhap?next=${encodeURIComponent(pathname)}`) },
       });
+      return;
+    }
+    if (max !== undefined && qty >= max) {
+      show(`Vườn chỉ còn ${max} ${product.unit} ${product.name}`, { kind: "info", duration: 2500 });
       return;
     }
     const res = cart.add(product);
@@ -63,9 +68,7 @@ export function AddToCartButton({ product, compact = false }: { product: CartPro
       <button onClick={() => { cart.setQty(product.id, qty - 1); pulse(); }} className="m3-icon-btn sm" style={{ background: "var(--md-surface-container-lowest)", color: "var(--md-on-surface)" }} aria-label="Giảm">
         <Icon name={qty === 1 ? "delete" : "remove"} size={18} />
       </button>
-      <span className={`tabular ${bump ? "m3-bump" : ""}`} style={{ minWidth: 24, textAlign: "center", fontWeight: 700, fontSize: 14, color: "var(--md-on-primary-container)" }}>
-        {qty}
-      </span>
+      <QtyInput value={qty} max={max} bump={bump} color="var(--md-on-primary-container)" onCommit={(n) => { cart.setQty(product.id, n); pulse(); }} />
       <button onClick={add} className="m3-icon-btn sm filled" aria-label="Tăng">
         <Icon name="add" size={18} />
       </button>

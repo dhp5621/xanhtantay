@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import { useCart } from "./CartProvider";
 import { useSnackbar } from "@/components/ui/Snackbar";
 import { Icon } from "@/components/ui/Icon";
+import { QtyInput } from "./QtyInput";
 import { Portal } from "@/components/ui/Portal";
 import { formatVND } from "@/lib/format";
 
@@ -115,7 +116,7 @@ export function CartSheet() {
                       <button className="m3-icon-btn sm" onClick={() => cart.setQty(l.id, l.quantity - 1)} aria-label="Giảm">
                         <Icon name={l.quantity === 1 ? "delete" : "remove"} size={18} />
                       </button>
-                      <span className="tabular label-lg" style={{ minWidth: 22, textAlign: "center" }}>{l.quantity}</span>
+                      <QtyInput value={l.quantity} onCommit={(n) => cart.setQty(l.id, n)} />
                       <button className="m3-icon-btn sm" onClick={() => cart.setQty(l.id, l.quantity + 1)} aria-label="Tăng">
                         <Icon name="add" size={18} />
                       </button>

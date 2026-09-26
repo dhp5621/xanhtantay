@@ -782,6 +782,10 @@ button.m3-chip:active { transform: scale(0.95); border-radius: var(--shape-md); 
   text-transform: uppercase;
 }
 
+/* Stepper quantity inputs: no native spin buttons */
+input[type="number"].tabular::-webkit-outer-spin-button,
+input[type="number"].tabular::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
 /* ─── Progress ─────────────────────────────────────────────── */
 .m3-progress {
   height: 8px;

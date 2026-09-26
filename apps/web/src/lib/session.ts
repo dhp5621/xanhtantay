@@ -6,6 +6,7 @@ export type SessionUser = {
   name?: string | null;
   email?: string | null;
   role?: "customer" | "farmer";
+  farmSlug?: string | null;
 };
 
 /** Server-side session helper with typed user. */

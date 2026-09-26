@@ -46,6 +46,8 @@ export const products = pgTable("products", {
   category: text("category").notNull(),
   image_url: text("image_url"),
   in_stock: boolean("in_stock").notNull().default(true),
+  /** Units available for sale; decremented on every order, 0 ⇒ sold out. */
+  stock_qty: integer("stock_qty").notNull().default(20),
 });
 
 export const farm_diary = pgTable("farm_diary", {

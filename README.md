@@ -7,7 +7,7 @@ Nông sản tươi từ vườn đến tay bạn. Monorepo pnpm: `apps/web` (Nex
 ```bash
 pnpm install
 cp apps/web/.env.example apps/web/.env.local   # điền DATABASE_URL (Neon) + NEXTAUTH_SECRET
-pnpm --filter web db:push
+pnpm --filter web db:push                       # cần chạy lại khi schema đổi (vd. cột products.stock_qty)
 pnpm --filter web db:seed                       # idempotent, chạy lại thoải mái
 pnpm dev
 ```

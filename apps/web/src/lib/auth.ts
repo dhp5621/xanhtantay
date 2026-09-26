@@ -1,7 +1,7 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { db } from "@/db";
-import { users } from "@/db/schema";
+import { users, farms } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 /** Demo accounts advertised on the login page. Password for all: DEMO_PASSWORD (default demo123). */
@@ -31,7 +31,12 @@ export const authOptions: NextAuthOptions = {
         // Production should bcrypt.compare(credentials.password, user.password_hash).
         if (credentials.password !== DEMO_PASSWORD) return null;
 
-        return { id: user.id, name: user.name, email: user.email, role: user.role };
+        let farmSlug: string | null = null;
+        if (user.role === "farmer") {
+          const [farm] = await db.select({ slug: farms.slug }).from(farms).where(eq(farms.owner_id, user.id));
+          farmSlug = farm?.slug ?? null;
+        }
+        return { id: user.id, name: user.name, email: user.email, role: user.role, farmSlug };
       },
     }),
   ],
@@ -40,6 +45,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.role = (user as unknown as { role: string }).role;
         token.id = user.id;
+        token.farmSlug = (user as unknown as { farmSlug?: string | null }).farmSlug ?? null;
       }
       return token;
     },
@@ -47,6 +53,7 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         (session.user as { role: string; id: string }).role = token.role as string;
         (session.user as { id: string }).id = token.id as string;
+        (session.user as { farmSlug?: string | null }).farmSlug = (token.farmSlug as string | null) ?? null;
       }
       return session;
     },

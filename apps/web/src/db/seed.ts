@@ -30,21 +30,21 @@ async function seed() {
   ]).onConflictDoNothing();
 
   await db.insert(products).values([
-    { id: "p-ba-rau-muong", farm_id: "farm-bac-ba", name: "Rau muống xanh", unit: "kg", price_per_unit: 15000, category: "rau_la", in_stock: true },
-    { id: "p-ba-bi-do", farm_id: "farm-bac-ba", name: "Bí đỏ Nhật", unit: "kg", price_per_unit: 35000, category: "cu_qua", in_stock: true },
-    { id: "p-ba-ca-rot", farm_id: "farm-bac-ba", name: "Cà rốt Đà Lạt", unit: "kg", price_per_unit: 28000, category: "cu_qua", in_stock: true },
-    { id: "p-ba-cai-xanh", farm_id: "farm-bac-ba", name: "Cải xanh", unit: "bó", price_per_unit: 8000, category: "rau_la", in_stock: true },
-    { id: "p-ba-su-hao", farm_id: "farm-bac-ba", name: "Su hào", unit: "củ", price_per_unit: 10000, category: "cu_qua", in_stock: false },
-    { id: "p-tu-xa-lach", farm_id: "farm-co-tu", name: "Xà lách cuộn", unit: "kg", price_per_unit: 45000, category: "rau_la", in_stock: true },
-    { id: "p-tu-dua-leo", farm_id: "farm-co-tu", name: "Dưa leo baby", unit: "kg", price_per_unit: 32000, category: "cu_qua", in_stock: true },
-    { id: "p-tu-ca-chua", farm_id: "farm-co-tu", name: "Cà chua cherry", unit: "kg", price_per_unit: 55000, category: "cu_qua", in_stock: true },
-    { id: "p-tu-rau-mam", farm_id: "farm-co-tu", name: "Rau mầm hỗn hợp", unit: "hộp", price_per_unit: 25000, category: "rau_mam", in_stock: true },
-    { id: "p-tu-hung-que", farm_id: "farm-co-tu", name: "Húng quế", unit: "bó", price_per_unit: 5000, category: "rau_thom", in_stock: true },
-    { id: "p-tham-rau-den", farm_id: "farm-u-tham", name: "Rau dền đỏ", unit: "bó", price_per_unit: 7000, category: "rau_la", in_stock: true },
-    { id: "p-tham-mong-toi", farm_id: "farm-u-tham", name: "Mồng tơi", unit: "kg", price_per_unit: 12000, category: "rau_la", in_stock: true },
-    { id: "p-tham-kho-qua", farm_id: "farm-u-tham", name: "Khổ qua (mướp đắng)", unit: "kg", price_per_unit: 22000, category: "cu_qua", in_stock: true },
-    { id: "p-tham-bau", farm_id: "farm-u-tham", name: "Bầu xanh", unit: "kg", price_per_unit: 18000, category: "cu_qua", in_stock: true },
-    { id: "p-tham-rau-ngot", farm_id: "farm-u-tham", name: "Rau ngót", unit: "bó", price_per_unit: 6000, category: "rau_la", in_stock: true },
+    { id: "p-ba-rau-muong", farm_id: "farm-bac-ba", name: "Rau muống xanh", unit: "kg", price_per_unit: 15000, category: "rau_la", stock_qty: 40, in_stock: true },
+    { id: "p-ba-bi-do", farm_id: "farm-bac-ba", name: "Bí đỏ Nhật", unit: "kg", price_per_unit: 35000, category: "cu_qua", stock_qty: 40, in_stock: true },
+    { id: "p-ba-ca-rot", farm_id: "farm-bac-ba", name: "Cà rốt Đà Lạt", unit: "kg", price_per_unit: 28000, category: "cu_qua", stock_qty: 40, in_stock: true },
+    { id: "p-ba-cai-xanh", farm_id: "farm-bac-ba", name: "Cải xanh", unit: "bó", price_per_unit: 8000, category: "rau_la", stock_qty: 25, in_stock: true },
+    { id: "p-ba-su-hao", farm_id: "farm-bac-ba", name: "Su hào", unit: "củ", price_per_unit: 10000, category: "cu_qua", stock_qty: 0, in_stock: false },
+    { id: "p-tu-xa-lach", farm_id: "farm-co-tu", name: "Xà lách cuộn", unit: "kg", price_per_unit: 45000, category: "rau_la", stock_qty: 40, in_stock: true },
+    { id: "p-tu-dua-leo", farm_id: "farm-co-tu", name: "Dưa leo baby", unit: "kg", price_per_unit: 32000, category: "cu_qua", stock_qty: 40, in_stock: true },
+    { id: "p-tu-ca-chua", farm_id: "farm-co-tu", name: "Cà chua cherry", unit: "kg", price_per_unit: 55000, category: "cu_qua", stock_qty: 40, in_stock: true },
+    { id: "p-tu-rau-mam", farm_id: "farm-co-tu", name: "Rau mầm hỗn hợp", unit: "hộp", price_per_unit: 25000, category: "rau_mam", stock_qty: 25, in_stock: true },
+    { id: "p-tu-hung-que", farm_id: "farm-co-tu", name: "Húng quế", unit: "bó", price_per_unit: 5000, category: "rau_thom", stock_qty: 25, in_stock: true },
+    { id: "p-tham-rau-den", farm_id: "farm-u-tham", name: "Rau dền đỏ", unit: "bó", price_per_unit: 7000, category: "rau_la", stock_qty: 25, in_stock: true },
+    { id: "p-tham-mong-toi", farm_id: "farm-u-tham", name: "Mồng tơi", unit: "kg", price_per_unit: 12000, category: "rau_la", stock_qty: 40, in_stock: true },
+    { id: "p-tham-kho-qua", farm_id: "farm-u-tham", name: "Khổ qua (mướp đắng)", unit: "kg", price_per_unit: 22000, category: "cu_qua", stock_qty: 40, in_stock: true },
+    { id: "p-tham-bau", farm_id: "farm-u-tham", name: "Bầu xanh", unit: "kg", price_per_unit: 18000, category: "cu_qua", stock_qty: 40, in_stock: true },
+    { id: "p-tham-rau-ngot", farm_id: "farm-u-tham", name: "Rau ngót", unit: "bó", price_per_unit: 6000, category: "rau_la", stock_qty: 25, in_stock: true },
   ]).onConflictDoNothing();
 
   await db.insert(farm_diary).values([

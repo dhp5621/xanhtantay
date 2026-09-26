@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Icon } from "@/components/ui/Icon";
 
 const DEMO = {
@@ -11,15 +11,24 @@ const DEMO = {
 } as const;
 type Role = "customer" | "farmer";
 
-export function LoginForm({ next, demoPassword }: { next?: string; demoPassword: string }) {
+export function LoginForm({ next, demoPassword, initialRole = "customer" }: { next?: string; demoPassword: string; initialRole?: Role }) {
   const DEMO_PASSWORD = demoPassword;
-  const [role, setRole] = useState<Role>("customer");
+  const [role, setRoleState] = useState<Role>(initialRole);
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState<false | "form" | Role>(false);
   const router = useRouter();
+
+  /** Keep ?role= in the URL in sync with the selected segment (shareable, survives refresh). */
+  const setRole = (r: Role) => {
+    setRoleState(r);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("role", r);
+    router.replace(`/dang-nhap?${params.toString()}`, { scroll: false });
+  };
 
   async function doSignIn(e: string, p: string, r: Role, source: "form" | Role) {
     setLoading(source);
@@ -60,7 +69,7 @@ export function LoginForm({ next, demoPassword }: { next?: string; demoPassword:
                 key={r}
                 type="button"
                 disabled={!!loading}
-                onClick={() => doSignIn(d.email, DEMO_PASSWORD, r, r)}
+                onClick={() => { setRole(r); doSignIn(d.email, DEMO_PASSWORD, r, r); }}
                 className="m3-card-elevated m3-card-action"
                 style={{ padding: "14px 14px 12px", textAlign: "left", border: "none", background: r === "customer" ? "var(--md-primary-container)" : "var(--md-tertiary-container)", color: r === "customer" ? "var(--md-on-primary-container)" : "var(--md-on-tertiary-container)", borderRadius: "var(--shape-lg-inc)" }}
               >

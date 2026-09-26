@@ -20,7 +20,7 @@ export default async function SanPhamPage() {
 
   return (
     <div>
-      <PageHeader icon="eco" eyebrow={`${myProducts.filter((p) => p.in_stock).length}/${myProducts.length} còn hàng`} title="Sản phẩm" subtitle="Quản lý danh sách và tồn kho" />
+      <PageHeader icon="eco" eyebrow={`${myProducts.filter((p) => p.in_stock && p.stock_qty > 0).length}/${myProducts.length} đang bán · tự trừ khi khách đặt`} title="Sản phẩm" subtitle="Quản lý danh sách và tồn kho" />
       <ProductManager farmId={myFarm.id} initial={myProducts} />
     </div>
   );

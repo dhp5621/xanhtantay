@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { orders, order_items, products } from "@/db/schema";
-import { desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import { getSessionUser } from "@/lib/session";
 
 export async function GET() {
@@ -37,12 +37,33 @@ export async function POST(req: Request) {
     const p = byId.get(item.product_id);
     const qty = Number(item.quantity);
     if (!p || p.farm_id !== farm_id) return NextResponse.json({ error: "Sản phẩm không thuộc vườn này" }, { status: 400 });
-    if (!p.in_stock) return NextResponse.json({ error: `${p.name} đã hết hàng` }, { status: 400 });
+    if (!p.in_stock || p.stock_qty <= 0) return NextResponse.json({ error: `${p.name} đã hết hàng` }, { status: 400 });
     if (!Number.isFinite(qty) || qty <= 0 || qty > 100) return NextResponse.json({ error: "Số lượng không hợp lệ" }, { status: 400 });
+    if (qty > p.stock_qty) return NextResponse.json({ error: `${p.name} chỉ còn ${p.stock_qty} ${p.unit}` }, { status: 409 });
     lines.push({ product_id: p.id, quantity: qty, unit_price: p.price_per_unit });
   }
 
   const total = lines.reduce((s, l) => s + l.unit_price * l.quantity, 0);
+
+  // Reserve stock with a conditional decrement so two simultaneous buyers cannot oversell.
+  const reserved: { product_id: string; quantity: number }[] = [];
+  for (const l of lines) {
+    const [row] = await db
+      .update(products)
+      .set({ stock_qty: sql`${products.stock_qty} - ${l.quantity}` })
+      .where(and(eq(products.id, l.product_id), gte(products.stock_qty, l.quantity)))
+      .returning({ id: products.id, stock_qty: products.stock_qty });
+    if (!row) {
+      // Roll back what we already reserved, then report which item ran out.
+      for (const r of reserved) {
+        await db.update(products).set({ stock_qty: sql`${products.stock_qty} + ${r.quantity}` }).where(eq(products.id, r.product_id));
+      }
+      const name = byId.get(l.product_id)?.name ?? "Sản phẩm";
+      return NextResponse.json({ error: `${name} vừa hết hàng, có người mua trước bạn` }, { status: 409 });
+    }
+    reserved.push({ product_id: l.product_id, quantity: l.quantity });
+    if (row.stock_qty <= 0) await db.update(products).set({ in_stock: false }).where(eq(products.id, l.product_id));
+  }
 
   const [order] = await db.insert(orders).values({
     user_id: user.id,

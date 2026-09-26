@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { farms, farm_diary, group_orders, products } from "@/db/schema";
 import { count, desc, eq } from "drizzle-orm";
 import { Icon } from "@/components/ui/Icon";
-import { formatDate, daysUntil } from "@/lib/format";
+import { formatDate, daysUntil, formatDateTime, timeAgo } from "@/lib/format";
 import { getSessionUser } from "@/lib/session";
 import { Landing } from "@/components/landing/Landing";
 
@@ -120,7 +120,7 @@ export default async function HomePage() {
                 <p className="label-md text-primary" style={{ marginBottom: 4 }}>{farm?.name ?? "Vườn rau"}</p>
                 <p className="body-md text-on-surface" style={{ fontWeight: 400 }}>{entry.content}</p>
                 <p className="body-sm text-on-surface-variant" style={{ marginTop: 6, display: "inline-flex", alignItems: "center", gap: 4 }}>
-                  <Icon name="schedule" size={14} /> {formatDate(entry.created_at)}
+                  <Icon name="schedule" size={14} /> {timeAgo(entry.created_at)} · {formatDateTime(entry.created_at)}
                 </p>
               </div>
               <span className="m3-list-trailing"><Icon name="chevron_right" /></span>

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { subscriptions, orders, order_items, products } from "@/db/schema";
-import { eq, lte, and, inArray } from "drizzle-orm";
+import { eq, lte, and, inArray, sql } from "drizzle-orm";
 
 // Vercel Cron: runs daily via vercel.json cron config
 export async function GET(req: Request) {
@@ -26,8 +26,12 @@ export async function GET(req: Request) {
     const byId = new Map(rows.map((p) => [p.id, p]));
     const lines = items
       .map((i) => ({ product: byId.get(i.product_id), quantity: i.quantity }))
-      .filter((l): l is { product: typeof rows[number]; quantity: number } => !!l.product && l.product.in_stock);
+      .filter((l): l is { product: typeof rows[number]; quantity: number } => !!l.product && l.product.in_stock && l.product.stock_qty >= l.quantity);
     if (!lines.length) continue;
+    for (const l of lines) {
+      await db.update(products).set({ stock_qty: sql`GREATEST(${products.stock_qty} - ${l.quantity}, 0)` }).where(eq(products.id, l.product.id));
+    }
+    await db.update(products).set({ in_stock: false }).where(and(inArray(products.id, lines.map((l) => l.product.id)), lte(products.stock_qty, 0)));
 
     const total = lines.reduce((sum, l) => sum + l.product.price_per_unit * l.quantity, 0);
 

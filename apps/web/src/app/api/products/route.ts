@@ -19,7 +19,7 @@ export async function POST(req: Request) {
   if (user.role !== "farmer") return NextResponse.json({ error: "Không có quyền" }, { status: 403 });
 
   const body = await req.json().catch(() => null);
-  const { farm_id, name, unit, price_per_unit, category } = (body ?? {}) as Record<string, unknown>;
+  const { farm_id, name, unit, price_per_unit, category, stock_qty } = (body ?? {}) as Record<string, unknown>;
   if (!farm_id || !name || !unit || !category || !Number.isFinite(Number(price_per_unit))) {
     return NextResponse.json({ error: "Thiếu thông tin" }, { status: 400 });
   }
@@ -29,6 +29,7 @@ export async function POST(req: Request) {
 
   const [product] = await db.insert(products).values({
     farm_id: farm.id, name: String(name), unit: String(unit), price_per_unit: Math.round(Number(price_per_unit)), category: String(category),
+    stock_qty: Number.isFinite(Number(stock_qty)) ? Math.max(0, Math.round(Number(stock_qty))) : 20,
   }).returning();
   return NextResponse.json(product, { status: 201 });
 }
@@ -56,6 +57,14 @@ export async function PATCH(req: Request) {
   if (typeof rest.in_stock === "boolean") updates.in_stock = rest.in_stock;
   if (rest.price_per_unit !== undefined && Number.isFinite(Number(rest.price_per_unit))) updates.price_per_unit = Math.round(Number(rest.price_per_unit));
   if (typeof rest.image_url === "string" || rest.image_url === null) updates.image_url = rest.image_url as string | null;
+  if (rest.stock_qty !== undefined && Number.isFinite(Number(rest.stock_qty))) {
+    updates.stock_qty = Math.max(0, Math.min(100000, Math.round(Number(rest.stock_qty))));
+    // Stock and availability stay consistent unless the farmer explicitly toggled in_stock.
+    if (typeof rest.in_stock !== "boolean") updates.in_stock = updates.stock_qty > 0;
+  }
+  if (typeof rest.in_stock === "boolean" && rest.in_stock && product.stock_qty <= 0 && updates.stock_qty === undefined) {
+    return NextResponse.json({ error: "Nhập số lượng còn lại trước khi mở bán" }, { status: 400 });
+  }
   if (Object.keys(updates).length === 0) return NextResponse.json({ error: "Không có gì để cập nhật" }, { status: 400 });
 
   const [updated] = await db.update(products).set(updates).where(eq(products.id, product.id)).returning();

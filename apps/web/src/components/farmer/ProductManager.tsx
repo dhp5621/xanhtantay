@@ -1,14 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/ui/Icon";
 import { Portal } from "@/components/ui/Portal";
 import { useSnackbar } from "@/components/ui/Snackbar";
 import { CATEGORY_LABELS, CATEGORY_ICONS, formatVND } from "@/lib/format";
 
-interface Product { id: string; name: string; unit: string; price_per_unit: number; category: string; in_stock: boolean }
-const EMPTY = { name: "", unit: "kg", price_per_unit: 10000, category: "rau_la" };
+interface Product { id: string; name: string; unit: string; price_per_unit: number; category: string; in_stock: boolean; stock_qty: number }
+const EMPTY = { name: "", unit: "kg", price_per_unit: 10000, category: "rau_la", stock_qty: 20 };
 
 export function ProductManager({ farmId, initial }: { farmId: string; initial: Product[] }) {
   const [items, setItems] = useState(initial);
@@ -20,7 +20,19 @@ export function ProductManager({ farmId, initial }: { farmId: string; initial: P
   const { show } = useSnackbar();
 
   const openNew = () => { setForm(EMPTY); setEditing("new"); };
-  const openEdit = (p: Product) => { setForm({ name: p.name, unit: p.unit, price_per_unit: p.price_per_unit, category: p.category }); setEditing(p); };
+  const openEdit = (p: Product) => { setForm({ name: p.name, unit: p.unit, price_per_unit: p.price_per_unit, category: p.category, stock_qty: p.stock_qty }); setEditing(p); };
+
+  // Debounced stock adjustment: quick +/- taps, one PATCH after the taps stop.
+  const pendingRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const adjustStock = (p: Product, delta: number) => {
+    const next = Math.max(0, p.stock_qty + delta);
+    setItems((xs) => xs.map((x) => (x.id === p.id ? { ...x, stock_qty: next, in_stock: next > 0 } : x)));
+    clearTimeout(pendingRef.current[p.id]);
+    pendingRef.current[p.id] = setTimeout(async () => {
+      const res = await fetch("/api/products", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: p.id, stock_qty: next }) });
+      if (!res.ok) { show("Không lưu được tồn kho", { kind: "error" }); router.refresh(); }
+    }, 500);
+  };
   const close = () => { setClosing(true); setTimeout(() => { setClosing(false); setEditing(null); }, 250); };
 
   const toggleStock = async (p: Product) => {
@@ -72,18 +84,24 @@ export function ProductManager({ farmId, initial }: { farmId: string; initial: P
       ) : (
         <div className="m3-list-group stagger">
           {items.map((p) => (
-            <div key={p.id} className="m3-list-item" style={{ cursor: "default", opacity: p.in_stock ? 1 : 0.6, flexWrap: "wrap" }}>
-              <span className="m3-list-leading" style={{ background: p.in_stock ? undefined : "var(--md-surface-container-highest)", color: p.in_stock ? undefined : "var(--md-on-surface-variant)" }}>
-                <Icon name={CATEGORY_ICONS[p.category] ?? "eco"} filled={p.in_stock} />
+            <div key={p.id} className="m3-list-item" style={{ cursor: "default", opacity: p.in_stock && p.stock_qty > 0 ? 1 : 0.6, flexWrap: "wrap" }}>
+              <span className="m3-list-leading" style={{ background: p.in_stock && p.stock_qty > 0 ? undefined : "var(--md-surface-container-highest)", color: p.in_stock ? undefined : "var(--md-on-surface-variant)" }}>
+                <Icon name={CATEGORY_ICONS[p.category] ?? "eco"} filled={p.in_stock && p.stock_qty > 0} />
               </span>
               <div style={{ flex: 1, minWidth: 160 }}>
                 <p className="title-sm text-on-surface">{p.name} <span className="m3-chip sm" style={{ marginLeft: 6, height: 22, fontSize: 11 }}>{CATEGORY_LABELS[p.category] ?? p.category}</span></p>
                 <p className="label-lg text-primary tabular">{formatVND(p.price_per_unit)} <span className="body-sm text-on-surface-variant" style={{ fontWeight: 400 }}>/ {p.unit}</span></p>
               </div>
-              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                <button className={`m3-btn m3-btn-sm ${p.in_stock ? "m3-btn-tonal-primary" : "m3-btn-error"}`} onClick={() => toggleStock(p)} disabled={busy === p.id} aria-pressed={p.in_stock}>
-                  <Icon name={p.in_stock ? "check_circle" : "block"} size={18} filled />
-                  <span>{p.in_stock ? "Còn hàng" : "Hết hàng"}</span>
+              <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                {/* Stock counter: auto-decrements when customers order */}
+                <div style={{ display: "inline-flex", alignItems: "center", gap: 2, background: p.stock_qty > 0 ? "var(--md-primary-container)" : "var(--md-error-container)", color: p.stock_qty > 0 ? "var(--md-on-primary-container)" : "var(--md-on-error-container)", borderRadius: "var(--shape-full)", padding: 3 }} title="Số lượng còn bán">
+                  <button className="m3-icon-btn sm" onClick={() => adjustStock(p, -1)} aria-label="Bớt 1" style={{ background: "var(--md-surface-container-lowest)", color: "var(--md-on-surface)" }} disabled={p.stock_qty <= 0}><Icon name="remove" size={18} /></button>
+                  <span className="tabular label-lg" style={{ minWidth: 64, textAlign: "center" }}>{p.stock_qty} {p.unit}</span>
+                  <button className="m3-icon-btn sm filled" onClick={() => adjustStock(p, +1)} aria-label="Thêm 1"><Icon name="add" size={18} /></button>
+                </div>
+                <button className={`m3-btn m3-btn-sm ${p.in_stock && p.stock_qty > 0 ? "m3-btn-tonal-primary" : "m3-btn-error"}`} onClick={() => toggleStock(p)} disabled={busy === p.id || (p.stock_qty <= 0 && !p.in_stock)} aria-pressed={p.in_stock} title={p.stock_qty <= 0 ? "Thêm số lượng để mở bán" : undefined}>
+                  <Icon name={p.in_stock && p.stock_qty > 0 ? "check_circle" : "block"} size={18} filled />
+                  <span>{p.in_stock && p.stock_qty > 0 ? "Đang bán" : "Hết hàng"}</span>
                 </button>
                 <button className="m3-icon-btn tonal" onClick={() => openEdit(p)} aria-label={`Sửa ${p.name}`}><Icon name="edit" size={20} /></button>
               </div>
@@ -106,7 +124,11 @@ export function ProductManager({ farmId, initial }: { farmId: string; initial: P
                 <label className="m3-field-label" htmlFor="pm-name">Tên sản phẩm</label>
                 <input id="pm-name" className="m3-input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required maxLength={80} placeholder="Ví dụ: Cải ngọt" />
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+                <div className="m3-field">
+                  <label className="m3-field-label" htmlFor="pm-stock">Còn lại</label>
+                  <input id="pm-stock" type="number" min={0} step={1} className="m3-input" value={form.stock_qty} onChange={(e) => setForm({ ...form, stock_qty: Math.max(0, Number(e.target.value)) })} required />
+                </div>
                 <div className="m3-field">
                   <label className="m3-field-label" htmlFor="pm-price">Giá (₫)</label>
                   <input id="pm-price" type="number" min={1000} step={500} className="m3-input" value={form.price_per_unit} onChange={(e) => setForm({ ...form, price_per_unit: Number(e.target.value) })} required />
