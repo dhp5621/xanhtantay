@@ -38,7 +38,7 @@ export async function POST(req: Request) {
   if (aiConfigured()) {
     result = await chatJSON<AiPlan>(SYSTEM, `Khách vừa nhận: ${inventory.join(", ")}. ${prefsToPrompt(prefs)}
 Ước tính số ngày dùng hết (mỗi ngày một gia đình ${prefs.servings} người ăn khoảng 250 g rau/người), tối đa 10 ngày, rau lá ăn trước, củ quả để sau.
-BẮT BUỘC: mảng "plan" phải có ĐÚNG bằng "days" phần tử, ngày 1 đến ngày cuối, mỗi ngày 2 bữa (Trưa, Tối); không được bỏ sót ngày nào.
+Dữ liệu phải nhất quán: "days" đúng bằng số phần tử trong "plan" (liệt kê đủ từng ngày cho tới khi hết rau). Số bữa mỗi ngày tuỳ lượng rau, có thể 1, 2 hay 3 bữa, không cần ép.
 JSON: {"days": số ngày, "summary": "1–2 câu: ăn được mấy ngày, cách bảo quản", "plan": [{"day": 1, "meals": [{"time": "Trưa"|"Tối", "title": "tên món", "uses": ["rau nào, bao nhiêu"], "note": "mẹo ngắn (tuỳ chọn)"}], "leftover": "còn lại gì sau ngày này (tuỳ chọn)"}]}`, { temperature: 0.6, timeoutMs: 40_000 });
     if (result && (!Array.isArray(result.plan) || !Number.isFinite(Number(result.days)))) result = null;
   }
@@ -59,7 +59,7 @@ JSON: {"days": số ngày, "summary": "1–2 câu: ăn được mấy ngày, cá
     result = { days, summary: `Khoảng ${days} ngày cho ${prefs.servings} người. Rau lá cất ngăn mát, dùng trong 3 ngày đầu; củ quả để nơi thoáng mát được lâu hơn.`, plan };
   }
 
-  // The day count and the day list must agree: the list is the truth.
+  // Consistency only: the day count must match the days actually listed (meals per day are up to the AI).
   const planDays = result.plan.slice(0, 14).filter((d) => d && Array.isArray(d.meals) && d.meals.length);
   const days = Math.max(1, planDays.length);
 
