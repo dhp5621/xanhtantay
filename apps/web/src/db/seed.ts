@@ -8,7 +8,8 @@ import {
  * Idempotent seed: every row has a fixed id and uses ON CONFLICT DO NOTHING,
  * so `pnpm db:seed` can be re-run safely. Password for all demo accounts: demo123.
  */
-const U = (p: string) => `https://images.unsplash.com/${p}?w=600&q=70&auto=format`;
+// Wikimedia Commons photos: the filename names the plant, so the picture matches the product.
+const U = (f: string) => `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(f)}?width=640`;
 const daysFromNow = (d: number) => { const x = new Date(); x.setDate(x.getDate() + d); x.setHours(9, 0, 0, 0); return x; };
 
 async function seed() {
@@ -31,21 +32,21 @@ async function seed() {
   ]).onConflictDoNothing();
 
   await db.insert(products).values([
-    { id: "p-ba-rau-muong", farm_id: "farm-bac-ba", name: "Rau muống xanh", unit: "kg", price_per_unit: 15000, category: "rau_la", stock_qty: 40, image_url: U("photo-1515543237350-b3eea1ec8082"), in_stock: true },
-    { id: "p-ba-bi-do", farm_id: "farm-bac-ba", name: "Bí đỏ Nhật", unit: "kg", price_per_unit: 35000, category: "cu_qua", stock_qty: 40, image_url: U("photo-1570586437263-ab629fccc818"), in_stock: true },
-    { id: "p-ba-ca-rot", farm_id: "farm-bac-ba", name: "Cà rốt Đà Lạt", unit: "kg", price_per_unit: 28000, category: "cu_qua", stock_qty: 40, image_url: U("photo-1445282768818-728615cc910a"), in_stock: true },
-    { id: "p-ba-cai-xanh", farm_id: "farm-bac-ba", name: "Cải xanh", unit: "bó", price_per_unit: 8000, category: "rau_la", stock_qty: 25, image_url: U("photo-1574943320219-553eb213f72d"), in_stock: true },
-    { id: "p-ba-su-hao", farm_id: "farm-bac-ba", name: "Su hào", unit: "củ", price_per_unit: 10000, category: "cu_qua", stock_qty: 0, image_url: U("photo-1594282486552-05b4d80fbb9f"), in_stock: false },
-    { id: "p-tu-xa-lach", farm_id: "farm-co-tu", name: "Xà lách cuộn", unit: "kg", price_per_unit: 45000, category: "rau_la", stock_qty: 40, image_url: U("photo-1622206151226-18ca2c9ab4a1"), in_stock: true },
-    { id: "p-tu-dua-leo", farm_id: "farm-co-tu", name: "Dưa leo baby", unit: "kg", price_per_unit: 32000, category: "cu_qua", stock_qty: 40, image_url: U("photo-1449300079323-02e209d9d3a6"), in_stock: true },
-    { id: "p-tu-ca-chua", farm_id: "farm-co-tu", name: "Cà chua cherry", unit: "kg", price_per_unit: 55000, category: "cu_qua", stock_qty: 40, image_url: U("photo-1592841200221-a6898f307baa"), in_stock: true },
-    { id: "p-tu-rau-mam", farm_id: "farm-co-tu", name: "Rau mầm hỗn hợp", unit: "hộp", price_per_unit: 25000, category: "rau_mam", stock_qty: 25, image_url: U("photo-1540420773420-3366772f4999"), in_stock: true },
-    { id: "p-tu-hung-que", farm_id: "farm-co-tu", name: "Húng quế", unit: "bó", price_per_unit: 5000, category: "rau_thom", stock_qty: 25, image_url: U("photo-1618375569909-3c8616cf7733"), in_stock: true },
-    { id: "p-tham-rau-den", farm_id: "farm-u-tham", name: "Rau dền đỏ", unit: "bó", price_per_unit: 7000, category: "rau_la", stock_qty: 25, image_url: U("photo-1576045057995-568f588f82fb"), in_stock: true },
-    { id: "p-tham-mong-toi", farm_id: "farm-u-tham", name: "Mồng tơi", unit: "kg", price_per_unit: 12000, category: "rau_la", stock_qty: 40, image_url: U("photo-1515543237350-b3eea1ec8082"), in_stock: true },
-    { id: "p-tham-kho-qua", farm_id: "farm-u-tham", name: "Khổ qua (mướp đắng)", unit: "kg", price_per_unit: 22000, category: "cu_qua", stock_qty: 40, image_url: U("photo-1590779033100-9f60a05a013d"), in_stock: true },
-    { id: "p-tham-bau", farm_id: "farm-u-tham", name: "Bầu xanh", unit: "kg", price_per_unit: 18000, category: "cu_qua", stock_qty: 40, image_url: U("photo-1601493700631-2b16ec4b4716"), in_stock: true },
-    { id: "p-tham-rau-ngot", farm_id: "farm-u-tham", name: "Rau ngót", unit: "bó", price_per_unit: 6000, category: "rau_la", stock_qty: 25, image_url: U("photo-1576045057995-568f588f82fb"), in_stock: true },
+    { id: "p-ba-rau-muong", farm_id: "farm-bac-ba", name: "Rau muống xanh", unit: "kg", price_per_unit: 15000, category: "rau_la", stock_qty: 40, image_url: U("Arya-kangkung-ipomoea aquatica-Pilangsari 2019 01.jpg"), in_stock: true },
+    { id: "p-ba-bi-do", farm_id: "farm-bac-ba", name: "Bí đỏ Nhật", unit: "kg", price_per_unit: 35000, category: "cu_qua", stock_qty: 40, image_url: U("Cucurbita maxima kabocha USA orange variety.jpg"), in_stock: true },
+    { id: "p-ba-ca-rot", farm_id: "farm-bac-ba", name: "Cà rốt Đà Lạt", unit: "kg", price_per_unit: 28000, category: "cu_qua", stock_qty: 40, image_url: U("Carrot at monday market.jpg"), in_stock: true },
+    { id: "p-ba-cai-xanh", farm_id: "farm-bac-ba", name: "Cải xanh", unit: "bó", price_per_unit: 8000, category: "rau_la", stock_qty: 25, image_url: U("Curly mustard leaves.jpg"), in_stock: true },
+    { id: "p-ba-su-hao", farm_id: "farm-bac-ba", name: "Su hào", unit: "củ", price_per_unit: 10000, category: "cu_qua", stock_qty: 0, image_url: U("Brassica oleracea var. gongylodes (kohlrabi).jpg"), in_stock: false },
+    { id: "p-tu-xa-lach", farm_id: "farm-co-tu", name: "Xà lách cuộn", unit: "kg", price_per_unit: 45000, category: "rau_la", stock_qty: 40, image_url: U("Lettuce Mini Heads (7331119710).jpg"), in_stock: true },
+    { id: "p-tu-dua-leo", farm_id: "farm-co-tu", name: "Dưa leo baby", unit: "kg", price_per_unit: 32000, category: "cu_qua", stock_qty: 40, image_url: U("Fresh cucumbers.jpg"), in_stock: true },
+    { id: "p-tu-ca-chua", farm_id: "farm-co-tu", name: "Cà chua cherry", unit: "kg", price_per_unit: 55000, category: "cu_qua", stock_qty: 40, image_url: U("Cherry Tomato on Vine.JPG"), in_stock: true },
+    { id: "p-tu-rau-mam", farm_id: "farm-co-tu", name: "Rau mầm hỗn hợp", unit: "hộp", price_per_unit: 25000, category: "rau_mam", stock_qty: 25, image_url: U("Sunflower microgreens 01.jpg"), in_stock: true },
+    { id: "p-tu-hung-que", farm_id: "farm-co-tu", name: "Húng quế", unit: "bó", price_per_unit: 5000, category: "rau_thom", stock_qty: 25, image_url: U("Thai basil.jpg"), in_stock: true },
+    { id: "p-tham-rau-den", farm_id: "farm-u-tham", name: "Rau dền đỏ", unit: "bó", price_per_unit: 7000, category: "rau_la", stock_qty: 25, image_url: U("(Close-up of Amaranthus tricolor in Kyoto, Japan) - DPLA - 48275f491c15ba734454f136cf4c8361.jpg"), in_stock: true },
+    { id: "p-tham-mong-toi", farm_id: "farm-u-tham", name: "Mồng tơi", unit: "kg", price_per_unit: 12000, category: "rau_la", stock_qty: 40, image_url: U("Basella alba leaves 27052014.jpg"), in_stock: true },
+    { id: "p-tham-kho-qua", farm_id: "farm-u-tham", name: "Khổ qua (mướp đắng)", unit: "kg", price_per_unit: 22000, category: "cu_qua", stock_qty: 40, image_url: U("Momordica charantia 22052014.jpg"), in_stock: true },
+    { id: "p-tham-bau", farm_id: "farm-u-tham", name: "Bầu xanh", unit: "kg", price_per_unit: 18000, category: "cu_qua", stock_qty: 40, image_url: U("Bottle gourd of Bangladesh.jpg"), in_stock: true },
+    { id: "p-tham-rau-ngot", farm_id: "farm-u-tham", name: "Rau ngót", unit: "bó", price_per_unit: 6000, category: "rau_la", stock_qty: 25, image_url: U("Sauropus androgynus at Kadavoor.jpg"), in_stock: true },
   ]).onConflictDoNothing();
 
   await db.insert(farm_diary).values([
