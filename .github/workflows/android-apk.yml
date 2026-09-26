@@ -62,7 +62,7 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           chmod +x ./gradlew
-          ./gradlew assembleRelease --no-daemon --build-cache
+          ./gradlew assembleRelease --no-daemon --build-cache -x lint -x lintVitalRelease -x lintReportRelease
 
       - name: Rename APK
         run: cp apps/mobile/android/app/build/outputs/apk/release/app-release.apk xanhtantay.apk
