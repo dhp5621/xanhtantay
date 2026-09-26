@@ -6,6 +6,8 @@ import { Icon } from "@/components/ui/Icon";
 import { AddToCartButton } from "@/components/cart/AddToCartButton";
 import { CATEGORY_LABELS, CATEGORY_ICONS, formatVND } from "@/lib/format";
 import { ProductThumb } from "./ProductThumb";
+import { ChipStrip } from "@/components/ui/ChipStrip";
+import { SmartImage } from "@/components/ui/SmartImage";
 
 export interface CatalogItem { id: string; name: string; unit: string; price_per_unit: number; category: string; in_stock: boolean; stock_qty: number; image_url?: string | null; farm: { id: string; name: string; slug: string; location: string } }
 
@@ -20,7 +22,16 @@ export function Catalog({ items, initialQuery, initialCategory, initialProduct }
   const [cat, setCat] = useState(initialCategory);
   const [product, setProduct] = useState(initialProduct);
   const [onlyStock, setOnlyStock] = useState(true);
-  const [sort, setSort] = useState<"name" | "price">("name");
+  const [sort, setSort] = useState<"name" | "price" | "stock">("name");
+  const [showFilters, setShowFilters] = useState(false);
+  const [farmId, setFarmId] = useState("");
+  const [price, setPrice] = useState<"" | "lt10" | "10to30" | "gt30">("");
+  const [unit, setUnit] = useState("");
+
+  const farms = useMemo(() => Array.from(new Map(items.map((i) => [i.farm.id, i.farm])).values()).sort((a, b) => a.name.localeCompare(b.name, "vi")), [items]);
+  const units = useMemo(() => Array.from(new Set(items.map((i) => i.unit))).sort(), [items]);
+  const activeFilters = [farmId, price, unit].filter(Boolean).length + (onlyStock ? 0 : 1);
+  const clearFilters = () => { setFarmId(""); setPrice(""); setUnit(""); setOnlyStock(true); };
 
   // Product "aisles": distinct base names, e.g. Cà rốt, Cải xanh, Mồng tơi…
   const aisles = useMemo(() => {
@@ -32,9 +43,12 @@ export function Catalog({ items, initialQuery, initialCategory, initialProduct }
   const filtered = useMemo(() => {
     const nq = norm(q.trim());
     return items
-      .filter((it) => (!cat || it.category === cat) && (!product || baseName(it.name) === product) && (!onlyStock || it.in_stock) && (!nq || norm(it.name).includes(nq) || norm(it.farm.name).includes(nq) || norm(it.farm.location).includes(nq)))
-      .sort((a, b) => (sort === "price" ? a.price_per_unit - b.price_per_unit : a.name.localeCompare(b.name, "vi")));
-  }, [items, q, cat, product, onlyStock, sort]);
+      .filter((it) => (!cat || it.category === cat) && (!product || baseName(it.name) === product) && (!onlyStock || it.in_stock)
+        && (!farmId || it.farm.id === farmId) && (!unit || it.unit === unit)
+        && (!price || (price === "lt10" ? it.price_per_unit < 10000 : price === "10to30" ? it.price_per_unit >= 10000 && it.price_per_unit <= 30000 : it.price_per_unit > 30000))
+        && (!nq || norm(it.name).includes(nq) || norm(it.farm.name).includes(nq) || norm(it.farm.location).includes(nq)))
+      .sort((a, b) => (sort === "price" ? a.price_per_unit - b.price_per_unit : sort === "stock" ? b.stock_qty - a.stock_qty : a.name.localeCompare(b.name, "vi")));
+  }, [items, q, cat, product, onlyStock, sort, farmId, unit, price]);
 
   // Group results by base product so the same vegetable from several farms sits together.
   const groups = useMemo(() => {
@@ -58,23 +72,55 @@ export function Catalog({ items, initialQuery, initialCategory, initialProduct }
             <button key={k} className={`m3-chip round ${cat === k ? "selected" : ""}`} onClick={() => setCat(cat === k ? "" : k)}><Icon name={CATEGORY_ICONS[k]} size={18} filled={cat === k} /> {v}</button>
           ))}
           <span style={{ flex: 1 }} />
-          <button className={`m3-chip round ${onlyStock ? "selected" : ""}`} onClick={() => setOnlyStock((v) => !v)}><Icon name={onlyStock ? "check" : "inventory_2"} size={16} /> Còn hàng</button>
+          <button className={`m3-chip round ${showFilters || activeFilters ? "selected" : ""}`} onClick={() => setShowFilters((v) => !v)} aria-expanded={showFilters}>
+            <Icon name="filter_list" size={18} /> Bộ lọc{activeFilters ? ` · ${activeFilters}` : ""}
+          </button>
           <div className="m3-button-group">
             <button className={`m3-seg ${sort === "name" ? "selected" : ""}`} onClick={() => setSort("name")}><Icon name="sort_by_alpha" size={16} /> Tên</button>
             <button className={`m3-seg ${sort === "price" ? "selected" : ""}`} onClick={() => setSort("price")}><Icon name="payments" size={16} /> Giá</button>
+            <button className={`m3-seg ${sort === "stock" ? "selected" : ""}`} onClick={() => setSort("stock")}><Icon name="inventory_2" size={16} /> Còn nhiều</button>
           </div>
         </div>
+
+        {showFilters && (
+          <div className="m3-filter-panel">
+            <div className="m3-field">
+              <label className="m3-field-label" htmlFor="f-farm">Vườn</label>
+              <select id="f-farm" className="m3-select" value={farmId} onChange={(e) => setFarmId(e.target.value)}>
+                <option value="">Tất cả vườn</option>
+                {farms.map((f) => <option key={f.id} value={f.id}>{f.name} · {f.location}</option>)}
+              </select>
+            </div>
+            <div className="m3-field">
+              <label className="m3-field-label">Khoảng giá</label>
+              <div className="flex flex-wrap gap-2">
+                {([["", "Mọi giá"], ["lt10", "Dưới 10k"], ["10to30", "10k – 30k"], ["gt30", "Trên 30k"]] as const).map(([v, l]) => (
+                  <button key={v} type="button" className={`m3-chip sm round ${price === v ? "selected" : ""}`} onClick={() => setPrice(v)}>{l}</button>
+                ))}
+              </div>
+            </div>
+            <div className="m3-field">
+              <label className="m3-field-label">Đơn vị & tồn kho</label>
+              <div className="flex flex-wrap gap-2">
+                <button type="button" className={`m3-chip sm round ${!unit ? "selected" : ""}`} onClick={() => setUnit("")}>Mọi đơn vị</button>
+                {units.map((u) => <button key={u} type="button" className={`m3-chip sm round ${unit === u ? "selected" : ""}`} onClick={() => setUnit(unit === u ? "" : u)}>{u}</button>)}
+                <button type="button" className={`m3-chip sm round ${onlyStock ? "selected" : ""}`} onClick={() => setOnlyStock((v) => !v)}><Icon name={onlyStock ? "check" : "inventory_2"} size={14} /> Chỉ còn hàng</button>
+              </div>
+            </div>
+            {activeFilters > 0 && <div style={{ gridColumn: "1 / -1", display: "flex", justifyContent: "flex-end" }}><button type="button" className="m3-btn m3-btn-text m3-btn-sm" onClick={clearFilters}><Icon name="restart_alt" size={16} /><span>Xoá bộ lọc</span></button></div>}
+          </div>
+        )}
       </div>
 
       {/* Aisles */}
-      <div className="m3-chip-scroll" role="tablist" aria-label="Mặt hàng">
+      <ChipStrip ariaLabel="Mặt hàng">
         <button role="tab" aria-selected={!product} className={`m3-chip round ${!product ? "m3-chip-primary" : "m3-chip-surface"}`} style={{ height: 40 }} onClick={() => setProduct("")}><Icon name="apps" size={18} /> Mọi mặt hàng</button>
         {aisles.map((a) => (
           <button key={a.name} role="tab" aria-selected={product === a.name} className={`m3-chip round ${product === a.name ? "m3-chip-primary" : "m3-chip-surface"}`} style={{ height: 40 }} onClick={() => setProduct(product === a.name ? "" : a.name)}>
-            {a.image ? <span style={{ width: 22, height: 22, borderRadius: "50%", background: `url(${a.image}) center/cover`, flexShrink: 0, marginLeft: -4 }} /> : <Icon name="eco" size={18} filled={product === a.name} />} {a.name} <span style={{ opacity: 0.6 }}>· {a.n}</span>
+            {a.image ? <span className="m3-chip-thumb"><SmartImage src={a.image} /></span> : <Icon name="eco" size={18} filled={product === a.name} />} {a.name} <span style={{ opacity: 0.6 }}>· {a.n}</span>
           </button>
         ))}
-      </div>
+      </ChipStrip>
 
       <p className="body-sm text-on-surface-variant">{filtered.length} sản phẩm{groups.length !== filtered.length ? ` · ${groups.length} mặt hàng` : ""}</p>
 
@@ -93,7 +139,7 @@ export function Catalog({ items, initialQuery, initialCategory, initialProduct }
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {list.map((it) => (
                     <div key={it.id} className="m3-card lift" style={{ padding: "12px 14px 12px 12px", display: "flex", alignItems: "center", gap: 12, borderRadius: "var(--shape-lg-inc)", opacity: it.in_stock ? 1 : 0.6 }}>
-                      <ProductThumb image_url={it.image_url} category={it.category} name={it.name} size={76} radius="var(--shape-lg)" />
+                      <ProductThumb image_url={it.image_url} category={it.category} name={it.name} size={76} radius="var(--shape-lg)" zoom caption={`${it.name} · ${it.farm.name}`} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <p className="title-sm text-on-surface" style={{ marginBottom: 2 }}>{it.name}</p>
                         <Link href={`/farms/${it.farm.slug}`} className="body-sm text-primary" style={{ display: "inline-flex", alignItems: "center", gap: 4, textDecoration: "none", fontWeight: 600 }}><Icon name="potted_plant" size={14} filled /> {it.farm.name}</Link>

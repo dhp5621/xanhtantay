@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { getServerSession } from "next-auth";
+import "./fonts.css";
 import "./globals.css";
 import { authOptions } from "@/lib/auth";
 import { Providers } from "@/components/layout/Providers";
@@ -24,9 +25,6 @@ export const viewport: Viewport = {
 // Applies the stored theme before first paint so there is no light→dark flash.
 const THEME_INIT = `(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||t==='light'){document.documentElement.setAttribute('data-theme',t)}}catch(e){}})();`;
 
-const FONT_HREF =
-  "https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,300..800&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,300..700,0..1,0&display=swap";
-
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession(authOptions);
 
@@ -34,9 +32,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="vi" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href={FONT_HREF} rel="stylesheet" />
+        {/* Fonts are self-hosted (public/fonts); preload the icon subset so icons never flash as text */}
+        <link rel="preload" href="/fonts/material-symbols-rounded-subset.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+        <link rel="preload" href="/fonts/google-sans-flex-latin.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+        <link rel="preload" href="/fonts/google-sans-flex-vietnamese.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
       </head>
       <body>
         <Providers session={session}>

@@ -1881,3 +1881,18 @@ input[type="number"].tabular::-webkit-inner-spin-button { -webkit-appearance: no
   color: var(--md-on-surface-variant);
 }
 .m3-img.done .m3-img-ph { display: none; }
+
+/* ─── Chip strip with scroll buttons (pointer devices) ───────── */
+.m3-chip-strip-wrap { position: relative; }
+.m3-chip-strip-btn { position: absolute; top: 50%; transform: translateY(-50%) scale(0.8); z-index: 2; opacity: 0; pointer-events: none; box-shadow: var(--elev-2); transition: opacity var(--dur-short-4) var(--ease-standard), transform var(--dur-medium-2) var(--spring-fast-spatial); }
+.m3-chip-strip-btn.left { left: -6px; } .m3-chip-strip-btn.right { right: -6px; }
+@media (hover: hover) and (pointer: fine) { .m3-chip-strip-btn.show { opacity: 1; pointer-events: auto; transform: translateY(-50%) scale(1); } }
+.m3-chip-strip-wrap .m3-chip-scroll { margin: 0; padding-left: 4px; padding-right: 4px; }
+@media (hover: hover) and (pointer: fine) { .m3-chip-strip-wrap .m3-chip-scroll { padding-left: 36px; padding-right: 36px; mask-image: linear-gradient(to right, transparent, #000 28px, #000 calc(100% - 28px), transparent); } }
+.m3-chip-thumb { width: 24px; height: 24px; border-radius: 50%; overflow: hidden; flex-shrink: 0; margin-left: -4px; display: inline-block; }
+.m3-chip-thumb .m3-img-ph .m3-loader { width: 12px; height: 12px; }
+.m3-chip-thumb .m3-img-ph .m3-loader::before { transform: scale(0.25); }
+
+/* ─── Filter panel ───────────────────────────────────────────── */
+.m3-filter-panel { display: grid; gap: 14px; padding: 16px 18px; border-radius: var(--shape-xl); background: var(--md-surface-container-low); animation: m3-enter var(--dur-medium-2) var(--ease-emphasized-decel) both; }
+@media (min-width: 768px) { .m3-filter-panel { grid-template-columns: repeat(3, minmax(0, 1fr)); } }

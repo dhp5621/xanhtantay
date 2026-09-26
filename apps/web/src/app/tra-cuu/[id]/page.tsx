@@ -82,6 +82,18 @@ export default async function TraCuuPage({ params }: { params: Promise<{ id: str
         </section>
       )}
 
+      <section className="m3-card-outlined anim-in delay-3" style={{ padding: 18, borderRadius: "var(--shape-xl)", display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={`/api/qr/${o.id}`} alt={`Mã QR gói #${code}`} width={132} height={132} style={{ borderRadius: 12, background: "#fff", padding: 6, flexShrink: 0 }} />
+        <div style={{ flex: 1, minWidth: 200 }}>
+          <p className="title-md text-on-surface">Mã QR của gói này</p>
+          <p className="body-sm text-on-surface-variant" style={{ marginTop: 2 }}>Nhà vườn in mã này lên tem gói rau. Bạn có thể tải về để chia sẻ hành trình gói rau với người khác.</p>
+          <div className="flex flex-wrap gap-2" style={{ marginTop: 10 }}>
+            <a href={`/api/qr/${o.id}`} download={`xanh-tan-tay-${code}.svg`} className="m3-btn m3-btn-tonal m3-btn-sm"><Icon name="download" size={18} /><span>Tải mã QR</span></a>
+          </div>
+        </div>
+      </section>
+
       <div className="flex flex-wrap gap-2 justify-center anim-in delay-3">
         <Link href={`/farms/${farm.slug}`} className="m3-btn m3-btn-filled"><Icon name="potted_plant" filled /><span>Đặt thêm từ vườn này</span></Link>
         <Link href="/" className="m3-btn m3-btn-text"><span>Về Xanh Tận Tay</span></Link>

@@ -22,6 +22,8 @@ pnpm dev                                        # http://localhost:3000
 
 Kiểm tra kiểu: `apps/web/node_modules/.bin/tsc --noEmit -p apps/web/tsconfig.json`.
 
+Font tự host trong `apps/web/public/fonts`. Icon là bản rút gọn theo tên đã dùng trong mã; khi thêm icon mới chạy `node apps/web/scripts/icon-subset.mjs` (trong `apps/web`) để tạo lại file.
+
 ### Biến môi trường (`apps/web/.env.local`)
 
 | Biến | Bắt buộc | Ý nghĩa |

@@ -27,6 +27,7 @@ export function ProductManager({ farmId, initial }: { farmId: string; initial: P
   const openEdit = (p: Product) => { setForm({ name: p.name, unit: p.unit, price_per_unit: p.price_per_unit, category: p.category, stock_qty: p.stock_qty, image_url: p.image_url ?? null }); setEditing(p); };
   const [uploading, setUploading] = useState(false);
   const [camera, setCamera] = useState(false);
+  const [qrFor, setQrFor] = useState<Product | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const uploadImage = async (f: File) => {
     setUploading(true);
@@ -124,6 +125,7 @@ export function ProductManager({ farmId, initial }: { farmId: string; initial: P
                   <Icon name={p.in_stock && p.stock_qty > 0 ? "check_circle" : "block"} size={18} filled />
                   <span>{p.in_stock && p.stock_qty > 0 ? "Đang bán" : "Hết hàng"}</span>
                 </button>
+                <button className="m3-icon-btn tonal" onClick={() => setQrFor(p)} aria-label={`Mã QR ${p.name}`} title="Mã QR sản phẩm"><Icon name="qr_code_2" size={20} /></button>
                 <button className="m3-icon-btn tonal" onClick={() => openEdit(p)} aria-label={`Sửa ${p.name}`}><Icon name="edit" size={20} /></button>
               </div>
             </div>
@@ -131,6 +133,22 @@ export function ProductManager({ farmId, initial }: { farmId: string; initial: P
         </div>
       )}
 
+      {qrFor && (
+        <Portal>
+          <div className="m3-scrim" onClick={() => setQrFor(null)} aria-hidden />
+          <div className="m3-dialog" role="dialog" aria-modal="true" style={{ width: "min(420px, calc(100vw - 32px))", textAlign: "center" }}>
+            <h2 className="headline-sm" style={{ marginBottom: 4 }}>Mã QR · {qrFor.name}</h2>
+            <p className="body-sm text-on-surface-variant" style={{ marginBottom: 14 }}>Dán lên quầy hoặc bao bì; khách quét là mở đúng món này trong cửa hàng.</p>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={`/api/qr/link?to=${encodeURIComponent(`/rau-cu?mon=${qrFor.name}`)}`} alt={`QR ${qrFor.name}`} width={220} height={220} style={{ background: "#fff", padding: 10, borderRadius: 16, display: "inline-block" }} />
+            <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
+              <a href={`/api/qr/link?to=${encodeURIComponent(`/rau-cu?mon=${qrFor.name}`)}`} download={`qr-${qrFor.name}.svg`} className="m3-btn m3-btn-tonal"><Icon name="download" /><span>Tải SVG</span></a>
+              <button type="button" className="m3-btn m3-btn-filled" onClick={() => window.print()}><Icon name="print" /><span>In</span></button>
+              <button type="button" className="m3-btn m3-btn-text" onClick={() => setQrFor(null)}>Đóng</button>
+            </div>
+          </div>
+        </Portal>
+      )}
       {camera && <CameraCapture modes={["photo"]} initialFacing="environment" title="Ảnh sản phẩm" onClose={() => setCamera(false)} onCapture={(f) => void uploadImage(f)} />}
       {editing && (
         <>
