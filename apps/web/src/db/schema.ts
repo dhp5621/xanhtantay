@@ -146,7 +146,7 @@ export const meal_plans = pgTable("meal_plans", {
   source: text("source").notNull().default("ai"),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
-export interface MealPlanMeal { time: string; title: string; uses: string[]; note?: string }
+export interface MealPlanMeal { time: string; title: string; uses: string[]; note?: string; recipe?: { minutes?: number; ingredients: string[]; steps: string[] } }
 export interface MealPlanDay { day: number; meals: MealPlanMeal[]; leftover?: string }
 
 /** Curated fallback recipes (used only when the AI service is not configured). */

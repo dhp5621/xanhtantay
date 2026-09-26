@@ -38,6 +38,7 @@ export async function POST(req: Request) {
   if (aiConfigured()) {
     result = await chatJSON<AiPlan>(SYSTEM, `Khách vừa nhận: ${inventory.join(", ")}. ${prefsToPrompt(prefs)}
 Ước tính số ngày dùng hết (mỗi ngày một gia đình ${prefs.servings} người ăn khoảng 250 g rau/người), tối đa 10 ngày, rau lá ăn trước, củ quả để sau.
+BẮT BUỘC: mảng "plan" phải có ĐÚNG bằng "days" phần tử, ngày 1 đến ngày cuối, mỗi ngày 2 bữa (Trưa, Tối); không được bỏ sót ngày nào.
 JSON: {"days": số ngày, "summary": "1–2 câu: ăn được mấy ngày, cách bảo quản", "plan": [{"day": 1, "meals": [{"time": "Trưa"|"Tối", "title": "tên món", "uses": ["rau nào, bao nhiêu"], "note": "mẹo ngắn (tuỳ chọn)"}], "leftover": "còn lại gì sau ngày này (tuỳ chọn)"}]}`, { temperature: 0.6, timeoutMs: 40_000 });
     if (result && (!Array.isArray(result.plan) || !Number.isFinite(Number(result.days)))) result = null;
   }
@@ -58,10 +59,14 @@ JSON: {"days": số ngày, "summary": "1–2 câu: ăn được mấy ngày, cá
     result = { days, summary: `Khoảng ${days} ngày cho ${prefs.servings} người. Rau lá cất ngăn mát, dùng trong 3 ngày đầu; củ quả để nơi thoáng mát được lâu hơn.`, plan };
   }
 
+  // The day count and the day list must agree: the list is the truth.
+  const planDays = result.plan.slice(0, 14).filter((d) => d && Array.isArray(d.meals) && d.meals.length);
+  const days = Math.max(1, planDays.length);
+
   const [row] = await db.insert(meal_plans).values({
-    user_id: user.id, order_id: o.id, days: Math.max(1, Math.min(14, Math.round(Number(result.days)))),
+    user_id: user.id, order_id: o.id, days,
     summary: String(result.summary ?? "").slice(0, 400),
-    plan: result.plan.slice(0, 14).map((d, i) => ({ day: Number(d.day) || i + 1, meals: (d.meals ?? []).slice(0, 4).map((m) => ({ time: String(m.time ?? ""), title: String(m.title ?? ""), uses: (m.uses ?? []).map(String).slice(0, 6), note: m.note ? String(m.note).slice(0, 160) : undefined })), leftover: d.leftover ? String(d.leftover).slice(0, 160) : undefined })),
+    plan: planDays.map((d, i) => ({ day: i + 1, meals: (d.meals ?? []).slice(0, 4).map((m) => ({ time: String(m.time ?? ""), title: String(m.title ?? ""), uses: (m.uses ?? []).map(String).slice(0, 6), note: m.note ? String(m.note).slice(0, 160) : undefined })), leftover: d.leftover ? String(d.leftover).slice(0, 160) : undefined })),
     source,
   }).returning();
   return NextResponse.json(row, { status: 201 });
