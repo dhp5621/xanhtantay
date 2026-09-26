@@ -75,6 +75,13 @@ export default async function DonHangPage() {
                     <Icon name="sticky_note_2" size={16} /> {order.note}
                   </p>
                 )}
+                {order.status === "delivered" && (
+                  <div style={{ marginTop: 12 }}>
+                    <Link href={`/cong-thuc?order=${order.id}`} className="m3-btn m3-btn-tonal-primary m3-btn-sm">
+                      <Icon name="skillet" size={18} filled /><span>Nấu gì với đơn này?</span>
+                    </Link>
+                  </div>
+                )}
 
                 {/* Stepper */}
                 <div className="flex items-center" style={{ marginTop: 20, padding: "0 8px" }}>

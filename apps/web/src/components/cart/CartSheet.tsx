@@ -85,13 +85,10 @@ export function CartSheet() {
               </div>
               <h3 className="headline-sm" style={{ marginBottom: 6 }}>Đặt hàng thành công!</h3>
               <p className="body-md text-on-surface-variant" style={{ marginBottom: 20 }}>
-                Bác nông dân sẽ bắt đầu thu hoạch cho bạn. Theo dõi hành trình rau trong mục Đơn hàng.
+                Bác nông dân sẽ bắt đầu thu hoạch cho bạn. Khi rau giao tới cửa, trợ lý bếp sẽ gợi ý nấu gì từ đúng đơn này.
               </p>
               <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
-                <button className="m3-btn m3-btn-filled" onClick={() => { close(); router.push(`/cong-thuc?order=${success}`); }}>
-                  <Icon name="skillet" filled /><span>Nấu gì với đơn này?</span>
-                </button>
-                <button className="m3-btn m3-btn-tonal" onClick={() => { close(); router.push("/don-hang"); }}>
+                <button className="m3-btn m3-btn-filled" onClick={() => { close(); router.push("/don-hang"); }}>
                   <Icon name="package_2" /><span>Xem đơn hàng</span>
                 </button>
                 <button className="m3-btn m3-btn-text" onClick={close}>Tiếp tục mua</button>

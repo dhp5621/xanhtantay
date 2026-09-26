@@ -52,9 +52,9 @@ export function RecipeAssistant({ purchased, initial, focusOrderId, ai }: { purc
       <section className="m3-hero anim-in-scale" style={{ padding: "22px 24px", borderRadius: "var(--shape-xl-inc)" }}>
         <span className="m3-hero-blob" style={{ width: 220, height: 220, right: -60, top: -90 }} />
         <div style={{ position: "relative" }}>
-          <p className="label-md" style={{ color: "var(--md-on-primary-container)", opacity: 0.8, textTransform: "uppercase", marginBottom: 6 }}>Rau củ bạn đã mua gần đây</p>
+          <p className="label-md" style={{ color: "var(--md-on-primary-container)", opacity: 0.8, textTransform: "uppercase", marginBottom: 6 }}>Rau củ đã giao đến bạn</p>
           {noPurchases ? (
-            <p className="body-md" style={{ color: "var(--md-on-primary-container)" }}>Chưa có đơn nào. Đặt rau trước, trợ lý sẽ dựa vào đó để gợi ý.</p>
+            <p className="body-md" style={{ color: "var(--md-on-primary-container)" }}>Chưa có đơn nào được giao. Đơn đang thu hoạch hay đang trên xe chưa tính; rau về tới cửa là trợ lý gợi ý ngay.</p>
           ) : (
             <div className="flex flex-wrap gap-2 stagger">
               {purchased.map((n) => <span key={n} className="m3-chip round" style={{ background: "var(--md-surface-container-lowest)", boxShadow: "none" }}><Icon name="eco" size={16} filled className="text-primary" /> {n}</span>)}
@@ -62,19 +62,22 @@ export function RecipeAssistant({ purchased, initial, focusOrderId, ai }: { purc
           )}
           <div className="flex flex-wrap gap-2" style={{ marginTop: 16 }}>
             {noPurchases ? (
-              <Link href="/farms" className="m3-btn m3-btn-filled"><Icon name="potted_plant" /><span>Chọn vườn rau</span></Link>
+              <>
+                <Link href="/don-hang" className="m3-btn m3-btn-filled"><Icon name="package_2" /><span>Xem đơn đang giao</span></Link>
+                <Link href="/farms" className="m3-btn m3-btn-tonal"><Icon name="potted_plant" /><span>Chọn vườn rau</span></Link>
+              </>
             ) : (
               <>
                 <button className="m3-btn m3-btn-filled m3-btn-lg" onClick={() => generate({ count: 3, order_id: focusOrderId })} disabled={busy !== null}>
                   {busy === "all" ? <span className="m3-loader sm on-primary" /> : <Icon name="auto_awesome" filled />}
                   <span>{busy === "all" ? "Đang nghĩ món…" : recipes.length ? "Gợi ý thêm 3 món" : "Gợi ý món cho tôi"}</span>
                 </button>
-                {focusOrderId && <span className="m3-chip sm round m3-chip-tertiary"><Icon name="receipt_long" size={16} /> Theo đơn vừa đặt</span>}
+                {focusOrderId && <span className="m3-chip sm round m3-chip-tertiary"><Icon name="receipt_long" size={16} /> Theo đơn đã giao này</span>}
               </>
             )}
           </div>
           <p className="body-sm" style={{ color: "var(--md-on-secondary-container)", marginTop: 10, opacity: 0.85 }}>
-            {ai ? "Mỗi lần bấm là một thực đơn mới, không lặp lại món đã có. Mọi gợi ý được lưu vào lịch sử của bạn." : "Máy chủ chưa bật AI, đang dùng công thức mẫu khớp với món bạn mua."}
+            {ai ? "Chỉ tính rau đã giao tới tay bạn. Mỗi lần bấm là một thực đơn mới, không lặp lại món đã có; mọi gợi ý được lưu vào lịch sử." : "Chỉ tính rau đã giao tới tay bạn. Máy chủ chưa bật AI, đang dùng công thức mẫu."}
           </p>
         </div>
       </section>

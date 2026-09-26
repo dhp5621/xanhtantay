@@ -23,7 +23,9 @@ export async function POST(req: Request) {
 
   const purchases = await getPurchases(user.id, { orderId: body.order_id });
   const names = distinctNames(purchases).slice(0, 12);
-  if (!names.length) return NextResponse.json({ error: "Bạn chưa mua món nào, đặt rau trước rồi quay lại nhé" }, { status: 400 });
+  if (!names.length) {
+    return NextResponse.json({ error: body.order_id ? "Đơn này chưa giao đến bạn. Khi rau về tới cửa, trợ lý sẽ gợi ý ngay." : "Chưa có đơn nào được giao. Rau về tới tay bạn rồi trợ lý mới nấu nhé." }, { status: 400 });
+  }
 
   // Titles already in history are excluded so "đổi món" really gives something new.
   const history = await db.select({ title: user_recipes.title }).from(user_recipes).where(eq(user_recipes.user_id, user.id)).orderBy(desc(user_recipes.created_at)).limit(30);

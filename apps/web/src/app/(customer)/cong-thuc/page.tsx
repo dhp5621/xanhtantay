@@ -34,7 +34,7 @@ export default async function CongThucPage({ searchParams }: { searchParams: Pro
 
   return (
     <div>
-      <PageHeader icon="skillet" eyebrow="Tiện ích bếp núc" title="Gợi ý mâm cơm" subtitle={aiConfigured() ? "Trợ lý AI nấu từ đúng những gì bạn đã mua" : "Gợi ý từ những gì bạn đã mua"} />
+      <PageHeader icon="skillet" eyebrow="Tiện ích bếp núc" title="Gợi ý mâm cơm" subtitle={aiConfigured() ? "Trợ lý AI nấu từ đúng những gì đã giao đến bạn" : "Gợi ý từ những gì đã giao đến bạn"} />
       <RecipeAssistant purchased={names} initial={history} focusOrderId={order} ai={aiConfigured()} />
     </div>
   );
