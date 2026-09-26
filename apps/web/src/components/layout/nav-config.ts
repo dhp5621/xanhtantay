@@ -6,6 +6,11 @@ export interface NavItem {
   exact?: boolean;
 }
 
+/** Signed-out visitors see only Home (plus the login button). */
+export const VISITOR_NAV: NavItem[] = [
+  { href: "/", label: "Trang chủ", icon: "home", exact: true },
+];
+
 export const CUSTOMER_NAV: NavItem[] = [
   { href: "/", label: "Trang chủ", icon: "home", exact: true },
   { href: "/farms", label: "Vườn rau", icon: "potted_plant" },

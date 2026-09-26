@@ -48,29 +48,47 @@ function PerkGrid({ perks, bg, fg }: { perks: typeof CUSTOMER_PERKS; bg: string;
 export function Landing({ farms, stats }: { farms: FarmCard[]; stats: { farms: number; products: number; groups: number } }) {
   return (
     <div className="flex flex-col gap-16">
-      {/* Hero */}
-      <section className="m3-hero anim-in-scale" style={{ padding: "clamp(40px, 7vw, 80px) clamp(20px, 6vw, 64px)" }}>
+      {/* Hero: two audiences */}
+      <section className="m3-hero anim-in-scale" style={{ padding: "clamp(36px, 6vw, 72px) clamp(20px, 6vw, 64px)" }}>
         <span className="m3-hero-blob" style={{ width: 380, height: 380, right: -100, top: -140 }} />
         <span className="m3-hero-blob" style={{ width: 240, height: 240, right: 220, bottom: -140, animationDelay: "-5s" }} />
-        <div style={{ position: "relative", maxWidth: 640 }}>
+        <div style={{ position: "relative" }}>
           <span className="m3-chip round anim-in" style={{ marginBottom: 20, background: "var(--md-surface-container-lowest)", color: "var(--md-primary)", boxShadow: "none" }}>
-            <Icon name="eco" size={18} filled /> Từ vườn đến tay bạn, không qua trung gian
+            <Icon name="eco" size={18} filled /> Chợ rau trực tiếp giữa người trồng và người ăn
           </span>
-          <h1 className="display-lg anim-in delay-1" style={{ color: "var(--md-on-primary-container)", marginBottom: 18 }}>
+          <h1 className="display-lg anim-in delay-1" style={{ color: "var(--md-on-primary-container)", marginBottom: 14, maxWidth: 720 }}>
             Rau tươi có tên người trồng
           </h1>
-          <p className="body-lg anim-in delay-2" style={{ color: "var(--md-on-secondary-container)", maxWidth: 520, marginBottom: 32, fontSize: 18 }}>
-            Đặt rau thẳng từ vườn nhà bác Ba, cô Tư, u Thắm. Xem vườn mỗi ngày, biết rau hái lúc nào, trả tiền khi rau đến cửa.
+          <p className="body-lg anim-in delay-2" style={{ color: "var(--md-on-secondary-container)", maxWidth: 600, marginBottom: 28, fontSize: 18 }}>
+            Người mua đặt thẳng từ vườn, xem vườn mỗi ngày và trả tiền khi rau đến cửa. Nhà vườn bán thẳng cho người ăn, giữ trọn giá trị và có đơn đều mỗi tuần.
           </p>
-          <div className="flex flex-wrap gap-3 anim-in delay-3">
-            <Link href="/dang-nhap" className="m3-btn m3-btn-filled m3-btn-lg">
-              <Icon name="shopping_basket" filled /><span>Dùng thử tài khoản khách</span>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 anim-in delay-3" style={{ maxWidth: 820 }}>
+            <Link href="/dang-nhap" className="m3-card-elevated m3-card-action" style={{ padding: "22px 22px 20px", borderRadius: "var(--shape-xl)", background: "var(--md-surface-container-lowest)" }}>
+              <div className="flex items-center gap-3" style={{ marginBottom: 10 }}>
+                <span className="m3-list-leading" style={{ width: 48, height: 48 }}><Icon name="shopping_basket" size={26} filled /></span>
+                <div>
+                  <p className="m3-eyebrow">Tôi là khách hàng</p>
+                  <p className="title-lg text-on-surface">Mua rau biết gốc</p>
+                </div>
+              </div>
+              <p className="body-md text-on-surface-variant" style={{ marginBottom: 12 }}>Đặt lẻ, gom đơn với hàng xóm hay giao định kỳ. Theo dõi rau từ luống đến cửa.</p>
+              <span className="m3-btn m3-btn-filled m3-btn-sm"><span>Dùng thử tài khoản khách</span><Icon name="arrow_forward" size={18} /></span>
             </Link>
-            <Link href="/farms" className="m3-btn m3-btn-elevated m3-btn-lg">
-              <Icon name="potted_plant" /><span>Xem các vườn</span>
+            <Link href="/dang-nhap" className="m3-card-elevated m3-card-action" style={{ padding: "22px 22px 20px", borderRadius: "var(--shape-xl)", background: "var(--md-surface-container-lowest)" }}>
+              <div className="flex items-center gap-3" style={{ marginBottom: 10 }}>
+                <span className="m3-list-leading" style={{ width: 48, height: 48, background: "var(--md-tertiary-container)", color: "var(--md-on-tertiary-container)" }}><Icon name="agriculture" size={26} filled /></span>
+                <div>
+                  <p className="m3-eyebrow" style={{ color: "var(--md-tertiary)" }}>Tôi là nhà vườn</p>
+                  <p className="title-lg text-on-surface">Bán thẳng, không thương lái</p>
+                </div>
+              </div>
+              <p className="body-md text-on-surface-variant" style={{ marginBottom: 12 }}>Đăng nhật ký vườn, nhận đơn, cập nhật trạng thái bằng điện thoại. Miễn phí tham gia.</p>
+              <span className="m3-btn m3-btn-tertiary m3-btn-sm"><span>Xem trang quản lý vườn</span><Icon name="arrow_forward" size={18} /></span>
             </Link>
           </div>
-          <div className="flex flex-wrap gap-x-8 gap-y-2 anim-in delay-4" style={{ marginTop: 36 }}>
+
+          <div className="flex flex-wrap gap-x-8 gap-y-2 anim-in delay-4" style={{ marginTop: 32 }}>
             {[
               { v: stats.farms, l: "vườn đang bán" },
               { v: stats.products, l: "loại rau củ" },
@@ -125,6 +143,21 @@ export function Landing({ farms, stats }: { farms: FarmCard[]; stats: { farms: n
           <Link href="/dang-nhap" className="m3-btn m3-btn-tertiary"><Icon name="agriculture" /><span>Xem trang quản lý vườn</span></Link>
         </div>
         <PerkGrid perks={FARMER_PERKS} bg="var(--md-tertiary-container)" fg="var(--md-on-tertiary-container)" />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 stagger" style={{ marginTop: 16 }}>
+          {[
+            { icon: "photo_camera", t: "Sáng: đăng một tấm ảnh vườn", d: "30 giây trên điện thoại, khách thấy ngay." },
+            { icon: "agriculture", t: "Trưa: hái theo đơn đã chốt", d: "Không thừa, không thiếu, không tồn kho." },
+            { icon: "local_shipping", t: "Chiều: bấm “đã lên xe”", d: "Khách nhận thông báo, tiền về khi giao xong." },
+          ].map((x) => (
+            <div key={x.t} className="m3-card-outlined" style={{ padding: "16px 18px", display: "flex", gap: 12, alignItems: "flex-start", borderRadius: "var(--shape-lg-inc)" }}>
+              <Icon name={x.icon} className="text-primary" filled />
+              <div>
+                <p className="title-sm text-on-surface">{x.t}</p>
+                <p className="body-sm text-on-surface-variant">{x.d}</p>
+              </div>
+            </div>
+          ))}
+        </div>
       </section>
 
       {/* Farms teaser */}

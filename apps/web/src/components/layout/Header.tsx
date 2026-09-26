@@ -6,7 +6,7 @@ import { useSession, signOut } from "next-auth/react";
 import { memo, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTheme } from "./ThemeProvider";
 import { Icon } from "@/components/ui/Icon";
-import { CUSTOMER_NAV, FARMER_NAV, isActive } from "./nav-config";
+import { CUSTOMER_NAV, FARMER_NAV, VISITOR_NAV, isActive } from "./nav-config";
 import { useCart } from "@/components/cart/CartProvider";
 
 const HIDDEN_ON = ["/dang-nhap"];
@@ -108,7 +108,7 @@ function HeaderImpl() {
   const role = (session?.user as { role?: string } | undefined)?.role;
   const isFarmer = role === "farmer";
   const inFarmerArea = pathname.startsWith("/farmer");
-  const items = isFarmer && inFarmerArea ? FARMER_NAV : CUSTOMER_NAV;
+  const items = !session ? VISITOR_NAV : isFarmer && inFarmerArea ? FARMER_NAV : CUSTOMER_NAV;
 
   // Scroll elevation via IntersectionObserver instead of a scroll listener,
   // so scrolling never triggers React re-renders.
@@ -121,9 +121,10 @@ function HeaderImpl() {
   }, []);
 
   useEffect(() => {
-    const show = !HIDDEN_ON.includes(pathname);
+    // The mobile navigation bar only exists for signed-in users.
+    const show = !HIDDEN_ON.includes(pathname) && !!session;
     document.body.classList.toggle("has-nav-bar", show);
-  }, [pathname]);
+  }, [pathname, session]);
 
   if (HIDDEN_ON.includes(pathname)) return null;
 

@@ -13,7 +13,7 @@ const HIDDEN_ON = ["/dang-nhap"];
 function NavBarImpl() {
   const pathname = usePathname();
   const { data: session } = useSession();
-  if (HIDDEN_ON.includes(pathname)) return null;
+  if (HIDDEN_ON.includes(pathname) || !session) return null;
 
   const isFarmer = (session?.user as { role?: string } | undefined)?.role === "farmer";
   const items = isFarmer && pathname.startsWith("/farmer") ? FARMER_NAV : CUSTOMER_MOBILE_NAV;
