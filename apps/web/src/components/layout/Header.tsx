@@ -109,7 +109,7 @@ function HeaderImpl() {
   const isFarmer = role === "farmer";
   // /tai-khoan is neutral — keep farmer nav so the mode doesn't reset on account/settings pages
   const inFarmerArea = pathname.startsWith("/farmer") || pathname === "/tai-khoan";
-  const items = !session ? VISITOR_NAV : isFarmer && inFarmerArea ? FARMER_NAV : CUSTOMER_NAV;
+  const items = !session ? VISITOR_NAV : isFarmer ? FARMER_NAV : CUSTOMER_NAV;
 
   // Scroll elevation via IntersectionObserver instead of a scroll listener,
   // so scrolling never triggers React re-renders.
@@ -156,7 +156,7 @@ function HeaderImpl() {
                 </Link>
               </span>
             )}
-            {!inFarmerArea && <CartButton />}
+            {!isFarmer && session && <CartButton />}
             <ThemeToggle />
             {session ? (
               <>

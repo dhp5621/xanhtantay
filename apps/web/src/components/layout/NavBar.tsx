@@ -16,8 +16,8 @@ function NavBarImpl() {
   if (HIDDEN_ON.includes(pathname) || !session) return null;
 
   const isFarmer = (session?.user as { role?: string } | undefined)?.role === "farmer";
-  const inFarmerArea = pathname.startsWith("/farmer") || pathname === "/tai-khoan";
-  const items = isFarmer && inFarmerArea ? FARMER_NAV : CUSTOMER_MOBILE_NAV;
+  // Farmers only ever get farm navigation; buyer options are not part of the farmer app.
+  const items = isFarmer ? FARMER_NAV : CUSTOMER_MOBILE_NAV;
 
   return (
     <nav className="m3-nav-bar" aria-label="Điều hướng">

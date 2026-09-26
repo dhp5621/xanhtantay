@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useCart } from "@/components/cart/CartProvider";
 import { Icon } from "@/components/ui/Icon";
+import { Portal } from "@/components/ui/Portal";
 import { useSnackbar } from "@/components/ui/Snackbar";
 
 /** Turns the current cart (for this farm) into a weekly/monthly subscription. */
@@ -53,7 +54,7 @@ export function SubscribeButton({ farmId }: { farmId: string }) {
         <Icon name="event_repeat" size={20} /><span>Giao định kỳ</span>
       </button>
       {open && (
-        <>
+        <Portal>
           <div className={`m3-scrim ${closing ? "closing" : ""}`} onClick={close} aria-hidden />
           <div className={`m3-dialog ${closing ? "closing" : ""}`} role="dialog" aria-modal="true">
             <h2 className="headline-sm" style={{ marginBottom: 4 }}>Giao định kỳ</h2>
@@ -76,7 +77,7 @@ export function SubscribeButton({ farmId }: { farmId: string }) {
               </button>
             </div>
           </div>
-        </>
+        </Portal>
       )}
     </>
   );

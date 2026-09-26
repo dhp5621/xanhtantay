@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import { useCart } from "./CartProvider";
 import { useSnackbar } from "@/components/ui/Snackbar";
 import { Icon } from "@/components/ui/Icon";
+import { Portal } from "@/components/ui/Portal";
 import { formatVND } from "@/lib/format";
 
 export function CartSheet() {
@@ -62,7 +63,7 @@ export function CartSheet() {
   };
 
   return (
-    <>
+    <Portal>
       <div className={`m3-scrim ${closing ? "closing" : ""}`} onClick={close} aria-hidden />
       <section className={`m3-sheet ${closing ? "closing" : ""}`} role="dialog" aria-modal="true" aria-labelledby="cart-title">
         <div className="m3-sheet-handle" />
@@ -145,6 +146,6 @@ export function CartSheet() {
           )}
         </div>
       </section>
-    </>
+    </Portal>
   );
 }

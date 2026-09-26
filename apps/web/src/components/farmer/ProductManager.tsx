@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/ui/Icon";
+import { Portal } from "@/components/ui/Portal";
 import { useSnackbar } from "@/components/ui/Snackbar";
 import { CATEGORY_LABELS, CATEGORY_ICONS, formatVND } from "@/lib/format";
 
@@ -93,6 +94,7 @@ export function ProductManager({ farmId, initial }: { farmId: string; initial: P
 
       {editing && (
         <>
+<Portal>
           <div className={`m3-scrim ${closing ? "closing" : ""}`} onClick={close} aria-hidden />
           <form className={`m3-dialog ${closing ? "closing" : ""}`} onSubmit={save} role="dialog" aria-modal="true">
             <div className="m3-dialog-icon"><Icon name={editing === "new" ? "add_circle" : "edit"} size={24} filled /></div>
@@ -134,6 +136,7 @@ export function ProductManager({ farmId, initial }: { farmId: string; initial: P
               </button>
             </div>
           </form>
+</Portal>
         </>
       )}
     </>

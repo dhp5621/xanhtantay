@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Icon } from "@/components/ui/Icon";
+import { Portal } from "@/components/ui/Portal";
 import { useSnackbar } from "@/components/ui/Snackbar";
 
 interface FarmOpt { id: string; name: string }
@@ -59,6 +60,7 @@ export function CreateGroupDialog({ farms }: { farms: FarmOpt[] }) {
 
       {open && (
         <>
+<Portal>
           <div className={`m3-scrim ${closing ? "closing" : ""}`} onClick={close} aria-hidden />
           <form className={`m3-dialog ${closing ? "closing" : ""}`} onSubmit={submit} role="dialog" aria-modal="true" aria-labelledby="cg-title">
             <div className="m3-dialog-icon"><Icon name="groups" size={24} filled /></div>
@@ -102,6 +104,7 @@ export function CreateGroupDialog({ farms }: { farms: FarmOpt[] }) {
               </button>
             </div>
           </form>
+</Portal>
         </>
       )}
     </>
