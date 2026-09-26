@@ -1640,7 +1640,7 @@ input[type="number"].tabular::-webkit-inner-spin-button { -webkit-appearance: no
 
 /* ─── Admin area ─────────────────────────────────────────────── */
 .admin-shell { display: flex; min-height: 100dvh; }
-.admin-main { flex: 1; min-width: 0; padding: 24px 16px 48px; max-width: 1280px; }
+.admin-main { flex: 1; min-width: 0; width: 100%; padding: 24px 16px 48px; max-width: 1280px; margin-inline: auto; }
 @media (min-width: 900px) { .admin-main { padding: 32px 32px 64px; } }
 .admin-rail {
   position: sticky; top: 0; height: 100dvh;
