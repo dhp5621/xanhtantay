@@ -1,8 +1,15 @@
 import { useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator, ScrollView } from "react-native";
 import { router } from "expo-router";
 import { useSession } from "../../hooks/useSession";
 import { colors, shape, type, elevation } from "../../constants/theme";
+
+const CUSTOMER_LINKS = [
+  { href: "/vuon-cua-toi", icon: "🌳", title: "Vườn của tôi", desc: "Điểm tích luỹ và hạng của bạn" },
+  { href: "/dinh-ky", icon: "🔄", title: "Đơn định kỳ", desc: "Quản lý gói giao hàng lặp lại" },
+  { href: "/cong-thuc", icon: "🍲", title: "Công thức nấu ăn", desc: "Gợi ý món ăn từ rau bạn vừa nhận" },
+  { href: "/tra-cuu", icon: "🔍", title: "Tra cứu gói rau", desc: "Xem hành trình một gói rau" },
+] as const;
 
 export default function TaiKhoanScreen() {
   const { user, loading, logout } = useSession();
@@ -28,7 +35,7 @@ export default function TaiKhoanScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 24 }}>
       <View style={[styles.profile, elevation[1]]}>
         {user.image ? (
           <Image source={{ uri: user.image }} style={styles.avatar} />
@@ -44,6 +51,18 @@ export default function TaiKhoanScreen() {
         </View>
       </View>
 
+      {user.role !== "farmer" &&
+        CUSTOMER_LINKS.map((l) => (
+          <TouchableOpacity key={l.href} style={styles.linkCard} onPress={() => router.push(l.href)}>
+            <Text style={{ fontSize: 24 }}>{l.icon}</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.linkTitle}>{l.title}</Text>
+              <Text style={styles.linkDesc}>{l.desc}</Text>
+            </View>
+            <Text style={styles.chevron}>›</Text>
+          </TouchableOpacity>
+        ))}
+
       <TouchableOpacity
         style={styles.logoutBtn}
         disabled={signingOut}
@@ -55,7 +74,7 @@ export default function TaiKhoanScreen() {
       >
         {signingOut ? <ActivityIndicator color={colors.error} /> : <Text style={styles.logoutBtnText}>Đăng xuất</Text>}
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -83,6 +102,18 @@ const styles = StyleSheet.create({
     backgroundColor: colors.secondaryContainer,
   },
   roleChipText: { ...type.labelLarge, color: colors.onSecondaryContainer, fontSize: 13 },
+  linkCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    backgroundColor: colors.surfaceContainerLowest,
+    borderRadius: shape.lg,
+    padding: 16,
+    marginBottom: 12,
+  },
+  linkTitle: { ...type.titleMedium, color: colors.onSurface, fontSize: 14 },
+  linkDesc: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 11, marginTop: 2 },
+  chevron: { fontSize: 20, color: colors.onSurfaceVariant },
   loginBtn: {
     backgroundColor: colors.primary,
     borderRadius: shape.full,

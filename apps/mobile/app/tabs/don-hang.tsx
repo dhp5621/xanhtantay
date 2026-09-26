@@ -99,6 +99,11 @@ export default function DonHangScreen() {
               </View>
               <Text style={styles.total}>{formatVnd(item.total)}</Text>
               {item.note ? <Text style={styles.note}>{item.note}</Text> : null}
+              {item.status === "delivered" && (
+                <TouchableOpacity style={styles.planBtn} onPress={() => router.push(`/ke-hoach/${item.id}`)}>
+                  <Text style={styles.planBtnText}>🍽️ Xem kế hoạch bữa ăn</Text>
+                </TouchableOpacity>
+              )}
             </View>
           );
         }}
@@ -127,4 +132,6 @@ const styles = StyleSheet.create({
   statusText: { fontSize: 12, fontWeight: "700" },
   total: { ...type.titleMedium, color: colors.primary, fontSize: 17 },
   note: { ...type.bodyMedium, color: colors.onSurfaceVariant, marginTop: 4 },
+  planBtn: { marginTop: 10, alignSelf: "flex-start", backgroundColor: colors.tertiaryContainer, borderRadius: shape.full, paddingVertical: 6, paddingHorizontal: 12 },
+  planBtnText: { color: colors.onTertiaryContainer, fontWeight: "700", fontSize: 12 },
 });
