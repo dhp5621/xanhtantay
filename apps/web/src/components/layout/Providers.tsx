@@ -5,6 +5,7 @@ import type { Session } from "next-auth";
 import { ThemeProvider } from "./ThemeProvider";
 import { SnackbarProvider } from "@/components/ui/Snackbar";
 import { CartProvider } from "@/components/cart/CartProvider";
+import { LiveRefresh } from "./LiveRefresh";
 
 export function Providers({ children, session }: { children: React.ReactNode; session: Session | null }) {
   return (
@@ -14,7 +15,10 @@ export function Providers({ children, session }: { children: React.ReactNode; se
     <SessionProvider session={session} refetchOnWindowFocus={false}>
       <ThemeProvider>
         <SnackbarProvider>
-          <CartProvider>{children}</CartProvider>
+          <CartProvider>
+            <LiveRefresh />
+            {children}
+          </CartProvider>
         </SnackbarProvider>
       </ThemeProvider>
     </SessionProvider>

@@ -11,6 +11,7 @@ import { AnimIn, AnimInScale, PressableScale } from "../../../components/motion"
 import { Button, Chip, PageHeader } from "../../../components/ui";
 import { MediaGallery } from "../../../components/MediaGallery";
 import { Icon } from "../../../components/Icon";
+import { useLiveRefresh } from "../../../hooks/useLive";
 
 const SUGGESTIONS = [
   { icon: "eco", text: "Hôm nay thu hoạch được lứa rau xanh mướt." },
@@ -39,6 +40,7 @@ export default function NhatKyScreen() {
     }
   }, []);
 
+  useLiveRefresh(load);
   useFocusEffect(
     useCallback(() => {
       load();

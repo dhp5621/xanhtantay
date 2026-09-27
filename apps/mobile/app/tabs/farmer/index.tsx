@@ -9,6 +9,7 @@ import { formatDate, formatVND, STATUS_SHORT, STATUS_ICONS } from "../../../cons
 import { AnimIn, AnimInScale, PressableScale, Skeleton } from "../../../components/motion";
 import { Chip, ListItem, StatTile } from "../../../components/ui";
 import { Icon } from "../../../components/Icon";
+import { useLiveRefresh } from "../../../hooks/useLive";
 
 interface Me {
   name: string;
@@ -30,6 +31,7 @@ export default function FarmerHomeScreen() {
     setOrders(o);
   }, []);
 
+  useLiveRefresh(load);
   useFocusEffect(
     useCallback(() => {
       load();

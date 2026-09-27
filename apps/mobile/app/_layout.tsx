@@ -6,6 +6,7 @@ import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import { SessionProvider } from "../hooks/useSession";
 import { CartProvider } from "../hooks/useCart";
+import { LiveProvider } from "../hooks/useLive";
 import { colors } from "../constants/theme";
 import { ICON_FONT, ICON_FONT_FILLED } from "../components/Icon";
 
@@ -29,6 +30,7 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.surface }}>
       <SessionProvider>
         <CartProvider>
+          <LiveProvider>
           <StatusBar style="dark" backgroundColor={colors.surface} />
           <Stack
             screenOptions={{
@@ -54,6 +56,7 @@ export default function RootLayout() {
             <Stack.Screen name="ke-hoach/[id]" options={{ headerShown: true, title: "Kế hoạch ăn" }} />
             <Stack.Screen name="tra-cuu/index" options={{ headerShown: true, title: "Tra cứu gói rau" }} />
           </Stack>
+          </LiveProvider>
         </CartProvider>
       </SessionProvider>
     </GestureHandlerRootView>

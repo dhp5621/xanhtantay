@@ -11,6 +11,7 @@ import { AnimIn, PressableScale, Skeleton } from "../../components/motion";
 import { Chip, EmptyState, PageHeader, Screen } from "../../components/ui";
 import { CartStepper } from "../../components/CartStepper";
 import { Icon } from "../../components/Icon";
+import { useLiveRefresh } from "../../hooks/useLive";
 
 interface CatalogItem {
   id: string;
@@ -59,6 +60,7 @@ export default function RauCuScreen() {
     }
   }, []);
 
+  useLiveRefresh(load);
   useFocusEffect(
     useCallback(() => {
       load();

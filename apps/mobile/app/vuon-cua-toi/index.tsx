@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useLiveRefresh } from "../../hooks/useLive";
 import { View, Text, StyleSheet, ScrollView, useWindowDimensions } from "react-native";
 import { router } from "expo-router";
 import { apiFetch, ApiError } from "../../constants/api";
@@ -26,11 +27,17 @@ export default function VuonCuaToiScreen() {
   const [data, setData] = useState<Loyalty | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const load = useCallback(
+    () =>
+      apiFetch("/users/points")
+        .then(setData)
+        .catch((e) => setError(e instanceof ApiError && e.status === 401 ? "Đăng nhập để xem vườn của bạn." : e instanceof Error ? e.message : "Không tải được dữ liệu")),
+    []
+  );
+  useLiveRefresh(load);
   useEffect(() => {
-    apiFetch("/users/points")
-      .then(setData)
-      .catch((e) => setError(e instanceof ApiError && e.status === 401 ? "Đăng nhập để xem vườn của bạn." : e instanceof Error ? e.message : "Không tải được dữ liệu"));
-  }, []);
+    load();
+  }, [load]);
 
   if (error) {
     return (

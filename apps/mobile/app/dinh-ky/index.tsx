@@ -7,6 +7,7 @@ import { colors, shape, type, elevation } from "../../constants/theme";
 import { formatDate, formatVND } from "../../constants/format";
 import { AnimIn, Skeleton } from "../../components/motion";
 import { Button, Chip, EmptyState, PageHeader } from "../../components/ui";
+import { useLiveRefresh } from "../../hooks/useLive";
 
 type Sub = Omit<Subscription, "items"> & {
   farm: { id: string; name: string; slug: string } | null;
@@ -29,6 +30,7 @@ export default function DinhKyScreen() {
     }
   }, []);
 
+  useLiveRefresh(load);
   useFocusEffect(
     useCallback(() => {
       load();

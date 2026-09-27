@@ -11,6 +11,7 @@ import { colors, shape, type, elevation } from "../../constants/theme";
 import { CATEGORY_LABELS, CATEGORY_ICONS, formatVND, formatDateTime, timeAgo } from "../../constants/format";
 import { useCart } from "../../hooks/useCart";
 import { useSession } from "../../hooks/useSession";
+import { useLiveRefresh } from "../../hooks/useLive";
 import { AnimIn, AnimInScale, PressableScale, Skeleton } from "../../components/motion";
 import { Button, Chip, SectionHead } from "../../components/ui";
 import { CartStepper } from "../../components/CartStepper";
@@ -34,9 +35,9 @@ export default function FarmDetailScreen() {
   const [freq, setFreq] = useState<"weekly" | "monthly">("weekly");
   const [subBusy, setSubBusy] = useState(false);
 
-  useEffect(() => {
-    if (!id) return;
-    Promise.all([apiFetch(`/farms/${id}`), apiFetch(`/products?farm_id=${id}`), apiFetch(`/farms/${id}/diary`).catch(() => [])])
+  const load = useCallback(() => {
+    if (!id) return Promise.resolve();
+    return Promise.all([apiFetch(`/farms/${id}`), apiFetch(`/products?farm_id=${id}`), apiFetch(`/farms/${id}/diary`).catch(() => [])])
       .then(([farmRow, productRows, diaryRows]) => {
         setFarm(farmRow);
         setProducts(productRows);
@@ -44,10 +45,16 @@ export default function FarmDetailScreen() {
       })
       .catch((e) => setError(e instanceof Error ? e.message : "Không tải được dữ liệu"))
       .finally(() => setLoading(false));
+  }, [id]);
+  useLiveRefresh(load);
+
+  useEffect(() => {
+    load();
+    if (!id) return;
     AsyncStorage.getItem(FOLLOWS_KEY)
       .then((raw) => setFollowing(((JSON.parse(raw ?? "[]") as string[]) ?? []).includes(id)))
       .catch(() => {});
-  }, [id]);
+  }, [id, load]);
 
   // A farmer only reaches this page for their own farm; show it as a preview, no buying.
   const preview = user?.role === "farmer";

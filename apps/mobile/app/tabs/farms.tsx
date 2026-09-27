@@ -8,6 +8,7 @@ import { colors, shape, type, elevation } from "../../constants/theme";
 import { AnimIn, PressableScale, Skeleton } from "../../components/motion";
 import { EmptyState, PageHeader, Screen } from "../../components/ui";
 import { Icon } from "../../components/Icon";
+import { useLiveRefresh } from "../../hooks/useLive";
 
 export default function FarmsScreen() {
   const [farms, setFarms] = useState<Farm[] | null>(null);
@@ -24,6 +25,7 @@ export default function FarmsScreen() {
     }
   }, []);
 
+  useLiveRefresh(load);
   useFocusEffect(
     useCallback(() => {
       load();

@@ -10,6 +10,7 @@ import { ORDER_TYPE_LABELS } from "../../constants/commerce";
 import { AnimIn, Skeleton } from "../../components/motion";
 import { Button, Chip, EmptyState, PageHeader, Screen } from "../../components/ui";
 import { Icon } from "../../components/Icon";
+import { useLiveRefresh } from "../../hooks/useLive";
 
 const STATUS_LABEL: Record<OrderStatus, string> = {
   harvesting: "Đang thu hoạch",
@@ -46,6 +47,7 @@ export default function DonHangScreen() {
     }
   }, [user]);
 
+  useLiveRefresh(load);
   useFocusEffect(
     useCallback(() => {
       if (!sessionLoading) load();

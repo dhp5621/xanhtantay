@@ -7,6 +7,7 @@ import { colors, shape, type, elevation } from "../../../constants/theme";
 import { formatDate } from "../../../constants/format";
 import { AnimIn, Skeleton } from "../../../components/motion";
 import { Avatar, Chip, EmptyState, PageHeader } from "../../../components/ui";
+import { useLiveRefresh } from "../../../hooks/useLive";
 
 type FarmSub = Subscription & { customer_name: string | null; customer_phone: string | null };
 const FREQ_LABEL: Record<string, string> = { weekly: "Mỗi tuần", monthly: "Mỗi tháng" };
@@ -24,6 +25,7 @@ export default function FarmerDangKyScreen() {
     }
   }, []);
 
+  useLiveRefresh(load);
   useFocusEffect(
     useCallback(() => {
       load();

@@ -9,6 +9,7 @@ import { useSession } from "../../../hooks/useSession";
 import { AnimIn, AnimatedProgress, PressableScale, Skeleton } from "../../../components/motion";
 import { Button, Chip, EmptyState } from "../../../components/ui";
 import { Icon } from "../../../components/Icon";
+import { useLiveRefresh } from "../../../hooks/useLive";
 
 const isoDay = (offset: number) => {
   const d = new Date();
@@ -37,6 +38,7 @@ export default function GomDonScreen() {
     }
   }, []);
 
+  useLiveRefresh(load);
   useFocusEffect(
     useCallback(() => {
       load();

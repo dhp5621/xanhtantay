@@ -10,6 +10,7 @@ import { useSession } from "../../hooks/useSession";
 import { AnimIn, AnimInScale, PressableScale, Skeleton } from "../../components/motion";
 import { Avatar, Button, ListItem, Screen, StatTile } from "../../components/ui";
 import { Icon } from "../../components/Icon";
+import { useLiveRefresh } from "../../hooks/useLive";
 
 interface Me {
   id: string;
@@ -42,6 +43,7 @@ export default function TaiKhoanScreen() {
     }
   }, [user]);
 
+  useLiveRefresh(load);
   useFocusEffect(
     useCallback(() => {
       load();

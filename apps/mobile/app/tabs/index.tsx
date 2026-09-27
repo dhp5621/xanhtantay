@@ -13,6 +13,7 @@ import { AnimIn, AnimInScale, AnimatedProgress, HeroBlob, PressableScale, Skelet
 import { Chip, Button, SectionHead, Screen } from "../../components/ui";
 import { MediaGallery } from "../../components/MediaGallery";
 import { Icon } from "../../components/Icon";
+import { useLiveRefresh } from "../../hooks/useLive";
 
 interface Feed {
   farms: Farm[];
@@ -42,6 +43,7 @@ export default function HomeScreen() {
     }
   }, []);
 
+  useLiveRefresh(load);
   useFocusEffect(
     useCallback(() => {
       load();

@@ -10,6 +10,7 @@ import { ORDER_TYPE_LABELS } from "../../../constants/commerce";
 import { AnimIn, Skeleton } from "../../../components/motion";
 import { Button, Chip, EmptyState, PageHeader } from "../../../components/ui";
 import { Icon } from "../../../components/Icon";
+import { useLiveRefresh } from "../../../hooks/useLive";
 
 type FarmerOrder = Order & {
   customer_name?: string | null;
@@ -44,6 +45,7 @@ export default function FarmerDonHangScreen() {
     }
   }, []);
 
+  useLiveRefresh(load);
   useFocusEffect(
     useCallback(() => {
       load();

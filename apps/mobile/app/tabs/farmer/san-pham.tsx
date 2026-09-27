@@ -10,6 +10,7 @@ import { pickMedia, uploadMedia } from "../../../constants/media";
 import { AnimIn, PressableScale, Skeleton } from "../../../components/motion";
 import { Button, Chip, EmptyState, PageHeader } from "../../../components/ui";
 import { Icon } from "../../../components/Icon";
+import { useLiveRefresh } from "../../../hooks/useLive";
 
 const UNITS = ["kg", "bó", "củ", "hộp", "trái", "gói"];
 const EMPTY_FORM = { name: "", unit: "kg", price_per_unit: "10000", category: "rau_la", stock_qty: "20", image_url: null as string | null };
@@ -33,6 +34,7 @@ export default function SanPhamScreen() {
     }
   }, []);
 
+  useLiveRefresh(load);
   useFocusEffect(
     useCallback(() => {
       load();

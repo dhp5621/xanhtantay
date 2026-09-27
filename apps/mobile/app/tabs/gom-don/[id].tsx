@@ -10,6 +10,7 @@ import { daysUntil, formatDate } from "../../../constants/format";
 import { AnimIn, AnimInScale, AnimatedProgress, PressableScale } from "../../../components/motion";
 import { Avatar, Button, Chip } from "../../../components/ui";
 import { Icon } from "../../../components/Icon";
+import { useLiveRefresh } from "../../../hooks/useLive";
 
 interface GroupMember { id: string; user_id: string; name: string | null }
 type GroupDetail = GroupOrder & { members: GroupMember[]; joined: boolean };
@@ -35,6 +36,7 @@ export default function GomDonDetailScreen() {
       .finally(() => setLoading(false));
   }, [id]);
 
+  useLiveRefresh(load);
   useFocusEffect(
     useCallback(() => {
       load();

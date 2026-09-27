@@ -7,6 +7,7 @@ import { colors, shape, type, elevation } from "../../constants/theme";
 import { DEFAULT_PREFS, RecipePrefs } from "../../constants/recipePrefs";
 import { RecipeSettingsButton, recipePrefsSummary } from "../../components/RecipeSettingsSheet";
 import { Screen } from "../../components/ui";
+import { useLiveRefresh } from "../../hooks/useLive";
 
 type UserRecipe = Recipe & { description?: string | null; minutes?: number | null; kcal?: number | null; based_on?: string[] };
 
@@ -27,6 +28,7 @@ export default function CongThucScreen() {
     }
   }, []);
 
+  useLiveRefresh(load);
   useFocusEffect(
     useCallback(() => {
       load().finally(() => setLoading(false));
