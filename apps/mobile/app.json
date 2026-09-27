@@ -7,6 +7,7 @@
     "icon": "./assets/icon.png",
     "scheme": "xanhtantay",
     "userInterfaceStyle": "automatic",
+    "backgroundColor": "#F6FBF4",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
@@ -22,7 +23,8 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#F6FBF4"
       },
-      "package": "dhp.vkn.xanhtantay"
+      "package": "dhp.vkn.xanhtantay",
+      "edgeToEdgeEnabled": true
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -31,6 +33,12 @@
       "expo-router",
       "expo-secure-store",
       "expo-video",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Xanh Tận Tay cần dùng camera để quét tem QR trên gói rau."
+        }
+      ],
       [
         "expo-image-picker",
         {

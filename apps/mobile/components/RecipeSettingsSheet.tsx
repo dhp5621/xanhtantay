@@ -1,8 +1,10 @@
 import { useState } from "react";
-import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, ActivityIndicator, ScrollView } from "react-native";
-import { colors, shape, type } from "../constants/theme";
+import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, ScrollView } from "react-native";
+import { colors, shape, type, useStyles } from "../constants/theme";
 import { GOALS, DIET_TAGS, RecipePrefs, DEFAULT_PREFS, isDefaultPrefs } from "../constants/recipePrefs";
 import { Icon } from "./Icon";
+import type { Colors } from "../constants/theme";
+import { Loader } from "./Loader";
 
 export function recipePrefsSummary(prefs: RecipePrefs): string {
   const goal = GOALS.find((g) => g.value === prefs.goal);
@@ -17,6 +19,7 @@ export function recipePrefsSummary(prefs: RecipePrefs): string {
 }
 
 export function RecipeSettingsButton({ prefs, onChange, disabled }: { prefs: RecipePrefs; onChange: (p: RecipePrefs) => void | Promise<void>; disabled?: boolean }) {
+  const styles = useStyles(makeStyles);
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<RecipePrefs>(prefs);
   const [saving, setSaving] = useState(false);
@@ -78,7 +81,7 @@ export function RecipeSettingsButton({ prefs, onChange, disabled }: { prefs: Rec
                   const sel = draft.tags.includes(t.value);
                   return (
                     <TouchableOpacity key={t.value} style={[styles.tagChip, sel && styles.tagChipSelected]} onPress={() => toggleTag(t.value)}>
-                      <Text style={[styles.tagChipText, sel && styles.tagChipTextSelected]}>{sel ? "✓ " : ""}{t.label}</Text>
+                      <Text style={[styles.tagChipText, sel && styles.tagChipTextSelected]}>{t.label}</Text>
                     </TouchableOpacity>
                   );
                 })}
@@ -126,7 +129,7 @@ export function RecipeSettingsButton({ prefs, onChange, disabled }: { prefs: Rec
                     <Text style={styles.cancelBtnText}>Huỷ</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.applyBtn} onPress={apply} disabled={saving}>
-                    {saving ? <ActivityIndicator color={colors.onPrimary} /> : <Text style={styles.applyBtnText}>Áp dụng</Text>}
+                    {saving ? <Loader size={22} color={colors.onPrimary} /> : <Text style={styles.applyBtnText}>Áp dụng</Text>}
                   </TouchableOpacity>
                 </View>
               </View>
@@ -138,7 +141,7 @@ export function RecipeSettingsButton({ prefs, onChange, disabled }: { prefs: Rec
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   trigger: { backgroundColor: colors.surfaceContainerHighest, borderRadius: shape.full, paddingVertical: 10, paddingHorizontal: 16 },
   triggerActive: { backgroundColor: colors.tertiaryContainer },
   triggerText: { ...type.labelLarge, color: colors.onSurfaceVariant, fontSize: 13 },

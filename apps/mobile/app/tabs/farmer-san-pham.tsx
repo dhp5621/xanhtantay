@@ -1,22 +1,27 @@
 import { useCallback, useState } from "react";
-import { View, Text, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity, TextInput, Modal, Alert, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, TextInput, Modal, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
 import { Image } from "expo-image";
 import { useFocusEffect } from "expo-router";
 import type { Product } from "@xanhtantay/types";
-import { apiFetch, ApiError } from "../../../constants/api";
-import { colors, shape, type, elevation } from "../../../constants/theme";
-import { CATEGORY_LABELS, CATEGORY_ICONS, formatVND } from "../../../constants/format";
-import { pickMedia, uploadMedia } from "../../../constants/media";
-import { AnimIn, PressableScale, Skeleton } from "../../../components/motion";
-import { Button, Chip, EmptyState, PageHeader } from "../../../components/ui";
-import { Icon } from "../../../components/Icon";
-import { useLiveRefresh } from "../../../hooks/useLive";
+import { apiFetch, ApiError } from "../../constants/api";
+import { colors, shape, type, elevation, emojiFont, useStyles } from "../../constants/theme";
+import { CATEGORY_LABELS, CATEGORY_ICONS, formatVND } from "../../constants/format";
+import { pickMedia, uploadMedia } from "../../constants/media";
+import { AnimIn, PressableScale, Skeleton } from "../../components/motion";
+import { Button, Chip, EmptyState, PageHeader } from "../../components/ui";
+import { Icon } from "../../components/Icon";
+import { useLiveRefresh } from "../../hooks/useLive";
+import type { Colors } from "../../constants/theme";
+import { useDialog } from "../../components/Dialog";
+import { Loader } from "../../components/Loader";
 
 const UNITS = ["kg", "bó", "củ", "hộp", "trái", "gói"];
 const EMPTY_FORM = { name: "", unit: "kg", price_per_unit: "10000", category: "rau_la", stock_qty: "20", image_url: null as string | null };
 
 /** Mirrors apps/web/src/components/farmer/ProductManager.tsx (list, stock steppers, in-stock toggle, add/edit dialog with photo). */
 export default function SanPhamScreen() {
+  const { alert } = useDialog();
+  const styles = useStyles(makeStyles);
   const [farm, setFarm] = useState<{ id: string; name: string } | null | undefined>(undefined);
   const [products, setProducts] = useState<Product[]>([]);
   const [editing, setEditing] = useState<Product | "new" | null>(null);
@@ -56,7 +61,7 @@ export default function SanPhamScreen() {
     try {
       await apiFetch("/products", { method: "PATCH", body: JSON.stringify({ id: p.id, stock_qty: next }) });
     } catch {
-      Alert.alert("Lỗi", "Không lưu được tồn kho");
+      alert("Lỗi", "Không lưu được tồn kho");
       load();
     }
   };
@@ -67,7 +72,7 @@ export default function SanPhamScreen() {
       await apiFetch("/products", { method: "PATCH", body: JSON.stringify({ id: p.id, in_stock: !p.in_stock }) });
     } catch (e) {
       setProducts((xs) => xs.map((x) => (x.id === p.id ? { ...x, in_stock: p.in_stock } : x)));
-      Alert.alert("Lỗi", e instanceof ApiError ? e.message : "Không cập nhật được");
+      alert("Lỗi", e instanceof ApiError ? e.message : "Không cập nhật được");
     }
   };
 
@@ -80,7 +85,7 @@ export default function SanPhamScreen() {
         setForm((f) => ({ ...f, image_url: url }));
       }
     } catch (e) {
-      Alert.alert("Không tải được ảnh", e instanceof Error ? e.message : undefined);
+      alert("Không tải được ảnh", e instanceof Error ? e.message : undefined);
     } finally {
       setUploading(false);
     }
@@ -101,7 +106,7 @@ export default function SanPhamScreen() {
       setProducts((xs) => (isNew ? [...xs, data] : xs.map((x) => (x.id === data.id ? data : x))));
       setEditing(null);
     } catch (e) {
-      Alert.alert("Không lưu được", e instanceof ApiError ? e.message : "Có lỗi xảy ra");
+      alert("Không lưu được", e instanceof ApiError ? e.message : "Có lỗi xảy ra");
     } finally {
       setBusy(false);
     }
@@ -162,7 +167,7 @@ export default function SanPhamScreen() {
                       <Text style={[styles.stockBtnText, { color: colors.onPrimary }]}>+</Text>
                     </TouchableOpacity>
                   </View>
-                  <Chip label={selling ? "✅ Đang bán" : "⛔ Hết hàng"} tone={selling ? "primary" : "error"} small onPress={() => toggleStock(p)} />
+                  <Chip icon={selling ? "check_circle" : "block"} label={selling ? "Đang bán" : "Hết hàng"} tone={selling ? "primary" : "error"} small onPress={() => toggleStock(p)} />
                 </View>
               </View>
             </AnimIn>
@@ -186,7 +191,7 @@ export default function SanPhamScreen() {
 
               <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
                 <View style={styles.photoBox}>
-                  {uploading ? <ActivityIndicator color={colors.primary} /> : form.image_url ? <Image source={{ uri: form.image_url }} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} /> : <Icon name={CATEGORY_ICONS[form.category]} size={30} />}
+                  {uploading ? <Loader size={22} color={colors.primary} /> : form.image_url ? <Image source={{ uri: form.image_url }} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} /> : <Icon name={CATEGORY_ICONS[form.category]} size={30} />}
                 </View>
                 <View style={{ flex: 1, gap: 6 }}>
                   <Text style={styles.body}>Ảnh sản phẩm (tuỳ chọn)</Text>
@@ -223,14 +228,14 @@ export default function SanPhamScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
   center: { flex: 1, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center", padding: 24 },
-  body: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12 },
+  body: { ...emojiFont,  ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12 },
   card: { backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.lgIncreased, padding: 12 },
   cardTop: { flexDirection: "row", alignItems: "center", gap: 12 },
   thumb: { width: 64, height: 64, borderRadius: shape.md, backgroundColor: colors.surfaceContainerHigh, alignItems: "center", justifyContent: "center", overflow: "hidden" },
-  productName: { ...type.titleMedium, color: colors.onSurface, fontSize: 15 },
+  productName: { ...emojiFont,  ...type.titleMedium, color: colors.onSurface, fontSize: 15 },
   productPrice: { ...type.labelLarge, color: colors.primary, fontSize: 14, marginTop: 1 },
   editLink: { ...type.labelLarge, color: colors.primary, fontSize: 13 },
   cardBottom: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 12 },

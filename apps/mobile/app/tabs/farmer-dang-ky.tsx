@@ -2,18 +2,20 @@ import { useCallback, useState } from "react";
 import { View, Text, FlatList, StyleSheet, RefreshControl } from "react-native";
 import { useFocusEffect } from "expo-router";
 import type { Subscription } from "@xanhtantay/types";
-import { apiFetch } from "../../../constants/api";
-import { colors, shape, type, elevation } from "../../../constants/theme";
-import { formatDate } from "../../../constants/format";
-import { AnimIn, Skeleton } from "../../../components/motion";
-import { Avatar, Chip, EmptyState, PageHeader } from "../../../components/ui";
-import { useLiveRefresh } from "../../../hooks/useLive";
+import { apiFetch } from "../../constants/api";
+import { colors, shape, type, elevation, emojiFont, useStyles } from "../../constants/theme";
+import { formatDate } from "../../constants/format";
+import { AnimIn, Skeleton } from "../../components/motion";
+import { Avatar, Chip, EmptyState, PageHeader } from "../../components/ui";
+import { useLiveRefresh } from "../../hooks/useLive";
+import type { Colors } from "../../constants/theme";
 
 type FarmSub = Subscription & { customer_name: string | null; customer_phone: string | null };
 const FREQ_LABEL: Record<string, string> = { weekly: "Mỗi tuần", monthly: "Mỗi tháng" };
 
 /** Mirrors apps/web/src/app/(farmer)/farmer/dang-ky/page.tsx. */
 export default function FarmerDangKyScreen() {
+  const styles = useStyles(makeStyles);
   const [subs, setSubs] = useState<FarmSub[] | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -86,10 +88,10 @@ export default function FarmerDangKyScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
   row: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.lg, padding: 14 },
-  name: { ...type.titleMedium, color: colors.onSurface, fontSize: 15 },
+  name: { ...emojiFont,  ...type.titleMedium, color: colors.onSurface, fontSize: 15 },
   meta: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12 },
   next: { ...type.titleMedium, color: colors.primary, fontSize: 14 },
 });

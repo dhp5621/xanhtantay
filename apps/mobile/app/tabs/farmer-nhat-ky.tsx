@@ -1,17 +1,20 @@
 import { useCallback, useState } from "react";
-import { View, Text, StyleSheet, TextInput, ActivityIndicator, Alert, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, StyleSheet, TextInput, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
 import { Image } from "expo-image";
 import { useFocusEffect } from "expo-router";
 import type { FarmDiaryEntry } from "@xanhtantay/types";
-import { apiFetch, ApiError } from "../../../constants/api";
-import { colors, shape, type, elevation } from "../../../constants/theme";
-import { pickMedia, uploadMedia, MAX_FILES, VIDEO_MAX_SECONDS, fmtMB, type PickedMedia } from "../../../constants/media";
-import { formatDateTime, timeAgo } from "../../../constants/format";
-import { AnimIn, AnimInScale, PressableScale } from "../../../components/motion";
-import { Button, Chip, PageHeader } from "../../../components/ui";
-import { MediaGallery } from "../../../components/MediaGallery";
-import { Icon } from "../../../components/Icon";
-import { useLiveRefresh } from "../../../hooks/useLive";
+import { apiFetch, ApiError } from "../../constants/api";
+import { colors, shape, type, elevation, emojiFont, useStyles } from "../../constants/theme";
+import { pickMedia, uploadMedia, MAX_FILES, VIDEO_MAX_SECONDS, fmtMB, type PickedMedia } from "../../constants/media";
+import { formatDateTime, timeAgo } from "../../constants/format";
+import { AnimIn, AnimInScale, PressableScale } from "../../components/motion";
+import { Button, Chip, PageHeader } from "../../components/ui";
+import { MediaGallery } from "../../components/MediaGallery";
+import { Icon } from "../../components/Icon";
+import { useLiveRefresh } from "../../hooks/useLive";
+import type { Colors } from "../../constants/theme";
+import { useDialog } from "../../components/Dialog";
+import { Loader, PageLoader } from "../../components/Loader";
 
 const SUGGESTIONS = [
   { icon: "eco", text: "Hôm nay thu hoạch được lứa rau xanh mướt." },
@@ -22,6 +25,8 @@ const SUGGESTIONS = [
 
 /** Mirrors apps/web/src/components/farmer/DiaryComposer.tsx — text + up to 4 photos/videos, uploaded via /api/upload. */
 export default function NhatKyScreen() {
+  const { alert } = useDialog();
+  const styles = useStyles(makeStyles);
   const [farm, setFarm] = useState<{ id: string; name: string } | null | undefined>(undefined);
   const [recent, setRecent] = useState<FarmDiaryEntry[]>([]);
   const [content, setContent] = useState("");
@@ -47,17 +52,17 @@ export default function NhatKyScreen() {
     }, [load])
   );
 
-  const add = async (source: "camera" | "library", allowVideo: boolean) => {
+  const add = async (source: "camera" | "library", kind: "image" | "video" | "any") => {
     if (media.length >= MAX_FILES) {
-      Alert.alert(`Tối đa ${MAX_FILES} tệp mỗi bài`);
+      alert(`Tối đa ${MAX_FILES} tệp mỗi bài`);
       return;
     }
-    setProcessing("Đang nén ảnh…");
+    setProcessing(kind === "video" ? "Đang chuẩn bị video…" : "Đang nén ảnh…");
     try {
-      const picked = await pickMedia({ source, allowVideo, max: MAX_FILES - media.length });
+      const picked = await pickMedia({ source, kind, max: MAX_FILES - media.length });
       setMedia((m) => [...m, ...picked].slice(0, MAX_FILES));
     } catch (e) {
-      Alert.alert("Không lấy được ảnh", e instanceof Error ? e.message : undefined);
+      alert("Không lấy được ảnh", e instanceof Error ? e.message : undefined);
     } finally {
       setProcessing(null);
     }
@@ -73,7 +78,7 @@ export default function NhatKyScreen() {
         try {
           media_urls.push(await uploadMedia(m));
         } catch (e) {
-          Alert.alert(`Không tải được ${m.kind === "video" ? "video" : "ảnh"}`, e instanceof ApiError ? e.message : "lỗi");
+          alert(`Không tải được ${m.kind === "video" ? "video" : "ảnh"}`, e instanceof ApiError ? e.message : "lỗi");
         }
       }
       setProcessing(null);
@@ -84,7 +89,7 @@ export default function NhatKyScreen() {
       setDone(true);
       setTimeout(() => setDone(false), 3000);
     } catch (e) {
-      Alert.alert("Không đăng được", e instanceof ApiError ? e.message : "Có lỗi xảy ra");
+      alert("Không đăng được", e instanceof ApiError ? e.message : "Có lỗi xảy ra");
     } finally {
       setProcessing(null);
       setSubmitting(false);
@@ -93,9 +98,7 @@ export default function NhatKyScreen() {
 
   if (farm === undefined) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
+      <PageLoader />
     );
   }
   if (farm === null) {
@@ -130,9 +133,9 @@ export default function NhatKyScreen() {
           <Text style={styles.label}>Ảnh / video (tối đa {MAX_FILES}, video ≤ {VIDEO_MAX_SECONDS}s)</Text>
           <View style={{ flexDirection: "row", gap: 8 }}>
             {[
-              { icon: "photo_camera", label: "Chụp ảnh", hint: "Camera", act: () => add("camera", false) },
-              { icon: "videocam", label: "Quay video", hint: `Tối đa ${VIDEO_MAX_SECONDS}s`, act: () => add("camera", true) },
-              { icon: "image", label: "Chọn từ máy", hint: "Ảnh hoặc video", act: () => add("library", true) },
+              { icon: "photo_camera", label: "Chụp ảnh", hint: "Camera", act: () => add("camera", "image") },
+              { icon: "videocam", label: "Quay video", hint: `Tối đa ${VIDEO_MAX_SECONDS}s`, act: () => add("camera", "video") },
+              { icon: "image", label: "Chọn từ máy", hint: "Ảnh hoặc video", act: () => add("library", "any") },
             ].map((b) => (
               <PressableScale key={b.label} disabled={full || !!processing} style={[styles.pickBtn, (full || !!processing) && { opacity: 0.5 }]} onPress={b.act}>
                 <Icon name={b.icon} size={26} />
@@ -144,7 +147,7 @@ export default function NhatKyScreen() {
 
           {processing && (
             <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginTop: 10 }}>
-              <ActivityIndicator size="small" color={colors.primary} />
+              <Loader size={18} color={colors.primary} />
               <Text style={styles.body}>{processing}</Text>
             </View>
           )}
@@ -162,7 +165,7 @@ export default function NhatKyScreen() {
                         </View>
                       )}
                       <PressableScale haptic style={styles.removeBtn} onPress={() => setMedia((ms) => ms.filter((_, j) => j !== i))}>
-                        <Text style={{ color: colors.onError, fontWeight: "800", fontSize: 12 }}>✕</Text>
+                        <Icon name="close" size={14} color={colors.onError} />
                       </PressableScale>
                     </View>
                   </AnimInScale>
@@ -208,10 +211,10 @@ export default function NhatKyScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
   center: { flex: 1, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center", padding: 24 },
-  body: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12 },
+  body: { ...emojiFont,  ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12 },
   textarea: { backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.lg, padding: 14, color: colors.onSurface, minHeight: 130, textAlignVertical: "top", fontSize: 15, borderWidth: 1, borderColor: colors.outlineVariant },
   counter: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 11, textAlign: "right", marginTop: 4 },
   label: { ...type.labelLarge, color: colors.onSurface, marginBottom: 8, fontSize: 13 },
@@ -226,5 +229,5 @@ const styles = StyleSheet.create({
   doneBannerText: { color: colors.onPrimaryContainer, fontWeight: "700" },
   sectionTitle: { ...type.titleLarge, color: colors.onSurface, fontSize: 18, marginBottom: 10 },
   recentCard: { flexDirection: "row", gap: 12, alignItems: "flex-start", backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.lg, padding: 12 },
-  recentText: { ...type.bodyMedium, color: colors.onSurface, fontSize: 14, marginBottom: 4 },
+  recentText: { ...emojiFont,  ...type.bodyMedium, color: colors.onSurface, fontSize: 14, marginBottom: 4 },
 });

@@ -4,7 +4,7 @@ import { Image } from "expo-image";
 import { router, useFocusEffect } from "expo-router";
 import type { Farm, Product } from "@xanhtantay/types";
 import { apiFetch } from "../../constants/api";
-import { colors, shape, type, elevation } from "../../constants/theme";
+import { colors, shape, type, elevation, emojiFont, useStyles } from "../../constants/theme";
 import { CATEGORY_LABELS, CATEGORY_ICONS, formatVND, normalizeSearch, baseName } from "../../constants/format";
 import { useCart } from "../../hooks/useCart";
 import { AnimIn, PressableScale, Skeleton } from "../../components/motion";
@@ -12,6 +12,7 @@ import { Chip, EmptyState, PageHeader, Screen } from "../../components/ui";
 import { CartStepper } from "../../components/CartStepper";
 import { Icon } from "../../components/Icon";
 import { useLiveRefresh } from "../../hooks/useLive";
+import type { Colors } from "../../constants/theme";
 
 interface CatalogItem {
   id: string;
@@ -30,6 +31,7 @@ type Sort = "name" | "price" | "stock";
 
 /** Mirrors apps/web/src/components/catalog/Catalog.tsx. */
 export default function RauCuScreen() {
+  const styles = useStyles(makeStyles);
   const cart = useCart();
   const [items, setItems] = useState<CatalogItem[] | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -136,18 +138,19 @@ export default function RauCuScreen() {
         {Object.entries(CATEGORY_LABELS).map(([k, v]) => (
           <Chip key={k} icon={CATEGORY_ICONS[k]} label={v} selected={cat === k} onPress={() => setCat(cat === k ? "" : k)} />
         ))}
-        <Chip label={`⚙️ Bộ lọc${activeFilters ? ` · ${activeFilters}` : ""}`} selected={showFilters || activeFilters > 0} onPress={() => setShowFilters((v) => !v)} />
+        <Chip icon="tune" label={`Bộ lọc${activeFilters ? ` · ${activeFilters}` : ""}`} selected={showFilters || activeFilters > 0} onPress={() => setShowFilters((v) => !v)} />
       </ScrollView>
 
       <View style={styles.segmented}>
         {(
           [
-            ["name", "🔤 Tên"],
-            ["price", "💵 Giá"],
-            ["stock", "📦 Còn nhiều"],
+            ["name", "sort_by_alpha", "Tên"],
+            ["price", "payments", "Giá"],
+            ["stock", "inventory_2", "Còn nhiều"],
           ] as const
-        ).map(([v, l]) => (
+        ).map(([v, ic, l]) => (
           <TouchableOpacity key={v} style={[styles.seg, sort === v && styles.segSelected]} onPress={() => setSort(v)}>
+            <Icon name={sort === v ? "check" : ic} size={16} color={sort === v ? colors.onSecondaryContainer : colors.onSurfaceVariant} />
             <Text style={[styles.segText, sort === v && { color: colors.onSecondaryContainer }]}>{l}</Text>
           </TouchableOpacity>
         ))}
@@ -176,7 +179,7 @@ export default function RauCuScreen() {
             <View style={styles.wrap}>
               <Chip label="Mọi đơn vị" small selected={!unit} onPress={() => setUnit("")} />
               {units.map((u) => <Chip key={u} label={u} small selected={unit === u} onPress={() => setUnit(unit === u ? "" : u)} />)}
-              <Chip label={`${onlyStock ? "✓ " : ""}Chỉ còn hàng`} small selected={onlyStock} onPress={() => setOnlyStock((v) => !v)} />
+              <Chip icon={onlyStock ? "check" : "inventory_2"} label="Chỉ còn hàng" small selected={onlyStock} onPress={() => setOnlyStock((v) => !v)} />
             </View>
             {activeFilters > 0 && (
               <TouchableOpacity onPress={clearFilters} style={{ alignSelf: "flex-end", padding: 6 }}>
@@ -292,11 +295,11 @@ export default function RauCuScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   search: { flexDirection: "row", alignItems: "center", gap: 10, height: 52, paddingHorizontal: 16, borderRadius: shape.full, backgroundColor: colors.surfaceContainerLowest, borderWidth: 1, borderColor: colors.outlineVariant },
   searchInput: { flex: 1, fontSize: 15, color: colors.onSurface },
   segmented: { flexDirection: "row", borderRadius: shape.full, borderWidth: 1, borderColor: colors.outlineVariant, overflow: "hidden" },
-  seg: { flex: 1, paddingVertical: 9, alignItems: "center" },
+  seg: { flex: 1, flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 4, paddingVertical: 9 },
   segSelected: { backgroundColor: colors.secondaryContainer },
   segText: { ...type.labelLarge, color: colors.onSurfaceVariant, fontSize: 12 },
   filterPanel: { backgroundColor: colors.surfaceContainerLow, borderRadius: shape.xl, padding: 14, gap: 8 },
@@ -307,11 +310,11 @@ const styles = StyleSheet.create({
   aisleText: { ...type.labelLarge, color: colors.onSurface, fontSize: 13 },
   count: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12 },
   groupHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", gap: 8, marginBottom: 10 },
-  groupTitle: { ...type.titleLarge, color: colors.onSurface, fontSize: 18, flex: 1 },
+  groupTitle: { ...emojiFont,  ...type.titleLarge, color: colors.onSurface, fontSize: 18, flex: 1 },
   groupMeta: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12 },
   row: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.lgIncreased, padding: 12 },
   thumb: { width: 76, height: 76, borderRadius: shape.lg, backgroundColor: colors.surfaceContainerHigh, alignItems: "center", justifyContent: "center", overflow: "hidden" },
-  name: { ...type.titleMedium, color: colors.onSurface, fontSize: 15 },
+  name: { ...emojiFont,  ...type.titleMedium, color: colors.onSurface, fontSize: 15 },
   farmLink: { ...type.labelLarge, color: colors.primary, fontSize: 12, marginTop: 1 },
   price: { ...type.labelLarge, color: colors.onSurface, fontSize: 15 },
   unit: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12, fontWeight: "400" },

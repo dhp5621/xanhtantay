@@ -3,12 +3,18 @@ import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { user_recipes } from "@/db/schema";
 import { getSessionUser } from "@/lib/session";
+import { getPurchases, distinctNames } from "@/lib/purchases";
+import { aiConfigured } from "@/lib/ai";
 
+/** Saved recipes plus what the customer actually bought and whether AI is on — what the web assistant page renders. */
 export async function GET() {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Chưa đăng nhập" }, { status: 401 });
-  const rows = await db.select().from(user_recipes).where(eq(user_recipes.user_id, user.id)).orderBy(desc(user_recipes.created_at)).limit(50);
-  return NextResponse.json(rows);
+  const [rows, purchases] = await Promise.all([
+    db.select().from(user_recipes).where(eq(user_recipes.user_id, user.id)).orderBy(desc(user_recipes.created_at)).limit(50),
+    getPurchases(user.id, { limitOrders: 5 }),
+  ]);
+  return NextResponse.json({ recipes: rows, purchased: distinctNames(purchases), ai: aiConfigured() });
 }
 
 export async function DELETE(req: Request) {

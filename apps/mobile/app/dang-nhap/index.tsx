@@ -1,11 +1,13 @@
 import { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSession } from "../../hooks/useSession";
-import { colors, shape, type } from "../../constants/theme";
+import { colors, shape, type, emojiFont, useStyles } from "../../constants/theme";
 import { AnimIn, AnimInScale, HeroBlob, PressableScale } from "../../components/motion";
 import { Screen } from "../../components/ui";
 import { Icon } from "../../components/Icon";
+import type { Colors } from "../../constants/theme";
+import { Loader } from "../../components/Loader";
 
 /** Demo accounts advertised on the web login page (apps/web/src/lib/auth.ts). Password for both: demo123. */
 const DEMO = {
@@ -14,6 +16,7 @@ const DEMO = {
 } as const;
 
 export default function DangNhapScreen() {
+  const styles = useStyles(makeStyles);
   const { login } = useSession();
   const params = useLocalSearchParams<{ role?: string; next?: string }>();
   const [role, setRole] = useState<"customer" | "farmer">(params.role === "farmer" ? "farmer" : "customer");
@@ -93,7 +96,7 @@ export default function DangNhapScreen() {
 
           <AnimIn delay={200}>
             <PressableScale haptic style={[styles.btn, (submitting || !email || !password) && styles.btnDisabled]} onPress={() => onSubmit()} disabled={submitting || !email || !password}>
-              {submitting ? <ActivityIndicator color={colors.onPrimary} /> : <Text style={styles.btnText}>Đăng nhập</Text>}
+              {submitting ? <Loader size={22} color={colors.onPrimary} /> : <Text style={styles.btnText}>Đăng nhập</Text>}
             </PressableScale>
 
             <View style={styles.demoCard}>
@@ -124,11 +127,11 @@ export default function DangNhapScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   container: { padding: 24, paddingTop: 12, flexGrow: 1, justifyContent: "center" },
   hero: { backgroundColor: colors.primaryContainer, borderRadius: shape.xlIncreased, padding: 28, alignItems: "center", overflow: "hidden", marginBottom: 20 },
   logo: { fontSize: 44 },
-  title: { ...type.headlineSmall, color: colors.onPrimaryContainer, fontSize: 26, marginTop: 4 },
+  title: { ...emojiFont,  ...type.headlineSmall, color: colors.onPrimaryContainer, fontSize: 26, marginTop: 4 },
   tagline: { ...type.bodyMedium, color: colors.onPrimaryContainer, opacity: 0.85, textAlign: "center", marginTop: 4 },
   roleToggle: { flexDirection: "row", backgroundColor: colors.surfaceContainerHighest, borderRadius: shape.full, padding: 3, marginBottom: 16 },
   roleBtn: { flex: 1, padding: 11, borderRadius: shape.full, alignItems: "center" },

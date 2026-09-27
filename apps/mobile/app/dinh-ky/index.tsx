@@ -1,13 +1,15 @@
 import { useCallback, useState } from "react";
-import { View, Text, FlatList, StyleSheet, Alert, RefreshControl } from "react-native";
+import { View, Text, FlatList, StyleSheet, RefreshControl } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import type { Subscription } from "@xanhtantay/types";
 import { apiFetch, ApiError } from "../../constants/api";
-import { colors, shape, type, elevation } from "../../constants/theme";
+import { colors, shape, type, elevation, emojiFont, useStyles } from "../../constants/theme";
 import { formatDate, formatVND } from "../../constants/format";
 import { AnimIn, Skeleton } from "../../components/motion";
 import { Button, Chip, EmptyState, PageHeader } from "../../components/ui";
 import { useLiveRefresh } from "../../hooks/useLive";
+import type { Colors } from "../../constants/theme";
+import { useDialog } from "../../components/Dialog";
 
 type Sub = Omit<Subscription, "items"> & {
   farm: { id: string; name: string; slug: string } | null;
@@ -18,6 +20,8 @@ const FREQ_LABEL: Record<string, string> = { weekly: "Mỗi tuần", monthly: "M
 
 /** Mirrors apps/web/src/app/(customer)/dang-ky/page.tsx + SubscriptionActions. */
 export default function DinhKyScreen() {
+  const { alert } = useDialog();
+  const styles = useStyles(makeStyles);
   const [subs, setSubs] = useState<Sub[] | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
@@ -42,9 +46,9 @@ export default function DinhKyScreen() {
     try {
       await apiFetch("/subscriptions", { method: "PATCH", body: JSON.stringify({ id: s.id, active: !s.active }) });
       setSubs((xs) => (xs ?? []).map((x) => (x.id === s.id ? { ...x, active: !x.active } : x)));
-      Alert.alert(s.active ? "Đã tạm dừng gói" : "Gói đã hoạt động trở lại", s.active ? "Bật lại bất cứ lúc nào." : undefined);
+      alert(s.active ? "Đã tạm dừng gói" : "Gói đã hoạt động trở lại", s.active ? "Bật lại bất cứ lúc nào." : undefined);
     } catch (e) {
-      Alert.alert("Không cập nhật được", e instanceof ApiError ? e.message : "Có lỗi xảy ra");
+      alert("Không cập nhật được", e instanceof ApiError ? e.message : "Có lỗi xảy ra");
     } finally {
       setBusy(null);
     }
@@ -124,13 +128,13 @@ export default function DinhKyScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
-  body: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12 },
+  body: { ...emojiFont,  ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12 },
   card: { backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.xl, padding: 20 },
-  farmName: { ...type.titleLarge, color: colors.onSurface, fontSize: 18 },
+  farmName: { ...emojiFont,  ...type.titleLarge, color: colors.onSurface, fontSize: 18 },
   next: { ...type.titleMedium, color: colors.primary, fontSize: 14, textAlign: "right" },
   itemsBox: { backgroundColor: colors.surfaceContainerLow, borderRadius: shape.md, padding: 12, marginTop: 14 },
   label: { ...type.labelLarge, color: colors.onSurfaceVariant, fontSize: 11, letterSpacing: 0.6 },
-  itemText: { ...type.bodyMedium, color: colors.onSurface, fontSize: 14, flex: 1 },
+  itemText: { ...emojiFont,  ...type.bodyMedium, color: colors.onSurface, fontSize: 14, flex: 1 },
 });

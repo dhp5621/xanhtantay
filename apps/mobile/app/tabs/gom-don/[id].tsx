@@ -1,22 +1,27 @@
 import { useCallback, useState } from "react";
-import { View, Text, StyleSheet, ActivityIndicator, Alert, ScrollView, Share, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, ScrollView, Share, TouchableOpacity } from "react-native";
 import * as Clipboard from "expo-clipboard";
 import { useLocalSearchParams, useFocusEffect, router } from "expo-router";
 import type { Farm, GroupOrder } from "@xanhtantay/types";
 import { apiFetch, ApiError, API_URL } from "../../../constants/api";
 import { useSession } from "../../../hooks/useSession";
-import { colors, shape, type, elevation } from "../../../constants/theme";
+import { colors, shape, type, elevation, emojiFont, useStyles } from "../../../constants/theme";
 import { daysUntil, formatDate } from "../../../constants/format";
 import { AnimIn, AnimInScale, AnimatedProgress, PressableScale } from "../../../components/motion";
 import { Avatar, Button, Chip } from "../../../components/ui";
 import { Icon } from "../../../components/Icon";
 import { useLiveRefresh } from "../../../hooks/useLive";
+import type { Colors } from "../../../constants/theme";
+import { useDialog } from "../../../components/Dialog";
+import { PageLoader } from "../../../components/Loader";
 
 interface GroupMember { id: string; user_id: string; name: string | null }
 type GroupDetail = GroupOrder & { members: GroupMember[]; joined: boolean };
 
 /** Mirrors apps/web/src/app/(customer)/gom-don/[id]/page.tsx + JoinGroupButton. */
 export default function GomDonDetailScreen() {
+  const { alert } = useDialog();
+  const styles = useStyles(makeStyles);
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useSession();
   const [group, setGroup] = useState<GroupDetail | null>(null);
@@ -51,17 +56,17 @@ export default function GomDonDetailScreen() {
     setBusy(true);
     try {
       await apiFetch(`/groups/${id}/join`, { method: "POST", body: JSON.stringify({ items: [] }) });
-      Alert.alert("Bạn đã vào nhóm!", "Rủ thêm hàng xóm để được freeship nhé.");
+      alert("Bạn đã vào nhóm!", "Rủ thêm hàng xóm để được freeship nhé.");
       load();
     } catch (e) {
-      Alert.alert("Không tham gia được", e instanceof ApiError ? e.message : "Có lỗi xảy ra");
+      alert("Không tham gia được", e instanceof ApiError ? e.message : "Có lỗi xảy ra");
     } finally {
       setBusy(false);
     }
   };
 
   const leave = () => {
-    Alert.alert("Rời nhóm gom đơn?", "Nhóm sẽ bớt một người và có thể mất điều kiện freeship. Bạn vẫn có thể tham gia lại trước hạn chốt.", [
+    alert("Rời nhóm gom đơn?", "Nhóm sẽ bớt một người và có thể mất điều kiện freeship. Bạn vẫn có thể tham gia lại trước hạn chốt.", [
       { text: "Ở lại", style: "cancel" },
       {
         text: "Rời nhóm",
@@ -70,10 +75,10 @@ export default function GomDonDetailScreen() {
           setBusy(true);
           try {
             await apiFetch(`/groups/${id}/leave`, { method: "POST" });
-            Alert.alert("Đã rời nhóm", "Vào lại bất cứ lúc nào trước hạn chốt.");
+            alert("Đã rời nhóm", "Vào lại bất cứ lúc nào trước hạn chốt.");
             load();
           } catch (e) {
-            Alert.alert("Không rời được", e instanceof ApiError ? e.message : "Có lỗi xảy ra");
+            alert("Không rời được", e instanceof ApiError ? e.message : "Có lỗi xảy ra");
           } finally {
             setBusy(false);
           }
@@ -92,9 +97,7 @@ export default function GomDonDetailScreen() {
 
   if (loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
+      <PageLoader />
     );
   }
   if (!group) {
@@ -199,11 +202,11 @@ export default function GomDonDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
   center: { flex: 1, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center" },
-  body: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 13 },
-  title: { ...type.headlineSmall, color: colors.onSurface, fontSize: 24 },
+  body: { ...emojiFont,  ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 13 },
+  title: { ...emojiFont,  ...type.headlineSmall, color: colors.onSurface, fontSize: 24 },
   farmLink: { ...type.labelLarge, color: colors.primary, marginTop: 4, fontSize: 14 },
   statusCard: { borderRadius: shape.xlIncreased, padding: 22 },
   statusIcon: { width: 60, height: 60, borderRadius: shape.lg, alignItems: "center", justifyContent: "center" },
@@ -215,5 +218,5 @@ const styles = StyleSheet.create({
   iconBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.secondaryContainer, alignItems: "center", justifyContent: "center" },
   sectionTitle: { ...type.titleLarge, color: colors.onSurface, fontSize: 18, marginBottom: 10 },
   memberRow: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.md, padding: 10 },
-  memberName: { ...type.bodyMedium, color: colors.onSurface, fontSize: 14 },
+  memberName: { ...emojiFont,  ...type.bodyMedium, color: colors.onSurface, fontSize: 14 },
 });

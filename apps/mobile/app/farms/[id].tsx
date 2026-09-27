@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, Modal, Alert, ScrollView, Platform } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView, Platform } from "react-native";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -7,7 +7,7 @@ import * as Haptics from "expo-haptics";
 import { Stack, useLocalSearchParams, router } from "expo-router";
 import type { Farm, Product, FarmDiaryEntry } from "@xanhtantay/types";
 import { apiFetch, ApiError } from "../../constants/api";
-import { colors, shape, type, elevation } from "../../constants/theme";
+import { colors, shape, type, elevation, emojiFont, useStyles } from "../../constants/theme";
 import { CATEGORY_LABELS, CATEGORY_ICONS, formatVND, formatDateTime, timeAgo } from "../../constants/format";
 import { useCart } from "../../hooks/useCart";
 import { useSession } from "../../hooks/useSession";
@@ -17,11 +17,16 @@ import { Button, Chip, SectionHead } from "../../components/ui";
 import { CartStepper } from "../../components/CartStepper";
 import { MediaGallery } from "../../components/MediaGallery";
 import { Icon } from "../../components/Icon";
+import type { Colors } from "../../constants/theme";
+import { useDialog } from "../../components/Dialog";
+import { Loader } from "../../components/Loader";
 
 const FOLLOWS_KEY = "xtt-follows";
 
 /** Mirrors apps/web/src/app/(customer)/farms/[slug]/page.tsx. */
 export default function FarmDetailScreen() {
+  const { alert } = useDialog();
+  const styles = useStyles(makeStyles);
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useSession();
   const cart = useCart();
@@ -79,7 +84,7 @@ export default function FarmDetailScreen() {
       return;
     }
     if (!farmLines.length) {
-      Alert.alert("Giao định kỳ", "Thêm vài món của vườn này vào giỏ trước, rồi đăng ký giao định kỳ.");
+      alert("Giao định kỳ", "Thêm vài món của vườn này vào giỏ trước, rồi đăng ký giao định kỳ.");
       return;
     }
     setSubOpen(true);
@@ -95,12 +100,12 @@ export default function FarmDetailScreen() {
       });
       cart.clearFarm(farm.id);
       setSubOpen(false);
-      Alert.alert("Đã tạo gói giao định kỳ!", "Rau sẽ tự lên đơn mỗi kỳ theo lịch bạn chọn.", [
+      alert("Đã tạo gói giao định kỳ!", "Rau sẽ tự lên đơn mỗi kỳ theo lịch bạn chọn.", [
         { text: "Đóng", style: "cancel" },
         { text: "Xem gói", onPress: () => router.push("/dinh-ky") },
       ]);
     } catch (e) {
-      Alert.alert("Không đăng ký được", e instanceof ApiError ? e.message : "Có lỗi xảy ra");
+      alert("Không đăng ký được", e instanceof ApiError ? e.message : "Có lỗi xảy ra");
     } finally {
       setSubBusy(false);
     }
@@ -142,7 +147,7 @@ export default function FarmDetailScreen() {
             <View style={styles.previewBanner}>
               <Icon name="visibility" size={20} />
               <Text style={[styles.body, { color: colors.onTertiaryContainer, flex: 1 }]}>Bạn đang xem vườn của mình như khách hàng nhìn thấy.</Text>
-              <Button label="Sửa tồn kho" small variant="filled" style={{ backgroundColor: colors.onTertiaryContainer }} onPress={() => router.push("/tabs/farmer/san-pham")} />
+              <Button label="Sửa tồn kho" small variant="filled" style={{ backgroundColor: colors.onTertiaryContainer }} onPress={() => router.push("/tabs/farmer-san-pham")} />
             </View>
           </AnimIn>
         )}
@@ -176,7 +181,7 @@ export default function FarmDetailScreen() {
           </View>
           {!preview && (
             <View style={{ flexDirection: "row", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
-              <Button label={following ? "Đang theo dõi" : "Theo dõi"} icon={following ? "🔔" : "🔕"} variant={following ? "filled" : "tonal"} small onPress={toggleFollow} />
+              <Button label={following ? "Đang theo dõi" : "Theo dõi"} icon={following ? "notifications_active" : "notifications"} variant={following ? "filled" : "tonal"} small onPress={toggleFollow} />
               <Button label="Giao định kỳ" icon="event_repeat" variant="outlined" small onPress={startSubscribe} />
             </View>
           )}
@@ -209,7 +214,7 @@ export default function FarmDetailScreen() {
                           {soldOut ? (
                             <Chip icon="block" label="Hết hàng" tone="error" small style={{ marginTop: 6 }} />
                           ) : (
-                            <Chip label={p.stock_qty <= 5 ? `❗ Chỉ còn ${p.stock_qty} ${p.unit}` : `📦 Còn ${p.stock_qty} ${p.unit}`} tone={p.stock_qty <= 5 ? "error" : "surface"} small style={{ marginTop: 6 }} />
+                            <Chip icon={p.stock_qty <= 5 ? "priority_high" : "inventory_2"} label={p.stock_qty <= 5 ? `Chỉ còn ${p.stock_qty} ${p.unit}` : `Còn ${p.stock_qty} ${p.unit}`} tone={p.stock_qty <= 5 ? "error" : "surface"} small style={{ marginTop: 6 }} />
                           )}
                         </View>
                         {!preview && !soldOut && (
@@ -301,7 +306,7 @@ export default function FarmDetailScreen() {
               <Button label="Huỷ" variant="text" onPress={() => setSubOpen(false)} />
               <Button label="Đăng ký" icon="check" onPress={submitSubscribe} loading={subBusy} />
             </View>
-            {subBusy && <ActivityIndicator color={colors.primary} style={{ marginTop: 8 }} />}
+            {subBusy && <Loader size={22} color={colors.primary} style={{ marginTop: 8 }} />}
           </View>
         </View>
       </Modal>
@@ -309,27 +314,27 @@ export default function FarmDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   center: { flex: 1, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center" },
   errorText: { color: colors.error },
-  body: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 13 },
+  body: { ...emojiFont,  ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 13 },
   leading: { width: 44, height: 44, borderRadius: shape.md, backgroundColor: colors.primaryContainer, alignItems: "center", justifyContent: "center" },
   previewBanner: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: colors.tertiaryContainer, borderRadius: shape.lg, padding: 12 },
   hero: { height: 240, borderRadius: shape.xlIncreased, overflow: "hidden", backgroundColor: colors.surfaceContainerHigh },
   heroLoc: { color: "rgba(255,255,255,.9)", fontSize: 13, fontWeight: "600", marginBottom: 4 },
   heroTitle: { ...type.headlineSmall, color: "#fff", fontSize: 28, lineHeight: 34 },
-  description: { ...type.bodyLarge, color: colors.onSurfaceVariant, fontSize: 15, lineHeight: 24 },
+  description: { ...emojiFont,  ...type.bodyLarge, color: colors.onSurfaceVariant, fontSize: 15, lineHeight: 24 },
   liveCard: { flexDirection: "row", alignItems: "center", gap: 14, backgroundColor: colors.surfaceContainerLow, borderRadius: shape.xl, padding: 16 },
   liveIcon: { width: 52, height: 52, borderRadius: shape.md, backgroundColor: colors.tertiaryContainer, alignItems: "center", justifyContent: "center" },
   liveTitle: { ...type.titleMedium, color: colors.onSurface, fontSize: 15 },
   catLabel: { ...type.labelLarge, color: colors.onSurfaceVariant, fontSize: 12, letterSpacing: 0.6, marginBottom: 10 },
   productCard: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.lgIncreased, padding: 12 },
   productImage: { width: 76, height: 76, borderRadius: shape.lg, backgroundColor: colors.surfaceContainerHigh, alignItems: "center", justifyContent: "center", overflow: "hidden" },
-  productName: { ...type.titleMedium, color: colors.onSurface, fontSize: 15 },
+  productName: { ...emojiFont,  ...type.titleMedium, color: colors.onSurface, fontSize: 15 },
   productPrice: { ...type.labelLarge, color: colors.primary, fontSize: 15, marginTop: 2 },
   unit: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12, fontWeight: "400" },
   diaryItem: { flexDirection: "row", alignItems: "flex-start", gap: 12, backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.lg, padding: 14 },
-  diaryContent: { ...type.bodyMedium, color: colors.onSurface, fontSize: 14, lineHeight: 21 },
+  diaryContent: { ...emojiFont,  ...type.bodyMedium, color: colors.onSurface, fontSize: 14, lineHeight: 21 },
   diaryMeta: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12, marginTop: 6 },
   diaryLink: { ...type.labelLarge, color: colors.primary, fontSize: 13 },
   cartBarWrap: { position: "absolute", left: 16, right: 16, bottom: 20 },

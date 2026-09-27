@@ -5,7 +5,7 @@ import { Redirect, router, useFocusEffect } from "expo-router";
 import type { Farm, FarmDiaryEntry, GroupOrder } from "@xanhtantay/types";
 import type { SessionUser } from "../../constants/api";
 import { apiFetch } from "../../constants/api";
-import { colors, shape, type, elevation } from "../../constants/theme";
+import { colors, shape, type, elevation, emojiFont, useStyles } from "../../constants/theme";
 import { daysUntil, formatDateTime, timeAgo } from "../../constants/format";
 import { PILLARS, PILLAR_TONES, FARMER_POINTS, DAY_STEPS, FEES, HOME_FEATURES } from "../../constants/landing";
 import { useSession } from "../../hooks/useSession";
@@ -14,6 +14,7 @@ import { Chip, Button, SectionHead, Screen } from "../../components/ui";
 import { MediaGallery } from "../../components/MediaGallery";
 import { Icon } from "../../components/Icon";
 import { useLiveRefresh } from "../../hooks/useLive";
+import type { Colors } from "../../constants/theme";
 
 interface Feed {
   farms: Farm[];
@@ -29,6 +30,7 @@ const TONE: Record<(typeof PILLAR_TONES)[number], { bg: string; fg: string }> = 
 };
 
 export default function HomeScreen() {
+  const styles = useStyles(makeStyles);
   const { user, loading: sessionLoading } = useSession();
   const [feed, setFeed] = useState<Feed | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -96,6 +98,7 @@ function HomeSkeleton() {
 /* ───────────────────────────── Signed-in feed ───────────────────────────── */
 
 function FeedView({ feed, user }: { feed: Feed; user: SessionUser }) {
+  const styles = useStyles(makeStyles);
   const { width } = useWindowDimensions();
   const cardW = Math.min(280, width * 0.72);
   return (
@@ -216,6 +219,7 @@ function FeedView({ feed, user }: { feed: Feed; user: SessionUser }) {
 /* ───────────────────────────── Visitor landing ───────────────────────────── */
 
 function LandingView({ feed }: { feed: Feed }) {
+  const styles = useStyles(makeStyles);
   const [openTip, setOpenTip] = useState<string | null>(null);
   const { width } = useWindowDimensions();
   const stepW = Math.min(240, width * 0.66);
@@ -432,9 +436,9 @@ function LandingView({ feed }: { feed: Feed }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   error: { color: colors.error },
-  muted: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 13 },
+  muted: { ...emojiFont,  ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 13 },
   chevron: { fontSize: 22, color: colors.onSurfaceVariant },
   leading: { width: 44, height: 44, borderRadius: shape.md, backgroundColor: colors.primaryContainer, alignItems: "center", justifyContent: "center" },
 
@@ -460,16 +464,16 @@ const styles = StyleSheet.create({
   farmMedia: { height: 160, position: "relative", backgroundColor: colors.surfaceContainerHigh },
   farmLocChip: { position: "absolute", left: 12, bottom: 12, backgroundColor: "rgba(0,0,0,.55)", borderRadius: shape.full, paddingVertical: 4, paddingHorizontal: 10 },
   farmLocText: { color: "#fff", fontSize: 12, fontWeight: "600" },
-  farmName: { ...type.titleMedium, color: colors.onSurface, fontSize: 16, marginBottom: 2 },
-  farmDesc: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 13 },
+  farmName: { ...emojiFont,  ...type.titleMedium, color: colors.onSurface, fontSize: 16, marginBottom: 2 },
+  farmDesc: { ...emojiFont,  ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 13 },
 
   diaryItem: { flexDirection: "row", alignItems: "flex-start", gap: 12, backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.lg, padding: 14 },
   diaryFarm: { ...type.labelLarge, color: colors.primary, fontSize: 12, marginBottom: 3 },
-  diaryContent: { ...type.bodyMedium, color: colors.onSurface, fontSize: 14, lineHeight: 20 },
+  diaryContent: { ...emojiFont,  ...type.bodyMedium, color: colors.onSurface, fontSize: 14, lineHeight: 20 },
   diaryMeta: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12, marginTop: 6 },
 
   groupCard: { backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.xl, padding: 18 },
-  groupTitle: { ...type.titleMedium, color: colors.onSurface, fontSize: 15 },
+  groupTitle: { ...emojiFont,  ...type.titleMedium, color: colors.onSurface, fontSize: 15 },
 
   centerEyebrow: { ...type.labelLarge, color: colors.primary, fontSize: 12, textTransform: "uppercase", letterSpacing: 0.6, textAlign: "center" },
   centerTitle: { ...type.headlineSmall, color: colors.onSurface, fontSize: 24, textAlign: "center", marginTop: 4 },

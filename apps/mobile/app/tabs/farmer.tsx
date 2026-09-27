@@ -2,14 +2,15 @@ import { useCallback, useState } from "react";
 import { View, Text, StyleSheet, ScrollView, RefreshControl } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import type { Order } from "@xanhtantay/types";
-import { apiFetch } from "../../../constants/api";
-import { useSession } from "../../../hooks/useSession";
-import { colors, shape, type, elevation } from "../../../constants/theme";
-import { formatDate, formatVND, STATUS_SHORT, STATUS_ICONS } from "../../../constants/format";
-import { AnimIn, AnimInScale, PressableScale, Skeleton } from "../../../components/motion";
-import { Chip, ListItem, StatTile } from "../../../components/ui";
-import { Icon } from "../../../components/Icon";
-import { useLiveRefresh } from "../../../hooks/useLive";
+import { apiFetch } from "../../constants/api";
+import { useSession } from "../../hooks/useSession";
+import { colors, shape, type, elevation, emojiFont, useStyles } from "../../constants/theme";
+import { formatDate, formatVND, STATUS_SHORT, STATUS_ICONS } from "../../constants/format";
+import { AnimIn, AnimInScale, PressableScale, Skeleton } from "../../components/motion";
+import { Chip, ListItem, StatTile } from "../../components/ui";
+import { Icon } from "../../components/Icon";
+import { useLiveRefresh } from "../../hooks/useLive";
+import type { Colors } from "../../constants/theme";
 
 interface Me {
   name: string;
@@ -20,6 +21,7 @@ type FarmerOrder = Order & { customer_name?: string | null };
 
 /** Mirrors apps/web/src/app/(farmer)/farmer/page.tsx. */
 export default function FarmerHomeScreen() {
+  const styles = useStyles(makeStyles);
   const { user } = useSession();
   const [me, setMe] = useState<Me | null>(null);
   const [orders, setOrders] = useState<FarmerOrder[] | null>(null);
@@ -45,15 +47,15 @@ export default function FarmerHomeScreen() {
   const recent = (orders ?? []).slice(0, 4);
 
   const tiles = [
-    { icon: "pending_actions", label: "Đơn chờ thu hoạch", value: pending, href: "/tabs/farmer/don-hang", tone: "tertiary" as const },
-    { icon: "package_2", label: "Tổng đơn hàng", value: orders?.length ?? 0, href: "/tabs/farmer/don-hang", tone: "secondary" as const },
-    { icon: "nutrition", label: "Sản phẩm", value: me?.stats.products ?? 0, href: "/tabs/farmer/san-pham", tone: "primary" as const },
-    { icon: "event_repeat", label: "Khách đăng ký", value: me?.stats.subscribers ?? 0, href: "/tabs/farmer/dang-ky", tone: "surface" as const },
+    { icon: "pending_actions", label: "Đơn chờ thu hoạch", value: pending, href: "/tabs/farmer-don-hang", tone: "tertiary" as const },
+    { icon: "package_2", label: "Tổng đơn hàng", value: orders?.length ?? 0, href: "/tabs/farmer-don-hang", tone: "secondary" as const },
+    { icon: "nutrition", label: "Sản phẩm", value: me?.stats.products ?? 0, href: "/tabs/farmer-san-pham", tone: "primary" as const },
+    { icon: "event_repeat", label: "Khách đăng ký", value: me?.stats.subscribers ?? 0, href: "/tabs/farmer-dang-ky", tone: "surface" as const },
   ];
   const quickLinks = [
-    { href: "/tabs/farmer/nhat-ky", icon: "photo_camera", label: "Đăng nhật ký hôm nay", desc: "Khách tin hơn khi thấy vườn mỗi ngày" },
-    { href: "/tabs/farmer/san-pham", icon: "inventory_2", label: "Cập nhật tồn kho", desc: "Bật/tắt món còn hàng" },
-    { href: "/tabs/farmer/don-hang", icon: "local_shipping", label: "Xử lý đơn mới", desc: `${pending} đơn đang chờ` },
+    { href: "/tabs/farmer-nhat-ky", icon: "photo_camera", label: "Đăng nhật ký hôm nay", desc: "Khách tin hơn khi thấy vườn mỗi ngày" },
+    { href: "/tabs/farmer-san-pham", icon: "inventory_2", label: "Cập nhật tồn kho", desc: "Bật/tắt món còn hàng" },
+    { href: "/tabs/farmer-don-hang", icon: "local_shipping", label: "Xử lý đơn mới", desc: `${pending} đơn đang chờ` },
     ...(me?.farm ? [{ href: `/farms/${me.farm.id}`, icon: "storefront", label: "Xem trang vườn của tôi", desc: "Như khách hàng nhìn thấy" }] : []),
   ];
 
@@ -137,14 +139,14 @@ export default function FarmerHomeScreen() {
         <View>
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
             <Text style={styles.sectionTitle}>Đơn gần đây</Text>
-            <PressableScale onPress={() => router.push("/tabs/farmer/don-hang")}>
+            <PressableScale onPress={() => router.push("/tabs/farmer-don-hang")}>
               <Text style={styles.link}>Tất cả →</Text>
             </PressableScale>
           </View>
           <View style={{ gap: 8 }}>
             {recent.map((o, i) => (
               <AnimIn key={o.id} index={i} delay={250}>
-                <PressableScale style={[styles.orderRow, elevation[1]]} onPress={() => router.push("/tabs/farmer/don-hang")}>
+                <PressableScale style={[styles.orderRow, elevation[1]]} onPress={() => router.push("/tabs/farmer-don-hang")}>
                   <Icon name={STATUS_ICONS[o.status]} size={22} />
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text style={styles.orderName}>{o.customer_name ?? "Khách hàng"}</Text>
@@ -164,10 +166,10 @@ export default function FarmerHomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
   eyebrow: { ...type.labelLarge, color: colors.primary, fontSize: 12, textTransform: "uppercase", letterSpacing: 0.6 },
-  title: { ...type.headlineSmall, color: colors.onSurface, fontSize: 26 },
+  title: { ...emojiFont,  ...type.headlineSmall, color: colors.onSurface, fontSize: 26 },
   warn: { backgroundColor: colors.errorContainer, borderRadius: shape.xl, padding: 16 },
   revenue: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: colors.surfaceContainerLow, borderRadius: shape.xl, padding: 18 },
   revenueLabel: { ...type.labelLarge, color: colors.onSurfaceVariant, fontSize: 11, letterSpacing: 0.6 },

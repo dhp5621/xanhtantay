@@ -2,9 +2,10 @@ import type { ReactNode } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, type StyleProp, type ViewStyle } from "react-native";
 import { SafeAreaView, type Edge } from "react-native-safe-area-context";
 import { Image } from "expo-image";
-import { colors, shape, type, elevation } from "../constants/theme";
+import { colors, shape, type, elevation, useStyles } from "../constants/theme";
 import { PressableScale } from "./motion";
 import { Icon } from "./Icon";
+import type { Colors } from "../constants/theme";
 
 /** Tab screens have no header, so they take the top inset themselves (Android is edge-to-edge in SDK 54). */
 export function Screen({ children, style, edges = ["top"] }: { children: ReactNode; style?: StyleProp<ViewStyle>; edges?: Edge[] }) {
@@ -17,6 +18,7 @@ export function Screen({ children, style, edges = ["top"] }: { children: ReactNo
 
 /** Eyebrow + title + subtitle block (`PageHeader`). */
 export function PageHeader({ icon, eyebrow, title, subtitle, right }: { icon?: string; eyebrow?: string; title: string; subtitle?: string; right?: ReactNode }) {
+  const styles = useStyles(makeStyles);
   return (
     <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 12, marginBottom: 16 }}>
       {icon ? (
@@ -36,6 +38,7 @@ export function PageHeader({ icon, eyebrow, title, subtitle, right }: { icon?: s
 
 /** `.m3-section-head` */
 export function SectionHead({ icon, title, action, onAction }: { icon?: string; title: string; action?: string; onAction?: () => void }) {
+  const styles = useStyles(makeStyles);
   return (
     <View style={styles.sectionHead}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1 }}>
@@ -54,6 +57,7 @@ export function SectionHead({ icon, title, action, onAction }: { icon?: string; 
 
 /** `.m3-empty` */
 export function EmptyState({ icon, title, description, action }: { icon: string; title: string; description?: string; action?: ReactNode }) {
+  const styles = useStyles(makeStyles);
   return (
     <View style={styles.empty}>
       <View style={styles.emptyIcon}>
@@ -77,6 +81,7 @@ const TONES: Record<Tone, { bg: string; fg: string }> = {
 
 /** `.m3-chip` — tonal pill; `selected` flips to primary. */
 export function Chip({ label, icon, tone = "surface", selected, small, onPress, style }: { label: string; icon?: string; tone?: Tone; selected?: boolean; small?: boolean; onPress?: () => void; style?: StyleProp<ViewStyle> }) {
+  const styles = useStyles(makeStyles);
   const t = selected ? { bg: colors.primary, fg: colors.onPrimary } : TONES[tone];
   const inner = (
     <View style={[styles.chip, small && styles.chipSmall, { backgroundColor: t.bg }, style]}>
@@ -96,6 +101,7 @@ export function Chip({ label, icon, tone = "surface", selected, small, onPress, 
 
 /** Filled / tonal / outlined / text buttons — `.m3-btn` variants. */
 export function Button({ label, onPress, variant = "filled", disabled, loading, icon, style, small }: { label: string; onPress?: () => void; variant?: "filled" | "tonal" | "outlined" | "text" | "tertiary" | "error"; disabled?: boolean; loading?: boolean; icon?: string; style?: StyleProp<ViewStyle>; small?: boolean }) {
+  const styles = useStyles(makeStyles);
   const v = {
     filled: { bg: colors.primary, fg: colors.onPrimary, border: "transparent" },
     tonal: { bg: colors.secondaryContainer, fg: colors.onSecondaryContainer, border: "transparent" },
@@ -114,6 +120,7 @@ export function Button({ label, onPress, variant = "filled", disabled, loading, 
 
 /** Stat tile used on the account / loyalty / farmer dashboards. */
 export function StatTile({ icon, value, label, desc, onPress, tone = "surface", style }: { icon: string; value: string | number; label: string; desc?: string; onPress?: () => void; tone?: Tone; style?: StyleProp<ViewStyle> }) {
+  const styles = useStyles(makeStyles);
   const t = TONES[tone];
   const fg = tone === "surface" ? colors.primary : t.fg;
   const body = (
@@ -141,6 +148,7 @@ export function Avatar({ name, src, size = 40, tone = "primary" }: { name?: stri
 
 /** `.m3-list-item` — leading icon bubble, title/desc, chevron. */
 export function ListItem({ icon, title, desc, onPress, trailing, tone = "surface" }: { icon: string; title: string; desc?: string; onPress?: () => void; trailing?: ReactNode; tone?: Tone }) {
+  const styles = useStyles(makeStyles);
   const t = TONES[tone];
   const leadingBg = tone === "surface" ? colors.primaryContainer : t.bg;
   const leadingFg = tone === "surface" ? colors.onPrimaryContainer : t.fg;
@@ -168,7 +176,7 @@ export function Leading({ icon, tone = "primary", size = 44, filled }: { icon: s
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   headerIcon: { width: 48, height: 48, borderRadius: shape.md, backgroundColor: colors.primaryContainer, alignItems: "center", justifyContent: "center", marginTop: 2 },
   eyebrow: { ...type.labelLarge, color: colors.primary, fontSize: 12, textTransform: "uppercase", letterSpacing: 0.6 },
   sectionHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12, gap: 8 },

@@ -4,13 +4,15 @@ import { Image } from "expo-image";
 import { router, useFocusEffect } from "expo-router";
 import type { Farm } from "@xanhtantay/types";
 import { apiFetch } from "../../constants/api";
-import { colors, shape, type, elevation } from "../../constants/theme";
+import { colors, shape, type, elevation, emojiFont, useStyles } from "../../constants/theme";
 import { AnimIn, PressableScale, Skeleton } from "../../components/motion";
 import { EmptyState, PageHeader, Screen } from "../../components/ui";
 import { Icon } from "../../components/Icon";
 import { useLiveRefresh } from "../../hooks/useLive";
+import type { Colors } from "../../constants/theme";
 
 export default function FarmsScreen() {
+  const styles = useStyles(makeStyles);
   const [farms, setFarms] = useState<Farm[] | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -87,12 +89,12 @@ export default function FarmsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   errorText: { color: colors.error, marginBottom: 8 },
   card: { backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.xl, overflow: "hidden" },
   media: { height: 170, position: "relative", backgroundColor: colors.surfaceContainerHigh },
   locChip: { position: "absolute", left: 12, bottom: 12, backgroundColor: "rgba(0,0,0,.55)", borderRadius: shape.full, paddingVertical: 4, paddingHorizontal: 10 },
   locText: { color: "#fff", fontSize: 12, fontWeight: "600" },
-  name: { ...type.titleMedium, color: colors.onSurface, fontSize: 17, marginBottom: 3 },
-  description: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 13 },
+  name: { ...emojiFont,  ...type.titleMedium, color: colors.onSurface, fontSize: 17, marginBottom: 3 },
+  description: { ...emojiFont,  ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 13 },
 });

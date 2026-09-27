@@ -71,12 +71,18 @@ type PressProps = PressableProps & {
   haptic?: boolean | Haptics.ImpactFeedbackStyle;
 };
 
-/** `.lift` / `.m3-card-action` — spring scale on press, optional haptic tick. */
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+/**
+ * `.lift` / `.m3-card-action` — spring scale on press, optional haptic tick.
+ * The style goes on the Pressable itself (not a nested view) so flex/size props like `flex: 1`
+ * or `aspectRatio` lay out against the real parent — a nested view collapsed fixed-size thumbnails.
+ */
 export function PressableScale({ children, style, scaleTo = 0.97, haptic = false, onPressIn, onPressOut, onPress, disabled, ...rest }: PressProps) {
   const scale = useSharedValue(1);
   const anim = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
   return (
-    <Pressable
+    <AnimatedPressable
       disabled={disabled}
       onPressIn={(e) => {
         scale.value = withSpring(scaleTo, SPRING);
@@ -92,10 +98,11 @@ export function PressableScale({ children, style, scaleTo = 0.97, haptic = false
         }
         onPress?.(e);
       }}
+      style={[style, anim, disabled && { opacity: 0.5 }]}
       {...rest}
     >
-      <Animated.View style={[style, anim, disabled && { opacity: 0.5 }]}>{children}</Animated.View>
-    </Pressable>
+      {children}
+    </AnimatedPressable>
   );
 }
 

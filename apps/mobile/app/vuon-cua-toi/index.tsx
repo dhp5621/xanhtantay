@@ -3,12 +3,13 @@ import { useLiveRefresh } from "../../hooks/useLive";
 import { View, Text, StyleSheet, ScrollView, useWindowDimensions } from "react-native";
 import { router } from "expo-router";
 import { apiFetch, ApiError } from "../../constants/api";
-import { colors, shape, type, elevation } from "../../constants/theme";
+import { colors, shape, type, elevation, emojiFont, useStyles } from "../../constants/theme";
 import { formatDate, formatVND } from "../../constants/format";
 import { levelFor, LEVELS } from "../../constants/commerce";
 import { AnimIn, AnimInScale, AnimatedProgress, HeroBlob, Skeleton } from "../../components/motion";
 import { Button, EmptyState, PageHeader, StatTile } from "../../components/ui";
 import { Icon } from "../../components/Icon";
+import type { Colors } from "../../constants/theme";
 
 interface Loyalty {
   points: number;
@@ -23,6 +24,7 @@ interface Loyalty {
 
 /** Mirrors apps/web/src/app/(customer)/vuon-cua-toi/page.tsx (GrowingTree + LevelPager as emoji stages). */
 export default function VuonCuaToiScreen() {
+  const styles = useStyles(makeStyles);
   const { width } = useWindowDimensions();
   const [data, setData] = useState<Loyalty | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -155,10 +157,10 @@ export default function VuonCuaToiScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
   center: { flex: 1, backgroundColor: colors.surface, justifyContent: "center", padding: 24 },
-  body: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12 },
+  body: { ...emojiFont,  ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12 },
   hero: { backgroundColor: colors.primaryContainer, borderRadius: shape.xlIncreased, padding: 24, alignItems: "center", overflow: "hidden" },
   heroEyebrow: { ...type.labelLarge, color: colors.onPrimaryContainer, opacity: 0.8, marginTop: 4, fontSize: 11, letterSpacing: 0.8 },
   heroTitle: { ...type.headlineSmall, color: colors.onPrimaryContainer, fontSize: 28, marginTop: 2 },
@@ -171,6 +173,6 @@ const styles = StyleSheet.create({
   levelMin: { ...type.labelLarge, color: colors.primary, fontSize: 11, marginTop: 6 },
   orderRow: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.lg, padding: 12 },
   orderIcon: { width: 40, height: 40, borderRadius: shape.md, backgroundColor: colors.primaryContainer, alignItems: "center", justifyContent: "center" },
-  orderFarm: { ...type.titleMedium, color: colors.onSurface, fontSize: 14 },
+  orderFarm: { ...emojiFont,  ...type.titleMedium, color: colors.onSurface, fontSize: 14 },
   orderTotal: { ...type.labelLarge, color: colors.onSurface, fontSize: 14 },
 });

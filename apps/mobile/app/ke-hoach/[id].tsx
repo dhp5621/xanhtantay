@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
-import { View, Text, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { apiFetch, ApiError } from "../../constants/api";
-import { colors, shape, type } from "../../constants/theme";
+import { colors, shape, type, emojiFont, useStyles } from "../../constants/theme";
 import { DEFAULT_PREFS, RecipePrefs } from "../../constants/recipePrefs";
 import { RecipeSettingsButton, recipePrefsSummary } from "../../components/RecipeSettingsSheet";
+import type { Colors } from "../../constants/theme";
+import { Loader, PageLoader } from "../../components/Loader";
 
 interface MealRecipe {
   minutes?: number;
@@ -36,6 +38,7 @@ function samePrefs(a?: RecipePrefs | null, b?: RecipePrefs | null) {
 }
 
 export default function KeHoachScreen() {
+  const styles = useStyles(makeStyles);
   const { id } = useLocalSearchParams<{ id: string }>();
   const [plan, setPlan] = useState<MealPlan | null>(null);
   const [loading, setLoading] = useState(true);
@@ -119,9 +122,7 @@ export default function KeHoachScreen() {
 
   if (loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
+      <PageLoader />
     );
   }
 
@@ -167,7 +168,7 @@ export default function KeHoachScreen() {
                   disabled={mealLoading}
                 >
                   {mealLoading ? (
-                    <ActivityIndicator size="small" color={colors.onSecondaryContainer} />
+                    <Loader size={18} color={colors.onSecondaryContainer} />
                   ) : (
                     <Text style={styles.howToBtnText}>{open ? "Thu gọn" : "Xem cách làm"}</Text>
                   )}
@@ -203,12 +204,12 @@ export default function KeHoachScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
   center: { flex: 1, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center", padding: 24 },
-  body: { ...type.bodyMedium, color: colors.onSurfaceVariant, textAlign: "center" },
-  title: { ...type.headlineSmall, color: colors.onSurface },
-  summary: { ...type.bodyMedium, color: colors.onSurfaceVariant, marginTop: 6, marginBottom: 12 },
+  body: { ...emojiFont,  ...type.bodyMedium, color: colors.onSurfaceVariant, textAlign: "center" },
+  title: { ...emojiFont,  ...type.headlineSmall, color: colors.onSurface },
+  summary: { ...emojiFont,  ...type.bodyMedium, color: colors.onSurfaceVariant, marginTop: 6, marginBottom: 12 },
   prefsRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 4, flexWrap: "wrap" },
   prefsSummary: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12, flexShrink: 1 },
   prefsHint: { ...type.bodyMedium, color: colors.tertiary, fontSize: 12, marginTop: 4, marginBottom: 12 },
@@ -217,9 +218,9 @@ const styles = StyleSheet.create({
   mealBlock: { marginBottom: 10, paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: colors.surfaceContainerHighest },
   mealRow: { flexDirection: "row", gap: 10, marginBottom: 8 },
   mealTime: { ...type.labelLarge, color: colors.onSurfaceVariant, fontSize: 12, minWidth: 44 },
-  mealTitle: { ...type.bodyLarge, color: colors.onSurface, fontWeight: "600" },
-  mealUses: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12 },
-  mealNote: { ...type.bodyMedium, color: colors.tertiary, fontSize: 12, marginTop: 2 },
+  mealTitle: { ...emojiFont,  ...type.bodyLarge, color: colors.onSurface, fontWeight: "600" },
+  mealUses: { ...emojiFont,  ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12 },
+  mealNote: { ...emojiFont,  ...type.bodyMedium, color: colors.tertiary, fontSize: 12, marginTop: 2 },
   howToBtn: {
     alignSelf: "flex-start",
     backgroundColor: colors.secondaryContainer,
@@ -231,8 +232,8 @@ const styles = StyleSheet.create({
   recipeBox: { marginTop: 10, backgroundColor: colors.surfaceContainer, borderRadius: shape.md, padding: 12 },
   recipeMinutes: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12, marginBottom: 8 },
   recipeHeading: { ...type.labelLarge, color: colors.onSurfaceVariant, fontSize: 11, textTransform: "uppercase", marginBottom: 4 },
-  recipeLine: { ...type.bodyMedium, color: colors.onSurface, fontSize: 13, lineHeight: 20 },
-  leftover: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12, fontStyle: "italic", marginTop: 4 },
+  recipeLine: { ...emojiFont,  ...type.bodyMedium, color: colors.onSurface, fontSize: 13, lineHeight: 20 },
+  leftover: { ...emojiFont,  ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12, fontStyle: "italic", marginTop: 4 },
   regenBtn: { backgroundColor: colors.secondaryContainer, borderRadius: shape.full, padding: 14, alignItems: "center", marginTop: 8 },
   regenBtnText: { color: colors.onSecondaryContainer, fontWeight: "700" },
 });

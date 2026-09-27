@@ -1,14 +1,19 @@
 import { useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, FlatList, ActivityIndicator, Alert } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, FlatList } from "react-native";
 import { router } from "expo-router";
 import { useCart } from "../../hooks/useCart";
 import { useSession } from "../../hooks/useSession";
 import { apiFetch } from "../../constants/api";
-import { colors, shape, type, elevation } from "../../constants/theme";
+import { colors, shape, type, elevation, emojiFont, useStyles } from "../../constants/theme";
 import { MIN_DIRECT_ORDER, formatVnd, pointsFor } from "../../constants/commerce";
 import { Icon } from "../../components/Icon";
+import type { Colors } from "../../constants/theme";
+import { useDialog } from "../../components/Dialog";
+import { Loader } from "../../components/Loader";
 
 export default function CartScreen() {
+  const { alert } = useDialog();
+  const styles = useStyles(makeStyles);
   const cart = useCart();
   const { user } = useSession();
   const [note, setNote] = useState("");
@@ -38,7 +43,7 @@ export default function CartScreen() {
           done.push({ farm_name: g.farm_name, total: data.total });
           cart.clearFarm(g.farm_id);
         } catch (e) {
-          Alert.alert(g.farm_name, e instanceof Error ? e.message : "Không đặt được đơn này");
+          alert(g.farm_name, e instanceof Error ? e.message : "Không đặt được đơn này");
         }
       }
       if (done.length) {
@@ -99,7 +104,7 @@ export default function CartScreen() {
                   router.push("/dang-nhap");
                   return;
                 }
-                Alert.alert("Đặt định kỳ", "Chọn tần suất giao hàng cho các món đang có trong giỏ của vườn này.", [
+                alert("Đặt định kỳ", "Chọn tần suất giao hàng cho các món đang có trong giỏ của vườn này.", [
                   { text: "Huỷ", style: "cancel" },
                   {
                     text: "Hàng tuần",
@@ -108,8 +113,8 @@ export default function CartScreen() {
                         method: "POST",
                         body: JSON.stringify({ farm_id: g.farm_id, frequency: "weekly", items: g.lines.map((l) => ({ product_id: l.id, quantity: l.quantity })) }),
                       })
-                        .then(() => Alert.alert("Đã tạo gói định kỳ hàng tuần!"))
-                        .catch((e) => Alert.alert("Lỗi", e instanceof Error ? e.message : "Có lỗi xảy ra")),
+                        .then(() => alert("Đã tạo gói định kỳ hàng tuần!"))
+                        .catch((e) => alert("Lỗi", e instanceof Error ? e.message : "Có lỗi xảy ra")),
                   },
                   {
                     text: "Hàng tháng",
@@ -118,8 +123,8 @@ export default function CartScreen() {
                         method: "POST",
                         body: JSON.stringify({ farm_id: g.farm_id, frequency: "monthly", items: g.lines.map((l) => ({ product_id: l.id, quantity: l.quantity })) }),
                       })
-                        .then(() => Alert.alert("Đã tạo gói định kỳ hàng tháng!"))
-                        .catch((e) => Alert.alert("Lỗi", e instanceof Error ? e.message : "Có lỗi xảy ra")),
+                        .then(() => alert("Đã tạo gói định kỳ hàng tháng!"))
+                        .catch((e) => alert("Lỗi", e instanceof Error ? e.message : "Có lỗi xảy ra")),
                   },
                 ]);
               }}
@@ -180,7 +185,7 @@ export default function CartScreen() {
           </View>
           <TouchableOpacity style={styles.checkoutBtn} disabled={submitting} onPress={checkout}>
             {submitting ? (
-              <ActivityIndicator color={colors.onPrimary} />
+              <Loader size={22} color={colors.onPrimary} />
             ) : (
               <Text style={styles.checkoutBtnText}>{user ? (cart.groups.length > 1 ? `Đặt ${cart.groups.length} đơn` : "Đặt hàng ngay") : "Đăng nhập để đặt"}</Text>
             )}
@@ -192,10 +197,10 @@ export default function CartScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
   center: { flex: 1, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center", padding: 24 },
-  title: { ...type.headlineSmall, color: colors.onSurface, marginBottom: 16 },
+  title: { ...emojiFont,  ...type.headlineSmall, color: colors.onSurface, marginBottom: 16 },
   emptyTitle: { ...type.titleLarge, color: colors.onSurface, marginBottom: 4 },
   emptyBody: { ...type.bodyMedium, color: colors.onSurfaceVariant, textAlign: "center", marginBottom: 20 },
   groupHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8, gap: 8 },
@@ -212,7 +217,7 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 8,
   },
-  lineName: { ...type.titleMedium, color: colors.onSurface, fontSize: 14 },
+  lineName: { ...emojiFont,  ...type.titleMedium, color: colors.onSurface, fontSize: 14 },
   linePrice: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12, marginTop: 2 },
   stepper: { flexDirection: "row", alignItems: "center", backgroundColor: colors.surfaceContainerHighest, borderRadius: shape.full },
   stepperBtn: { width: 30, height: 30, alignItems: "center", justifyContent: "center" },

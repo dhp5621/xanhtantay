@@ -1,15 +1,17 @@
 import { useCallback, useState } from "react";
-import { View, Text, FlatList, StyleSheet, RefreshControl, Modal, TextInput, TouchableOpacity, Alert, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, FlatList, StyleSheet, RefreshControl, Modal, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import type { Farm, GroupOrder } from "@xanhtantay/types";
 import { apiFetch, ApiError } from "../../../constants/api";
-import { colors, shape, type, elevation } from "../../../constants/theme";
+import { colors, shape, type, elevation, emojiFont, useStyles } from "../../../constants/theme";
 import { daysUntil } from "../../../constants/format";
 import { useSession } from "../../../hooks/useSession";
 import { AnimIn, AnimatedProgress, PressableScale, Skeleton } from "../../../components/motion";
 import { Button, Chip, EmptyState } from "../../../components/ui";
 import { Icon } from "../../../components/Icon";
 import { useLiveRefresh } from "../../../hooks/useLive";
+import type { Colors } from "../../../constants/theme";
+import { useDialog } from "../../../components/Dialog";
 
 const isoDay = (offset: number) => {
   const d = new Date();
@@ -19,6 +21,8 @@ const isoDay = (offset: number) => {
 
 /** Mirrors apps/web/src/app/(customer)/gom-don/page.tsx + CreateGroupDialog. */
 export default function GomDonScreen() {
+  const { alert } = useDialog();
+  const styles = useStyles(makeStyles);
   const { user } = useSession();
   const [groups, setGroups] = useState<GroupOrder[] | null>(null);
   const [farms, setFarms] = useState<Farm[]>([]);
@@ -55,7 +59,7 @@ export default function GomDonScreen() {
 
   const submit = async () => {
     if (!form.farm_id || !form.title.trim() || !form.shipping_address.trim()) {
-      Alert.alert("Thiếu thông tin", "Điền tên nhóm, chọn vườn và địa chỉ nhận chung nhé.");
+      alert("Thiếu thông tin", "Điền tên nhóm, chọn vườn và địa chỉ nhận chung nhé.");
       return;
     }
     setBusy(true);
@@ -65,7 +69,7 @@ export default function GomDonScreen() {
       setForm((x) => ({ ...x, title: "", shipping_address: "" }));
       router.push(`/tabs/gom-don/${data.id}`);
     } catch (e) {
-      Alert.alert("Không tạo được nhóm", e instanceof ApiError ? e.message : "Có lỗi xảy ra");
+      alert("Không tạo được nhóm", e instanceof ApiError ? e.message : "Có lỗi xảy ra");
     } finally {
       setBusy(false);
     }
@@ -195,14 +199,14 @@ export default function GomDonScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
   eyebrow: { ...type.labelLarge, color: colors.primary, fontSize: 12, textTransform: "uppercase", letterSpacing: 0.6 },
-  title: { ...type.headlineSmall, color: colors.onSurface },
+  title: { ...emojiFont,  ...type.headlineSmall, color: colors.onSurface },
   subtitle: { ...type.bodyMedium, color: colors.onSurfaceVariant, marginTop: 2, fontSize: 13 },
   card: { backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.xl, padding: 18 },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12, gap: 8 },
-  cardTitle: { ...type.titleMedium, color: colors.onSurface, flex: 1, fontSize: 16 },
+  cardTitle: { ...emojiFont,  ...type.titleMedium, color: colors.onSurface, flex: 1, fontSize: 16 },
   cardFooter: { flexDirection: "row", justifyContent: "space-between", marginTop: 10, gap: 8 },
   cardMeta: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12, flex: 1 },
   cardDeadline: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12, fontWeight: "700" },

@@ -39,8 +39,30 @@ export async function GET() {
     );
   }
 
-  const myOrders = await db.select().from(orders).where(eq(orders.user_id, user.id)).orderBy(desc(orders.created_at));
-  return NextResponse.json(myOrders);
+  // Customers get the same context the web order page renders: farm, farmer name and line items.
+  const myOrders = await db
+    .select({ order: orders, farm: { name: farms.name, location: farms.location, slug: farms.slug, id: farms.id }, farmer_name: users.name })
+    .from(orders)
+    .leftJoin(farms, eq(orders.farm_id, farms.id))
+    .leftJoin(users, eq(farms.owner_id, users.id))
+    .where(eq(orders.user_id, user.id))
+    .orderBy(desc(orders.created_at));
+  if (myOrders.length === 0) return NextResponse.json([]);
+  const lines = await db
+    .select({ item: order_items, product_name: products.name, product_unit: products.unit })
+    .from(order_items)
+    .leftJoin(products, eq(order_items.product_id, products.id))
+    .where(inArray(order_items.order_id, myOrders.map((o) => o.order.id)));
+  const linesByOrder = new Map<string, typeof lines>();
+  for (const it of lines) linesByOrder.set(it.item.order_id, [...(linesByOrder.get(it.item.order_id) ?? []), it]);
+  return NextResponse.json(
+    myOrders.map(({ order, farm, farmer_name }) => ({
+      ...order,
+      farm: farm?.id ? farm : null,
+      farmer_name,
+      items: (linesByOrder.get(order.id) ?? []).map((it) => ({ ...it.item, quantity: Number(it.item.quantity), product_name: it.product_name, product_unit: it.product_unit })),
+    }))
+  );
 }
 
 export async function POST(req: Request) {

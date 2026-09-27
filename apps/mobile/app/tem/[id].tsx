@@ -1,21 +1,26 @@
 import { useEffect, useState } from "react";
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Alert, Platform } from "react-native";
+import { View, Text, StyleSheet, ScrollView, Platform } from "react-native";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
 import { useLocalSearchParams } from "expo-router";
 import type { Order } from "@xanhtantay/types";
-import { apiFetch, API_URL } from "../../../../constants/api";
-import { colors, shape, type, elevation } from "../../../../constants/theme";
-import { formatDate } from "../../../../constants/format";
-import { AnimIn, AnimInScale } from "../../../../components/motion";
-import { Button } from "../../../../components/ui";
-import { QrImage } from "../../../../components/QrImage";
+import { apiFetch, API_URL } from "../../constants/api";
+import { colors, shape, type, elevation, emojiFont, useStyles } from "../../constants/theme";
+import { formatDate } from "../../constants/format";
+import { AnimIn, AnimInScale } from "../../components/motion";
+import { Button } from "../../components/ui";
+import { QrImage } from "../../components/QrImage";
+import type { Colors } from "../../constants/theme";
+import { useDialog } from "../../components/Dialog";
+import { PageLoader } from "../../components/Loader";
 
 type FarmerOrder = Order & { customer_name?: string | null; items?: { id: string; product_name?: string | null; product_unit?: string | null; quantity: string | number }[] };
 interface Farm { id: string; name: string; location: string }
 
 /** Mirrors apps/web/src/app/(farmer)/farmer/don-hang/[id]/tem/page.tsx — printable package label with a QR code. */
 export default function TemScreen() {
+  const { alert } = useDialog();
+  const styles = useStyles(makeStyles);
   const { id } = useLocalSearchParams<{ id: string }>();
   const [order, setOrder] = useState<FarmerOrder | null>(null);
   const [farm, setFarm] = useState<Farm | null>(null);
@@ -43,9 +48,7 @@ export default function TemScreen() {
   }
   if (!order || !farm) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
+      <PageLoader />
     );
   }
 
@@ -71,7 +74,7 @@ export default function TemScreen() {
     try {
       await Print.printAsync({ html });
     } catch (e) {
-      Alert.alert("Không in được", e instanceof Error ? e.message : undefined);
+      alert("Không in được", e instanceof Error ? e.message : undefined);
     } finally {
       setBusy(false);
     }
@@ -81,9 +84,9 @@ export default function TemScreen() {
     try {
       const { uri } = await Print.printToFileAsync({ html });
       if (Platform.OS !== "web" && (await Sharing.isAvailableAsync())) await Sharing.shareAsync(uri, { mimeType: "application/pdf", dialogTitle: `Tem gói #${code}` });
-      else Alert.alert("Đã tạo file tem", uri);
+      else alert("Đã tạo file tem", uri);
     } catch (e) {
-      Alert.alert("Không chia sẻ được", e instanceof Error ? e.message : undefined);
+      alert("Không chia sẻ được", e instanceof Error ? e.message : undefined);
     } finally {
       setBusy(false);
     }
@@ -124,13 +127,13 @@ export default function TemScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
   center: { flex: 1, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center", padding: 24 },
-  body: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 13 },
+  body: { ...emojiFont,  ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 13 },
   label: { flexDirection: "row", gap: 16, backgroundColor: "#fff", borderRadius: shape.lg, padding: 18, borderWidth: 1, borderColor: colors.outlineVariant },
   brand: { fontWeight: "800", fontSize: 17, color: "#191C19" },
   farm: { fontSize: 13, color: "#191C19", marginTop: 2 },
-  muted: { fontSize: 12, color: "#404943", marginTop: 4 },
+  muted: { ...emojiFont,  fontSize: 12, color: "#404943", marginTop: 4 },
   item: { fontSize: 13, color: "#191C19" },
 });

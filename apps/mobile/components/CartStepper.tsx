@@ -1,11 +1,13 @@
 import { View, Text, StyleSheet, Platform } from "react-native";
 import * as Haptics from "expo-haptics";
-import { colors, shape, type } from "../constants/theme";
+import { colors, shape, type, useStyles } from "../constants/theme";
 import { PressableScale } from "./motion";
 import { useCart, type CartProduct } from "../hooks/useCart";
+import type { Colors } from "../constants/theme";
 
 /** Mirrors apps/web/src/components/cart/AddToCartButton.tsx (compact): "+ Thêm" → − qty +. */
 export function CartStepper({ product, max, compact }: { product: CartProduct; max?: number; compact?: boolean }) {
+  const styles = useStyles(makeStyles);
   const cart = useCart();
   const qty = cart.qtyOf(product.id);
   const tick = () => {
@@ -53,7 +55,7 @@ export function CartStepper({ product, max, compact }: { product: CartProduct; m
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   addBtn: { backgroundColor: colors.primary, borderRadius: shape.full, paddingVertical: 8, paddingHorizontal: 16 },
   addBtnCompact: { paddingVertical: 7, paddingHorizontal: 12 },
   addBtnText: { ...type.labelLarge, color: colors.onPrimary, fontSize: 13 },

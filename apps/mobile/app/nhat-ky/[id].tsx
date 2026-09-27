@@ -1,13 +1,16 @@
 import { useEffect, useRef, useState } from "react";
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, useWindowDimensions, ScrollView } from "react-native";
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, useWindowDimensions, ScrollView } from "react-native";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import type { FarmDiaryEntry } from "@xanhtantay/types";
 import { apiFetch, ApiError } from "../../constants/api";
-import { colors, shape, type, elevation } from "../../constants/theme";
+import { colors, shape, type, elevation, emojiFont, useStyles } from "../../constants/theme";
 import { formatDateTime, timeAgo } from "../../constants/format";
 import { AnimInScale, PressableScale } from "../../components/motion";
 import { Avatar, Button, Chip } from "../../components/ui";
 import { MediaGallery } from "../../components/MediaGallery";
+import type { Colors } from "../../constants/theme";
+import { PageLoader } from "../../components/Loader";
+import { Icon } from "../../components/Icon";
 
 interface DiaryPayload {
   farm: { id: string; name: string; slug: string; location: string; cover_url: string | null; farmerName: string | null; farmerAvatar: string | null };
@@ -16,6 +19,7 @@ interface DiaryPayload {
 
 /** Mirrors apps/web/src/components/farm/DiaryPostPager.tsx — swipe between a farm's posts, oldest → newest. */
 export default function NhatKyScreen() {
+  const styles = useStyles(makeStyles);
   const { id } = useLocalSearchParams<{ id: string }>();
   const { width } = useWindowDimensions();
   const [data, setData] = useState<DiaryPayload | null>(null);
@@ -49,9 +53,7 @@ export default function NhatKyScreen() {
   }
   if (!data) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
+      <PageLoader />
     );
   }
 
@@ -107,7 +109,7 @@ export default function NhatKyScreen() {
                         <Text style={styles.farmName}>{farm.name}</Text>
                       </TouchableOpacity>
                       <Text style={styles.muted} numberOfLines={1}>
-                        {farm.farmerName ? `${farm.farmerName} · ` : ""}📍 {farm.location}
+                        {farm.farmerName ? `${farm.farmerName} · ` : ""}<Icon name="location_on" size={12} filled color={colors.onSurfaceVariant} /> {farm.location}
                       </Text>
                     </View>
                     <Chip icon="schedule" label={`${timeAgo(d.created_at)}`} small />
@@ -142,10 +144,10 @@ export default function NhatKyScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
   center: { flex: 1, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center", padding: 24 },
-  muted: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12 },
+  muted: { ...emojiFont,  ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12 },
   head: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 10, gap: 8 },
   navBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.secondaryContainer, alignItems: "center", justifyContent: "center" },
   navBtnText: { fontSize: 22, color: colors.onSecondaryContainer, lineHeight: 24, fontWeight: "700" },
@@ -153,7 +155,7 @@ const styles = StyleSheet.create({
   dotActive: { backgroundColor: colors.primary, width: 16 },
   card: { backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.xlIncreased, overflow: "hidden" },
   cardHead: { flexDirection: "row", alignItems: "center", gap: 12, padding: 18, paddingBottom: 12 },
-  farmName: { ...type.titleMedium, color: colors.onSurface, fontSize: 16 },
-  para: { ...type.bodyLarge, color: colors.onSurface, fontSize: 16, lineHeight: 26 },
+  farmName: { ...emojiFont,  ...type.titleMedium, color: colors.onSurface, fontSize: 16 },
+  para: { ...emojiFont,  ...type.bodyLarge, color: colors.onSurface, fontSize: 16, lineHeight: 26 },
   cardFoot: { flexDirection: "row", alignItems: "center", paddingHorizontal: 18, paddingVertical: 8 },
 });

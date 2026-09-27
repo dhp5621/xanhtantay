@@ -1,16 +1,20 @@
 import { useCallback, useState } from "react";
-import { View, Text, StyleSheet, ScrollView, Alert, ActivityIndicator, TouchableOpacity, RefreshControl } from "react-native";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useFocusEffect } from "expo-router";
 import { apiFetch, ApiError } from "../../constants/api";
-import { colors, shape, type } from "../../constants/theme";
+import { colors, shape, type, useStyles } from "../../constants/theme";
 import { pickMedia, makeAvatarDataUrl } from "../../constants/media";
 import * as ImagePicker from "expo-image-picker";
 import { useSession } from "../../hooks/useSession";
+import { useTheme } from "../../hooks/useTheme";
 import { AnimIn, AnimInScale, PressableScale, Skeleton } from "../../components/motion";
 import { Avatar, Button, ListItem, Screen, StatTile } from "../../components/ui";
 import { Icon } from "../../components/Icon";
 import { useLiveRefresh } from "../../hooks/useLive";
+import type { Colors } from "../../constants/theme";
+import { useDialog } from "../../components/Dialog";
+import { Loader } from "../../components/Loader";
 
 interface Me {
   id: string;
@@ -25,7 +29,10 @@ interface Me {
 
 /** Mirrors apps/web/src/app/(customer)/tai-khoan/page.tsx + AvatarUploader. */
 export default function TaiKhoanScreen() {
+  const { alert } = useDialog();
+  const styles = useStyles(makeStyles);
   const { user, loading, logout, refresh } = useSession();
+  const { preference, setPreference } = useTheme();
   const [me, setMe] = useState<Me | null>(null);
   const [busy, setBusy] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
@@ -57,7 +64,7 @@ export default function TaiKhoanScreen() {
       setMe((m) => (m ? { ...m, avatar_url } : m));
       refresh().catch(() => {});
     } catch (e) {
-      Alert.alert("Không lưu được", e instanceof ApiError ? e.message : "Có lỗi xảy ra");
+      alert("Không lưu được", e instanceof ApiError ? e.message : "Có lỗi xảy ra");
     } finally {
       setBusy(false);
     }
@@ -74,17 +81,17 @@ export default function TaiKhoanScreen() {
       await saveAvatar(await makeAvatarDataUrl(a.uri, a.width, a.height, 96));
     } catch (e) {
       setBusy(false);
-      Alert.alert("Không đọc được ảnh này", e instanceof Error ? e.message : undefined);
+      alert("Không đọc được ảnh này", e instanceof Error ? e.message : undefined);
     }
   };
 
   const changeAvatar = () => {
-    Alert.alert("Ảnh đại diện", "Ảnh được cắt vuông và nén còn 96×96, chỉ vài KB.", [
-      { text: "📷 Chụp ảnh mới", onPress: () => pickAvatar("camera") },
-      { text: "🖼️ Chọn từ máy", onPress: () => pickAvatar("library") },
-      ...(me?.avatar_url ? [{ text: "🗑️ Gỡ ảnh", style: "destructive" as const, onPress: () => saveAvatar(null) }] : []),
+    alert("Ảnh đại diện", "Ảnh được cắt vuông và nén còn 96×96, chỉ vài KB.", [
       { text: "Huỷ", style: "cancel" as const },
-    ]);
+      ...(me?.avatar_url ? [{ text: "Gỡ ảnh", style: "destructive" as const, onPress: () => saveAvatar(null) }] : []),
+      { text: "Chọn từ máy", onPress: () => pickAvatar("library") },
+      { text: "Chụp ảnh mới", onPress: () => pickAvatar("camera") },
+    ], { icon: "photo_camera" });
   };
 
   if (loading) {
@@ -131,9 +138,9 @@ export default function TaiKhoanScreen() {
 
   const stats = isFarmer
     ? [
-        { icon: "pending_actions", label: "Đơn chờ hái", value: me?.stats.pendingOrders ?? 0, href: "/tabs/farmer/don-hang" },
-        { icon: "nutrition", label: "Sản phẩm", value: me?.stats.products ?? 0, href: "/tabs/farmer/san-pham" },
-        { icon: "event_repeat", label: "Khách đăng ký", value: me?.stats.subscribers ?? 0, href: "/tabs/farmer/dang-ky" },
+        { icon: "pending_actions", label: "Đơn chờ hái", value: me?.stats.pendingOrders ?? 0, href: "/tabs/farmer-don-hang" },
+        { icon: "nutrition", label: "Sản phẩm", value: me?.stats.products ?? 0, href: "/tabs/farmer-san-pham" },
+        { icon: "event_repeat", label: "Khách đăng ký", value: me?.stats.subscribers ?? 0, href: "/tabs/farmer-dang-ky" },
       ]
     : [
         { icon: "package_2", label: "Đơn hàng", value: me?.stats.orders ?? 0, href: "/tabs/don-hang" },
@@ -144,10 +151,10 @@ export default function TaiKhoanScreen() {
   const menu = isFarmer
     ? [
         { href: "/tabs/farmer", icon: "dashboard", label: "Tổng quan vườn", desc: "Số liệu và đơn gần đây" },
-        { href: "/tabs/farmer/don-hang", icon: "package_2", label: "Đơn hàng", desc: "Thu hoạch, lên xe, đã giao" },
-        { href: "/tabs/farmer/san-pham", icon: "inventory_2", label: "Sản phẩm & tồn kho", desc: "Bật tắt món còn hàng, đổi giá" },
-        { href: "/tabs/farmer/nhat-ky", icon: "photo_camera", label: "Đăng nhật ký vườn", desc: "Ảnh, video từ vườn hôm nay" },
-        { href: "/tabs/farmer/dang-ky", icon: "event_repeat", label: "Khách đăng ký", desc: "Gói giao định kỳ từ vườn bạn" },
+        { href: "/tabs/farmer-don-hang", icon: "package_2", label: "Đơn hàng", desc: "Thu hoạch, lên xe, đã giao" },
+        { href: "/tabs/farmer-san-pham", icon: "inventory_2", label: "Sản phẩm & tồn kho", desc: "Bật tắt món còn hàng, đổi giá" },
+        { href: "/tabs/farmer-nhat-ky", icon: "photo_camera", label: "Đăng nhật ký vườn", desc: "Ảnh, video từ vườn hôm nay" },
+        { href: "/tabs/farmer-dang-ky", icon: "event_repeat", label: "Khách đăng ký", desc: "Gói giao định kỳ từ vườn bạn" },
         ...(me?.farm ? [{ href: `/farms/${me.farm.id}`, icon: "storefront", label: "Xem trang vườn của tôi", desc: "Như khách hàng nhìn thấy" }] : []),
       ]
     : [
@@ -180,7 +187,7 @@ export default function TaiKhoanScreen() {
             <View style={{ position: "relative" }}>
               <Avatar name={name} src={me?.avatar_url ?? user.image} size={80} tone={isFarmer ? "tertiary" : "primary"} />
               <PressableScale haptic scaleTo={0.9} style={styles.avatarBtn} onPress={changeAvatar} disabled={busy}>
-                {busy ? <ActivityIndicator size="small" color={colors.onPrimary} /> : <Icon name="photo_camera" size={15} filled color={colors.onPrimary} />}
+                {busy ? <Loader size={18} color={colors.onPrimary} /> : <Icon name="photo_camera" size={15} filled color={colors.onPrimary} />}
               </PressableScale>
             </View>
             <View style={{ flex: 1, minWidth: 0 }}>
@@ -209,6 +216,28 @@ export default function TaiKhoanScreen() {
           ))}
         </View>
 
+        <AnimIn delay={280}>
+          <Text style={styles.sectionLabel}>GIAO DIỆN</Text>
+          <View style={styles.segmented}>
+            {(
+              [
+                ["system", "brightness_auto", "Theo thiết bị"],
+                ["light", "light_mode", "Sáng"],
+                ["dark", "dark_mode", "Tối"],
+              ] as const
+            ).map(([v, ic, l]) => {
+              const sel = preference === v;
+              return (
+                <PressableScale key={v} haptic scaleTo={0.96} style={[styles.seg, sel && styles.segSelected]} onPress={() => setPreference(v)}>
+                  <Icon name={sel ? "check" : ic} size={18} color={sel ? colors.onSecondaryContainer : colors.onSurfaceVariant} />
+                  <Text style={[styles.segText, sel && { color: colors.onSecondaryContainer }]}>{l}</Text>
+                </PressableScale>
+              );
+            })}
+          </View>
+          <Text style={styles.segHint}>{preference === "system" ? "Đổi theo chế độ sáng/tối của điện thoại." : preference === "dark" ? "Luôn dùng giao diện tối." : "Luôn dùng giao diện sáng."}</Text>
+        </AnimIn>
+
         <AnimIn delay={320}>
           <TouchableOpacity
             style={styles.logoutBtn}
@@ -219,7 +248,7 @@ export default function TaiKhoanScreen() {
               setSigningOut(false);
             }}
           >
-            {signingOut ? <ActivityIndicator color={colors.error} /> : <Text style={styles.logoutBtnText}>Đăng xuất</Text>}
+            {signingOut ? <Loader size={22} color={colors.error} /> : <Text style={styles.logoutBtnText}>Đăng xuất</Text>}
           </TouchableOpacity>
         </AnimIn>
       </ScrollView>
@@ -227,13 +256,19 @@ export default function TaiKhoanScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   hero: { flexDirection: "row", alignItems: "center", gap: 18, borderRadius: shape.xlIncreased, padding: 24 },
   heroName: { ...type.headlineSmall, color: colors.onPrimaryContainer, fontSize: 22 },
   heroSub: { ...type.bodyMedium, color: colors.onPrimaryContainer, opacity: 0.8, fontSize: 13 },
   roleChip: { alignSelf: "flex-start", marginTop: 8, backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.full, paddingVertical: 4, paddingHorizontal: 10 },
   roleChipText: { ...type.labelLarge, color: colors.onSurface, fontSize: 12 },
   avatarBtn: { position: "absolute", right: -4, bottom: -4, width: 30, height: 30, borderRadius: 15, backgroundColor: colors.primary, borderWidth: 2, borderColor: colors.surfaceContainerLowest, alignItems: "center", justifyContent: "center" },
+  sectionLabel: { ...type.labelLarge, color: colors.onSurfaceVariant, fontSize: 11, letterSpacing: 0.6, marginBottom: 8 },
+  segmented: { flexDirection: "row", borderRadius: shape.full, borderWidth: 1, borderColor: colors.outlineVariant, overflow: "hidden" },
+  seg: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 11 },
+  segSelected: { backgroundColor: colors.secondaryContainer },
+  segText: { ...type.labelLarge, color: colors.onSurfaceVariant, fontSize: 12 },
+  segHint: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12, marginTop: 8 },
   logoutBtn: { borderWidth: 1.5, borderColor: colors.error, borderRadius: shape.full, padding: 14, alignItems: "center", alignSelf: "center", paddingHorizontal: 32 },
   logoutBtnText: { ...type.labelLarge, color: colors.error, fontSize: 15 },
 });

@@ -16,14 +16,19 @@ export interface PickedMedia {
   durationMs?: number;
 }
 
-/** Camera-roll / camera picker matching the web composer: images ≤1280px JPEG, videos ≤30s. */
-export async function pickMedia(opts: { source: "library" | "camera"; allowVideo?: boolean; max?: number }): Promise<PickedMedia[]> {
-  const mediaTypes: ImagePicker.MediaType[] = opts.allowVideo ? ["images", "videos"] : ["images"];
+/**
+ * Camera-roll / camera picker matching the web composer: images ≤1280px JPEG, videos ≤30s.
+ * `kind` picks what the camera opens in: "video" starts the recorder (with the 30s cap) instead of
+ * the photo shutter — passing both types to the system camera on Android only ever takes photos.
+ */
+export async function pickMedia(opts: { source: "library" | "camera"; kind?: "image" | "video" | "any"; allowVideo?: boolean; max?: number }): Promise<PickedMedia[]> {
+  const kind = opts.kind ?? (opts.allowVideo ? "any" : "image");
+  const mediaTypes: ImagePicker.MediaType[] = kind === "video" ? ["videos"] : kind === "any" ? ["images", "videos"] : ["images"];
   let result: ImagePicker.ImagePickerResult;
   if (opts.source === "camera") {
     const perm = await ImagePicker.requestCameraPermissionsAsync();
-    if (!perm.granted) throw new Error("Cần quyền dùng camera để chụp ảnh");
-    result = await ImagePicker.launchCameraAsync({ mediaTypes, quality: 0.9, videoMaxDuration: VIDEO_MAX_SECONDS });
+    if (!perm.granted) throw new Error(kind === "video" ? "Cần quyền dùng camera để quay video" : "Cần quyền dùng camera để chụp ảnh");
+    result = await ImagePicker.launchCameraAsync({ mediaTypes: kind === "video" ? ["videos"] : ["images"], quality: 0.9, videoMaxDuration: VIDEO_MAX_SECONDS, videoQuality: ImagePicker.UIImagePickerControllerQualityType.Medium });
   } else {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) throw new Error("Cần quyền truy cập thư viện ảnh");

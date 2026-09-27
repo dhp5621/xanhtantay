@@ -1,16 +1,18 @@
 import { useCallback, useState } from "react";
-import { View, Text, FlatList, StyleSheet, RefreshControl, Alert, Platform } from "react-native";
+import { View, Text, FlatList, StyleSheet, RefreshControl, Platform } from "react-native";
 import * as Haptics from "expo-haptics";
 import { router, useFocusEffect } from "expo-router";
 import type { Order, OrderStatus } from "@xanhtantay/types";
-import { apiFetch, ApiError } from "../../../constants/api";
-import { colors, shape, type, elevation } from "../../../constants/theme";
-import { formatDateTime, formatVND, STATUS_ICONS } from "../../../constants/format";
-import { ORDER_TYPE_LABELS } from "../../../constants/commerce";
-import { AnimIn, Skeleton } from "../../../components/motion";
-import { Button, Chip, EmptyState, PageHeader } from "../../../components/ui";
-import { Icon } from "../../../components/Icon";
-import { useLiveRefresh } from "../../../hooks/useLive";
+import { apiFetch, ApiError } from "../../constants/api";
+import { colors, shape, type, elevation, emojiFont, useStyles } from "../../constants/theme";
+import { formatDateTime, formatVND, STATUS_ICONS } from "../../constants/format";
+import { ORDER_TYPE_LABELS } from "../../constants/commerce";
+import { AnimIn, Skeleton } from "../../components/motion";
+import { Button, Chip, EmptyState, PageHeader } from "../../components/ui";
+import { Icon } from "../../components/Icon";
+import { useLiveRefresh } from "../../hooks/useLive";
+import type { Colors } from "../../constants/theme";
+import { useDialog } from "../../components/Dialog";
 
 type FarmerOrder = Order & {
   customer_name?: string | null;
@@ -32,6 +34,8 @@ const NEXT: Partial<Record<OrderStatus, { status: OrderStatus; label: string; ic
 
 /** Mirrors apps/web/src/app/(farmer)/farmer/don-hang/page.tsx + OrderStatusButton. */
 export default function FarmerDonHangScreen() {
+  const { alert } = useDialog();
+  const styles = useStyles(makeStyles);
   const [orders, setOrders] = useState<FarmerOrder[] | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [updating, setUpdating] = useState<string | null>(null);
@@ -61,7 +65,7 @@ export default function FarmerDonHangScreen() {
       setOrders((os) => (os ?? []).map((o) => (o.id === order.id ? { ...o, status: next.status } : o)));
       if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     } catch (e) {
-      Alert.alert("Không cập nhật được", e instanceof ApiError ? e.message : "Có lỗi xảy ra");
+      alert("Không cập nhật được", e instanceof ApiError ? e.message : "Có lỗi xảy ra");
     } finally {
       setUpdating(null);
     }
@@ -136,7 +140,7 @@ export default function FarmerDonHangScreen() {
               {item.note ? <Text style={styles.note}><Icon name="sticky_note_2" size={13} color={colors.onSurfaceVariant} /> {item.note}</Text> : null}
               <View style={{ flexDirection: "row", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
                 {next && <Button label={next.label} icon={next.icon} small loading={updating === item.id} onPress={() => advance(item)} />}
-                <Button label="Tem QR" icon="qr_code_2" variant="outlined" small onPress={() => router.push(`/tabs/farmer/tem/${item.id}`)} />
+                <Button label="Tem QR" icon="qr_code_2" variant="outlined" small onPress={() => router.push(`/tem/${item.id}`)} />
               </View>
             </View>
           </AnimIn>
@@ -146,15 +150,15 @@ export default function FarmerDonHangScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
   card: { backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.xl, padding: 16 },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", gap: 8 },
-  customerName: { ...type.titleMedium, color: colors.onSurface, fontSize: 15 },
+  customerName: { ...emojiFont,  ...type.titleMedium, color: colors.onSurface, fontSize: 15 },
   customerMeta: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12, marginTop: 2 },
   total: { ...type.titleMedium, color: colors.primary, fontSize: 16 },
   statusChip: { flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 3, paddingHorizontal: 9, borderRadius: shape.full },
   statusText: { fontSize: 11, fontWeight: "700" },
   itemsRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 10 },
-  note: { ...type.bodyMedium, color: colors.onSurfaceVariant, marginTop: 8, fontSize: 12 },
+  note: { ...emojiFont,  ...type.bodyMedium, color: colors.onSurfaceVariant, marginTop: 8, fontSize: 12 },
 });
