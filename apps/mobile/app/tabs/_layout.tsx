@@ -28,6 +28,7 @@ export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
+        unmountOnBlur: true,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.onSurfaceVariant,
         tabBarStyle: { backgroundColor: colors.surfaceContainerLow, borderTopWidth: 0, height: 58 + bottom, paddingTop: 8, paddingBottom: bottom },
