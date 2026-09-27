@@ -1,0 +1,104 @@
+name: iOS IPA
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/mobile/**"
+      - "packages/types/**"
+      - ".github/workflows/ios-ipa.yml"
+  workflow_dispatch: {}
+
+concurrency:
+  group: ios-ipa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 90
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_16.4.app || sudo xcode-select -s /Applications/Xcode.app
+
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/CocoaPods
+            ~/.cocoapods
+          key: pods-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pods-${{ runner.os }}-
+
+      - name: Cache Xcode DerivedData
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Developer/Xcode/DerivedData
+          key: deriveddata-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: deriveddata-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Prebuild iOS project
+        working-directory: apps/mobile
+        env:
+          EXPO_PUBLIC_API_URL: ${{ vars.EXPO_PUBLIC_API_URL }}
+        run: npx expo prebuild --platform ios --clean
+
+      # No Apple signing identity in CI: the archive is built unsigned and packaged as an IPA that
+      # can be re-signed/sideloaded (AltStore, Sideloadly, TrollStore, or `codesign` with your own cert).
+      - name: Build unsigned archive
+        working-directory: apps/mobile/ios
+        run: |
+          WORKSPACE=$(ls -d *.xcworkspace | head -1)
+          SCHEME="${WORKSPACE%.xcworkspace}"
+          echo "Building $WORKSPACE / $SCHEME"
+          set -o pipefail
+          xcodebuild \
+            -workspace "$WORKSPACE" \
+            -scheme "$SCHEME" \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination "generic/platform=iOS" \
+            -archivePath "$PWD/build/App.xcarchive" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            ONLY_ACTIVE_ARCH=NO \
+            archive | tail -n 200
+
+      - name: Package IPA
+        working-directory: apps/mobile/ios
+        run: |
+          APP=$(ls -d build/App.xcarchive/Products/Applications/*.app | head -1)
+          mkdir -p Payload
+          cp -R "$APP" Payload/
+          zip -qry "$GITHUB_WORKSPACE/xanhtantay-unsigned.ipa" Payload
+          ls -la "$GITHUB_WORKSPACE/xanhtantay-unsigned.ipa"
+
+      - name: Publish rolling iOS prerelease
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ios-latest
+          name: Xanh Tận Tay — iOS (mới nhất, chưa ký)
+          body: |
+            Tự động build từ commit ${{ github.sha }} trên ${{ github.ref_name }}.
+            IPA chưa ký: cần ký lại bằng chứng chỉ của bạn (AltStore / Sideloadly / codesign) trước khi cài lên máy thật.
+          prerelease: true
+          make_latest: false
+          target_commitish: ${{ github.sha }}
+          files: xanhtantay-unsigned.ipa
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

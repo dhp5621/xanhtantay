@@ -33,7 +33,8 @@ export default function TabsLayout() {
         tabBarLabelStyle: { fontWeight: "600", fontSize: isFarmer ? 10 : 11 },
         tabBarActiveBackgroundColor: "transparent",
         headerShown: false,
-        animation: "shift",
+        animation: "fade",
+        transitionSpec: { animation: "timing", config: { duration: 180 } },
         sceneStyle: { backgroundColor: colors.surface },
       }}
     >
