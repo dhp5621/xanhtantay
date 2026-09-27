@@ -9,10 +9,6 @@ on:
       - ".github/workflows/ios-ipa.yml"
   workflow_dispatch: {}
 
-concurrency:
-  group: ios-ipa-${{ github.ref }}
-  cancel-in-progress: true
-
 env:
   INSTALL_URL: https://huanhoahongso3-collab.github.io/autosignipacert/xanhtantay/
   IPA_NAME: xanhtantay-signed.ipa
