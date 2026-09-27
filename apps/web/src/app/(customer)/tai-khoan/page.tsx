@@ -8,6 +8,7 @@ import { getSessionUser } from "@/lib/session";
 import { Icon } from "@/components/ui/Icon";
 import { SignOutButton } from "@/components/auth/SignOutButton";
 import { AvatarUploader } from "@/components/auth/AvatarUploader";
+import { WebPushToggle } from "@/components/WebPushToggle";
 
 export const metadata = { title: "Tài khoản" };
 
@@ -104,6 +105,10 @@ export default async function TaiKhoanPage() {
             <span className="m3-list-trailing"><Icon name="chevron_right" /></span>
           </Link>
         ))}
+      </div>
+
+      <div className="m3-card m3-card-filled anim-in delay-4" style={{ padding: 16 }}>
+        <WebPushToggle />
       </div>
 
       <div className="anim-in delay-4" style={{ display: "flex", justifyContent: "center" }}>

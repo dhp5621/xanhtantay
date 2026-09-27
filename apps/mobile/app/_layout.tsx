@@ -9,6 +9,7 @@ import { SessionProvider, useSession } from "../hooks/useSession";
 import { CartProvider } from "../hooks/useCart";
 import { LiveProvider } from "../hooks/useLive";
 import { ThemeProvider, useTheme } from "../hooks/useTheme";
+import { usePushNotifications } from "../hooks/usePushNotifications";
 import { DialogProvider } from "../components/Dialog";
 import { colors } from "../constants/theme";
 import { ICON_FONT, ICON_FONT_FILLED } from "../components/Icon";
@@ -66,6 +67,7 @@ function Navigator() {
   const { scheme } = useTheme();
   const { user, loading } = useSession();
   const pathname = usePathname();
+  usePushNotifications();
   const gated = !loading && !user && !PUBLIC_PATHS.has(pathname) && !pathname.startsWith("/tra-cuu");
   const loginHref = "/dang-nhap?next=" + encodeURIComponent(pathname);
   return (

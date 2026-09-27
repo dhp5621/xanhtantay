@@ -22,13 +22,15 @@
     "next-auth": "^4.24.15",
     "qrcode": "1.5.4",
     "react": "19.1.0",
-    "react-dom": "19.1.0"
+    "react-dom": "19.1.0",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@types/node": "^20",
     "@types/qrcode": "^1.5.6",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.5",
+    "@types/web-push": "^3.6.4",
     "autoprefixer": "^10.4.20",
     "drizzle-kit": "^0.29.1",
     "postcss": "^8.4.47",

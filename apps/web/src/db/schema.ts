@@ -159,3 +159,21 @@ export const recipes = pgTable("recipes", {
   steps: text("steps").array().notNull().default([]),
   image_url: text("image_url"),
 });
+
+/**
+ * Devices that accept push notifications. Phones register an Expo push token (`ExponentPushToken[…]`);
+ * browsers register a Web Push subscription, keyed by its endpoint URL.
+ */
+export const push_devices = pgTable("push_devices", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  /** "ios" | "android" | "web" */
+  platform: text("platform").notNull(),
+  /** Expo push token, or the Web Push endpoint URL. */
+  token: text("token").notNull().unique(),
+  /** Web Push only: the full PushSubscription JSON (endpoint + keys). */
+  subscription: jsonb("subscription").$type<WebPushSubscription>(),
+  user_id: text("user_id").references(() => users.id, { onDelete: "set null" }),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  updated_at: timestamp("updated_at").defaultNow().notNull(),
+});
+export interface WebPushSubscription { endpoint: string; expirationTime?: number | null; keys: { p256dh: string; auth: string } }

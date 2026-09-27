@@ -16,7 +16,10 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "dhp.vkn.xanhtantay"
+      "bundleIdentifier": "dhp.vkn.xanhtantay",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -46,7 +49,14 @@
           "cameraPermission": "Xanh Tận Tay cần dùng camera để chụp ảnh vườn và ảnh đại diện."
         }
       ],
-      "react-native-edge-to-edge"
-    ]
+      "react-native-edge-to-edge",
+      "expo-notifications"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "49ef7159-e628-42fd-936d-ab549b28dbb0"
+      }
+    },
+    "owner": "huanhoahongso3"
   }
 }

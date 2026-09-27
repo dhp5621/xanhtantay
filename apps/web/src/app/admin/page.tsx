@@ -1,15 +1,16 @@
 export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { db } from "@/db";
-import { users, farms, products, orders, subscriptions, group_orders, farm_diary, meal_plans, user_recipes } from "@/db/schema";
+import { users, farms, products, orders, subscriptions, group_orders, farm_diary, meal_plans, user_recipes, push_devices } from "@/db/schema";
 import { and, count, desc, eq, lte, sum } from "drizzle-orm";
 import { Icon } from "@/components/ui/Icon";
+import { AdminPush } from "@/components/admin/AdminPush";
 import { formatVND, formatDateTime, STATUS_SHORT, STATUS_ICONS } from "@/lib/format";
 
 export const metadata = { title: { absolute: "Tổng quan · Quản trị Xanh Tận Tay" } };
 
 export default async function AdminDashboard() {
-  const [[u], [f], [p], [o], [pending], [rev], [s], [g], [low], [d], recent, [pooled], [plans], [ai]] = await Promise.all([
+  const [[u], [f], [p], [o], [pending], [rev], [s], [g], [low], [d], recent, [pooled], [plans], [ai], pushRows] = await Promise.all([
     db.select({ c: count() }).from(users),
     db.select({ c: count() }).from(farms),
     db.select({ c: count() }).from(products),
@@ -25,7 +26,9 @@ export default async function AdminDashboard() {
     db.select({ c: count() }).from(orders).where(and(eq(orders.delivery_mode, "pooled"), eq(orders.status, "harvesting"))),
     db.select({ c: count() }).from(meal_plans),
     db.select({ c: count() }).from(user_recipes),
+    db.select({ platform: push_devices.platform, c: count() }).from(push_devices).groupBy(push_devices.platform),
   ]);
+  const pushCounts = { mobile: pushRows.filter((r) => r.platform !== "web").reduce((n, r) => n + r.c, 0), web: pushRows.find((r) => r.platform === "web")?.c ?? 0 };
   const revenue = Number(rev.s ?? 0);
   const commission = Math.round(revenue * 0.075); // midpoint of the 5–10% model
 
@@ -65,6 +68,8 @@ export default async function AdminDashboard() {
           </Link>
         ))}
       </div>
+
+      <AdminPush counts={pushCounts} />
 
       <section>
         <div className="m3-section-head">

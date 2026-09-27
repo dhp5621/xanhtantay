@@ -115,6 +115,22 @@ jobs:
           LC_ALL: en_US.UTF-8
         run: npx expo prebuild --platform ios --clean
 
+      # expo-notifications adds aps-environment; manual signing fails unless it matches the profile.
+      # Use the profile's value, or drop push entirely when the profile has no Push Notifications capability.
+      - name: Match push entitlement to provisioning profile
+        working-directory: apps/mobile/ios
+        run: |
+          for ENT in */*.entitlements; do
+            [ -f "$ENT" ] || continue
+            if APS=$(plutil -extract Entitlements.aps-environment raw "$RUNNER_TEMP/profile.plist" 2>/dev/null); then
+              plutil -replace aps-environment -string "$APS" "$ENT"
+              echo "$ENT: aps-environment=$APS"
+            else
+              plutil -remove aps-environment "$ENT" 2>/dev/null || true
+              echo "::warning::Provisioning profile has no Push Notifications capability; this IPA can't receive push notifications."
+            fi
+          done
+
       - name: Install xcbeautify
         run: brew install xcbeautify
 
