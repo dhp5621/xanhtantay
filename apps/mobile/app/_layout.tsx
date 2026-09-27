@@ -1,9 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { SystemBars } from "react-native-edge-to-edge";
 import { Redirect, Stack, usePathname } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import { useFonts } from "expo-font";
+import * as Font from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import { SessionProvider, useSession } from "../hooks/useSession";
 import { CartProvider } from "../hooks/useCart";
@@ -12,26 +12,34 @@ import { ThemeProvider, useTheme } from "../hooks/useTheme";
 import { DialogProvider } from "../components/Dialog";
 import { colors } from "../constants/theme";
 import { ICON_FONT, ICON_FONT_FILLED } from "../components/Icon";
+import { EMOJI_FAMILY } from "../components/EmojiText";
 
 // Keep the native splash up until the icon font is ready so icons never flash as ligature text.
 SplashScreen.preventAutoHideAsync().catch(() => {});
 SplashScreen.setOptions?.({ duration: 300, fade: true });
 
-const FONTS: Record<string, number> = {
-  [ICON_FONT]: require("../assets/fonts/MaterialSymbolsRounded.ttf"),
-  [ICON_FONT_FILLED]: require("../assets/fonts/MaterialSymbolsRoundedFilled.ttf"),
-};
-// Android only: iOS ships Apple Color Emoji and cannot load Google's CBDT bitmap font anyway.
-if (Platform.OS === "android") FONTS.NotoColorEmoji = require("../assets/fonts/NotoColorEmoji.ttf");
-
 export default function RootLayout() {
-  const [fontsLoaded, fontError] = useFonts(FONTS);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (fontsLoaded || fontError) SplashScreen.hideAsync().catch(() => {});
-  }, [fontsLoaded, fontError]);
+    (async () => {
+      // The icon fonts are required; the 10 MB emoji font is best-effort (Android only) and must
+      // never keep the app from starting if it fails to load.
+      try {
+        await Font.loadAsync({
+          [ICON_FONT]: require("../assets/fonts/MaterialSymbolsRounded.ttf"),
+          [ICON_FONT_FILLED]: require("../assets/fonts/MaterialSymbolsRoundedFilled.ttf"),
+        });
+      } catch {
+        // icons fall back to their names; still start
+      }
+      setReady(true);
+      SplashScreen.hideAsync().catch(() => {});
+      if (Platform.OS === "android") Font.loadAsync({ [EMOJI_FAMILY]: require("../assets/fonts/NotoColorEmoji.ttf") }).catch(() => {});
+    })();
+  }, []);
 
-  if (!fontsLoaded && !fontError) return null;
+  if (!ready) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.surface }}>
@@ -63,7 +71,8 @@ function Navigator() {
   return (
     <>
       {gated ? <Redirect href={loginHref as never} /> : null}
-      <StatusBar style={scheme === "dark" ? "light" : "dark"} backgroundColor={colors.surface} />
+      {/* Edge-to-edge: status + navigation bar icons follow the scheme; both bars stay transparent. */}
+      <SystemBars style={scheme === "dark" ? "light" : "dark"} />
       <Stack
         screenOptions={{
           headerShown: false,

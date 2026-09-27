@@ -7,7 +7,6 @@ import { Icon } from "../../components/Icon";
 // Same icon names as apps/web/src/components/layout/nav-config.ts; the focused tab gets the filled glyph.
 const icon = (name: string) => ({ color, focused }: { color: string; focused: boolean }) => <Icon name={name} size={26} color={color} filled={focused} />;
 
-const header = { headerShown: true, headerStyle: { backgroundColor: colors.surface }, headerTintColor: colors.onSurface, headerShadowVisible: false, headerTitleStyle: { fontWeight: "700" as const } };
 
 /**
  * Customers: Home / Rau củ / Vườn / Bếp / Tài khoản (CUSTOMER_MOBILE_NAV).
@@ -16,6 +15,7 @@ const header = { headerShown: true, headerStyle: { backgroundColor: colors.surfa
  */
 export default function TabsLayout() {
   const { user } = useSession();
+  const header = { headerShown: true, headerStyle: { backgroundColor: colors.surface }, headerTintColor: colors.onSurface, headerShadowVisible: false, headerTitleStyle: { fontWeight: "700" as const } };
   const isFarmer = user?.role === "farmer";
   // Like the web's VISITOR_NAV: signed-out visitors only get Home and Account; everything else needs a session.
   const customerOnly = user && !isFarmer ? undefined : null;

@@ -13,6 +13,7 @@ import { Icon } from "../../components/Icon";
 import { useLiveRefresh } from "../../hooks/useLive";
 import type { Colors } from "../../constants/theme";
 import { useDialog } from "../../components/Dialog";
+import { EmojiText } from "../../components/EmojiText";
 
 type FarmerOrder = Order & {
   customer_name?: string | null;
@@ -22,11 +23,11 @@ type FarmerOrder = Order & {
 };
 
 const STATUS_LABEL: Record<OrderStatus, string> = { harvesting: "Đang thu hoạch", loaded: "Đã lên xe", delivered: "Đã giao" };
-const STATUS_STYLE: Record<OrderStatus, { bg: string; fg: string }> = {
+const statusStyle = (): Record<OrderStatus, { bg: string; fg: string }> => ({
   harvesting: { bg: colors.statusHarvestingBg, fg: colors.statusHarvestingFg },
   loaded: { bg: colors.statusLoadedBg, fg: colors.statusLoadedFg },
   delivered: { bg: colors.statusDeliveredBg, fg: colors.statusDeliveredFg },
-};
+});
 const NEXT: Partial<Record<OrderStatus, { status: OrderStatus; label: string; icon: string }>> = {
   harvesting: { status: "loaded", label: "Đã lên xe", icon: "local_shipping" },
   loaded: { status: "delivered", label: "Đã giao", icon: "home" },
@@ -113,7 +114,7 @@ export default function FarmerDonHangScreen() {
         )
       }
       renderItem={({ item, index }) => {
-        const s = STATUS_STYLE[item.status];
+        const s = statusStyle()[item.status];
         const next = NEXT[item.status];
         return (
           <AnimIn index={Math.min(index, 6)} style={{ marginBottom: 12 }}>
@@ -137,7 +138,7 @@ export default function FarmerDonHangScreen() {
                   {item.items.map((l) => <Chip key={l.id} label={`${Number(l.quantity)} ${l.product_unit ?? ""} ${l.product_name ?? ""}`} small />)}
                 </View>
               )}
-              {item.note ? <Text style={styles.note}><Icon name="sticky_note_2" size={13} color={colors.onSurfaceVariant} /> {item.note}</Text> : null}
+              {item.note ? <EmojiText style={styles.note}><Icon name="sticky_note_2" size={13} color={colors.onSurfaceVariant} /> {item.note}</EmojiText> : null}
               <View style={{ flexDirection: "row", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
                 {next && <Button label={next.label} icon={next.icon} small loading={updating === item.id} onPress={() => advance(item)} />}
                 <Button label="Tem QR" icon="qr_code_2" variant="outlined" small onPress={() => router.push(`/tem/${item.id}`)} />
@@ -154,11 +155,11 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
   card: { backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.xl, padding: 16 },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", gap: 8 },
-  customerName: { ...emojiFont,  ...type.titleMedium, color: colors.onSurface, fontSize: 15 },
+  customerName: {  ...type.titleMedium, color: colors.onSurface, fontSize: 15 },
   customerMeta: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12, marginTop: 2 },
   total: { ...type.titleMedium, color: colors.primary, fontSize: 16 },
   statusChip: { flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 3, paddingHorizontal: 9, borderRadius: shape.full },
   statusText: { fontSize: 11, fontWeight: "700" },
   itemsRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 10 },
-  note: { ...emojiFont,  ...type.bodyMedium, color: colors.onSurfaceVariant, marginTop: 8, fontSize: 12 },
+  note: {  ...type.bodyMedium, color: colors.onSurfaceVariant, marginTop: 8, fontSize: 12 },
 });

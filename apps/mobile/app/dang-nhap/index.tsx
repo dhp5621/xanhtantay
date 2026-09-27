@@ -131,7 +131,7 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
   container: { padding: 24, paddingTop: 12, flexGrow: 1, justifyContent: "center" },
   hero: { backgroundColor: colors.primaryContainer, borderRadius: shape.xlIncreased, padding: 28, alignItems: "center", overflow: "hidden", marginBottom: 20 },
   logo: { fontSize: 44 },
-  title: { ...emojiFont,  ...type.headlineSmall, color: colors.onPrimaryContainer, fontSize: 26, marginTop: 4 },
+  title: {  ...type.headlineSmall, color: colors.onPrimaryContainer, fontSize: 26, marginTop: 4 },
   tagline: { ...type.bodyMedium, color: colors.onPrimaryContainer, opacity: 0.85, textAlign: "center", marginTop: 4 },
   roleToggle: { flexDirection: "row", backgroundColor: colors.surfaceContainerHighest, borderRadius: shape.full, padding: 3, marginBottom: 16 },
   roleBtn: { flex: 1, padding: 11, borderRadius: shape.full, alignItems: "center" },

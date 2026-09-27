@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 import { View, Text, Modal, Pressable, StyleSheet } from "react-native";
-import { colors, shape, type, useStyles, type Colors, emojiFont } from "../constants/theme";
+import { colors, shape, type, useStyles, type Colors } from "../constants/theme";
 import { AnimInScale, PressableScale } from "./motion";
 import { Icon } from "./Icon";
 
@@ -93,7 +93,7 @@ const makeStyles = (c: Colors) =>
     scrim: { flex: 1, backgroundColor: c.scrim, alignItems: "center", justifyContent: "center", padding: 28 },
     card: { width: "100%", maxWidth: 420, backgroundColor: c.surfaceContainerHigh, borderRadius: shape.xl, padding: 24 },
     iconWrap: { alignItems: "center", marginBottom: 16 },
-    title: { ...emojiFont,  ...type.headlineSmall, color: c.onSurface, fontSize: 22, lineHeight: 28, fontWeight: "600" },
+    title: {  ...type.headlineSmall, color: c.onSurface, fontSize: 22, lineHeight: 28, fontWeight: "600" },
     message: { ...type.bodyMedium, color: c.onSurfaceVariant, marginTop: 12, lineHeight: 21 },
     actions: { flexDirection: "row", justifyContent: "flex-end", flexWrap: "wrap", gap: 6, marginTop: 24 },
     btn: { paddingVertical: 10, paddingHorizontal: 14, borderRadius: shape.full, minWidth: 64, alignItems: "center" },

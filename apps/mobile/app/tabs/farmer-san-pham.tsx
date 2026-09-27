@@ -14,6 +14,7 @@ import { useLiveRefresh } from "../../hooks/useLive";
 import type { Colors } from "../../constants/theme";
 import { useDialog } from "../../components/Dialog";
 import { Loader } from "../../components/Loader";
+import { EmojiText } from "../../components/EmojiText";
 
 const UNITS = ["kg", "bó", "củ", "hộp", "trái", "gói"];
 const EMPTY_FORM = { name: "", unit: "kg", price_per_unit: "10000", category: "rau_la", stock_qty: "20", image_url: null as string | null };
@@ -149,7 +150,7 @@ export default function SanPhamScreen() {
                     {p.image_url ? <Image source={{ uri: p.image_url }} style={StyleSheet.absoluteFill} contentFit="cover" transition={250} /> : <Icon name={CATEGORY_ICONS[p.category]} size={26} />}
                   </PressableScale>
                   <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={styles.productName} numberOfLines={1}>{p.name}</Text>
+                    <EmojiText style={styles.productName} numberOfLines={1}>{p.name}</EmojiText>
                     <Text style={styles.productPrice}>{formatVND(p.price_per_unit)} / {p.unit}</Text>
                     <Text style={styles.body}>{CATEGORY_LABELS[p.category] ?? p.category}</Text>
                   </View>
@@ -231,11 +232,11 @@ export default function SanPhamScreen() {
 const makeStyles = (colors: Colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
   center: { flex: 1, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center", padding: 24 },
-  body: { ...emojiFont,  ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12 },
+  body: {  ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12 },
   card: { backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.lgIncreased, padding: 12 },
   cardTop: { flexDirection: "row", alignItems: "center", gap: 12 },
   thumb: { width: 64, height: 64, borderRadius: shape.md, backgroundColor: colors.surfaceContainerHigh, alignItems: "center", justifyContent: "center", overflow: "hidden" },
-  productName: { ...emojiFont,  ...type.titleMedium, color: colors.onSurface, fontSize: 15 },
+  productName: {  ...type.titleMedium, color: colors.onSurface, fontSize: 15 },
   productPrice: { ...type.labelLarge, color: colors.primary, fontSize: 14, marginTop: 1 },
   editLink: { ...type.labelLarge, color: colors.primary, fontSize: 13 },
   cardBottom: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 12 },
@@ -246,7 +247,7 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
   fabWrap: { position: "absolute", right: 16, bottom: 20 },
   fab: { backgroundColor: colors.primary, borderRadius: shape.full, paddingVertical: 14, paddingHorizontal: 20 },
   fabText: { ...type.labelLarge, color: colors.onPrimary, fontSize: 15 },
-  modalScrim: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" },
+  modalScrim: { flex: 1, backgroundColor: colors.scrim, justifyContent: "flex-end" },
   modalCard: { backgroundColor: colors.surfaceContainerLowest, borderTopLeftRadius: shape.xlIncreased, borderTopRightRadius: shape.xlIncreased, padding: 20, paddingBottom: 32, maxHeight: "90%" },
   modalTitle: { ...type.titleLarge, color: colors.onSurface, marginBottom: 6 },
   photoBox: { width: 88, height: 88, borderRadius: shape.lg, backgroundColor: colors.surfaceContainerHigh, alignItems: "center", justifyContent: "center", overflow: "hidden" },

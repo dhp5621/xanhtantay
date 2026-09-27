@@ -95,6 +95,6 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
   media: { height: 170, position: "relative", backgroundColor: colors.surfaceContainerHigh },
   locChip: { position: "absolute", left: 12, bottom: 12, backgroundColor: "rgba(0,0,0,.55)", borderRadius: shape.full, paddingVertical: 4, paddingHorizontal: 10 },
   locText: { color: "#fff", fontSize: 12, fontWeight: "600" },
-  name: { ...emojiFont,  ...type.titleMedium, color: colors.onSurface, fontSize: 17, marginBottom: 3 },
-  description: { ...emojiFont,  ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 13 },
+  name: {  ...type.titleMedium, color: colors.onSurface, fontSize: 17, marginBottom: 3 },
+  description: {  ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 13 },
 });

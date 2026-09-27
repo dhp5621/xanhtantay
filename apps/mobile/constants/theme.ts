@@ -48,6 +48,8 @@ const lightColors = {
   scrim: "rgba(0,0,0,.40)",
   shimmerBand: "rgba(255,255,255,.55)",
   progressTrack: "rgba(0,0,0,.08)",
+  tintOverlay: "rgba(255,255,255,.35)",
+  tintOverlayStrong: "rgba(0,0,0,.08)",
   onImage: "#FFFFFF",
   imageScrim: "rgba(0,0,0,.55)",
 };
@@ -100,6 +102,8 @@ const darkColors: Colors = {
   scrim: "rgba(0,0,0,.60)",
   shimmerBand: "rgba(255,255,255,.10)",
   progressTrack: "rgba(255,255,255,.10)",
+  tintOverlay: "rgba(255,255,255,.08)",
+  tintOverlayStrong: "rgba(255,255,255,.12)",
   onImage: "#FFFFFF",
   imageScrim: "rgba(0,0,0,.55)",
 };
@@ -147,11 +151,12 @@ export const shape = {
 } as const;
 
 /**
- * User-written text (diary posts, notes, product names) may contain emoji newer than the device's
- * system font. Android falls back per glyph, so pointing these styles at the bundled Noto Color
- * Emoji renders every emoji while letters still come from the system font. iOS ships Apple's emoji.
+ * Kept for compatibility — emoji rendering now goes through components/EmojiText, which sets the
+ * bundled Noto Color Emoji on emoji runs only (the font also has digit glyphs, so applying it as a
+ * base font made numbers render in the emoji face).
  */
-export const emojiFont = Platform.OS === "android" ? ({ fontFamily: "NotoColorEmoji" } as const) : ({} as const);
+export const emojiFont = {} as const;
+export const isAndroid = Platform.OS === "android";
 
 // M3 type scale (subset actually used by mobile screens).
 export const type = {

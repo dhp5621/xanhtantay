@@ -20,6 +20,7 @@ import { Icon } from "../../components/Icon";
 import type { Colors } from "../../constants/theme";
 import { useDialog } from "../../components/Dialog";
 import { Loader } from "../../components/Loader";
+import { EmojiText } from "../../components/EmojiText";
 
 const FOLLOWS_KEY = "xtt-follows";
 
@@ -165,7 +166,7 @@ export default function FarmDetailScreen() {
 
         {farm.description ? (
           <AnimIn delay={60}>
-            <Text style={styles.description}>{farm.description}</Text>
+            <EmojiText style={styles.description}>{farm.description}</EmojiText>
           </AnimIn>
         ) : null}
 
@@ -245,7 +246,7 @@ export default function FarmDetailScreen() {
                     )}
                     <View style={{ flex: 1, minWidth: 0 }}>
                       <TouchableOpacity onPress={() => router.push(`/nhat-ky/${entry.id}`)}>
-                        <Text style={styles.diaryContent} numberOfLines={4}>{entry.content}</Text>
+                        <EmojiText style={styles.diaryContent} numberOfLines={4}>{entry.content}</EmojiText>
                       </TouchableOpacity>
                       <Text style={styles.diaryMeta}>
                         <Icon name="schedule" size={12} color={colors.onSurfaceVariant} /> <Text style={{ fontWeight: "700" }}>{timeAgo(entry.created_at)}</Text> · {formatDateTime(entry.created_at)}
@@ -317,31 +318,31 @@ export default function FarmDetailScreen() {
 const makeStyles = (colors: Colors) => StyleSheet.create({
   center: { flex: 1, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center" },
   errorText: { color: colors.error },
-  body: { ...emojiFont,  ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 13 },
+  body: {  ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 13 },
   leading: { width: 44, height: 44, borderRadius: shape.md, backgroundColor: colors.primaryContainer, alignItems: "center", justifyContent: "center" },
   previewBanner: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: colors.tertiaryContainer, borderRadius: shape.lg, padding: 12 },
   hero: { height: 240, borderRadius: shape.xlIncreased, overflow: "hidden", backgroundColor: colors.surfaceContainerHigh },
   heroLoc: { color: "rgba(255,255,255,.9)", fontSize: 13, fontWeight: "600", marginBottom: 4 },
   heroTitle: { ...type.headlineSmall, color: "#fff", fontSize: 28, lineHeight: 34 },
-  description: { ...emojiFont,  ...type.bodyLarge, color: colors.onSurfaceVariant, fontSize: 15, lineHeight: 24 },
+  description: {  ...type.bodyLarge, color: colors.onSurfaceVariant, fontSize: 15, lineHeight: 24 },
   liveCard: { flexDirection: "row", alignItems: "center", gap: 14, backgroundColor: colors.surfaceContainerLow, borderRadius: shape.xl, padding: 16 },
   liveIcon: { width: 52, height: 52, borderRadius: shape.md, backgroundColor: colors.tertiaryContainer, alignItems: "center", justifyContent: "center" },
   liveTitle: { ...type.titleMedium, color: colors.onSurface, fontSize: 15 },
   catLabel: { ...type.labelLarge, color: colors.onSurfaceVariant, fontSize: 12, letterSpacing: 0.6, marginBottom: 10 },
   productCard: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.lgIncreased, padding: 12 },
   productImage: { width: 76, height: 76, borderRadius: shape.lg, backgroundColor: colors.surfaceContainerHigh, alignItems: "center", justifyContent: "center", overflow: "hidden" },
-  productName: { ...emojiFont,  ...type.titleMedium, color: colors.onSurface, fontSize: 15 },
+  productName: {  ...type.titleMedium, color: colors.onSurface, fontSize: 15 },
   productPrice: { ...type.labelLarge, color: colors.primary, fontSize: 15, marginTop: 2 },
   unit: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12, fontWeight: "400" },
   diaryItem: { flexDirection: "row", alignItems: "flex-start", gap: 12, backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.lg, padding: 14 },
-  diaryContent: { ...emojiFont,  ...type.bodyMedium, color: colors.onSurface, fontSize: 14, lineHeight: 21 },
+  diaryContent: {  ...type.bodyMedium, color: colors.onSurface, fontSize: 14, lineHeight: 21 },
   diaryMeta: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12, marginTop: 6 },
   diaryLink: { ...type.labelLarge, color: colors.primary, fontSize: 13 },
   cartBarWrap: { position: "absolute", left: 16, right: 16, bottom: 20 },
   cartBar: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: colors.primary, borderRadius: shape.full, paddingVertical: 14, paddingHorizontal: 20 },
   cartBarText: { ...type.labelLarge, color: colors.onPrimary, fontSize: 15 },
   cartBarCta: { ...type.labelLarge, color: colors.primaryContainer, fontSize: 14 },
-  scrim: { flex: 1, backgroundColor: "rgba(0,0,0,.4)", justifyContent: "flex-end" },
+  scrim: { flex: 1, backgroundColor: colors.scrim, justifyContent: "flex-end" },
   sheet: { backgroundColor: colors.surfaceContainerLowest, borderTopLeftRadius: shape.xlIncreased, borderTopRightRadius: shape.xlIncreased, padding: 22, paddingBottom: 34 },
   sheetTitle: { ...type.headlineSmall, color: colors.onSurface, fontSize: 22, marginBottom: 4 },
   subLine: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: colors.surfaceContainerLow, borderRadius: shape.md, padding: 10 },

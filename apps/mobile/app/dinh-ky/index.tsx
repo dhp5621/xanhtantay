@@ -130,11 +130,11 @@ export default function DinhKyScreen() {
 
 const makeStyles = (colors: Colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
-  body: { ...emojiFont,  ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12 },
+  body: {  ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12 },
   card: { backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.xl, padding: 20 },
-  farmName: { ...emojiFont,  ...type.titleLarge, color: colors.onSurface, fontSize: 18 },
+  farmName: {  ...type.titleLarge, color: colors.onSurface, fontSize: 18 },
   next: { ...type.titleMedium, color: colors.primary, fontSize: 14, textAlign: "right" },
   itemsBox: { backgroundColor: colors.surfaceContainerLow, borderRadius: shape.md, padding: 12, marginTop: 14 },
   label: { ...type.labelLarge, color: colors.onSurfaceVariant, fontSize: 11, letterSpacing: 0.6 },
-  itemText: { ...emojiFont,  ...type.bodyMedium, color: colors.onSurface, fontSize: 14, flex: 1 },
+  itemText: {  ...type.bodyMedium, color: colors.onSurface, fontSize: 14, flex: 1 },
 });

@@ -27,7 +27,7 @@ export default function NotFoundScreen() {
 const makeStyles = (colors: Colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center", padding: 24 },
   card: { alignItems: "center", backgroundColor: colors.surfaceContainerLow, borderRadius: shape.xl, padding: 28, width: "100%" },
-  title: { ...emojiFont,  ...type.titleLarge, color: colors.onSurface, marginTop: 8 },
-  body: { ...emojiFont,  ...type.bodyMedium, color: colors.onSurfaceVariant, textAlign: "center", marginTop: 6 },
+  title: {  ...type.titleLarge, color: colors.onSurface, marginTop: 8 },
+  body: {  ...type.bodyMedium, color: colors.onSurfaceVariant, textAlign: "center", marginTop: 6 },
   link: { ...type.labelLarge, color: colors.onPrimary, backgroundColor: colors.primary, borderRadius: shape.full, paddingVertical: 12, paddingHorizontal: 22, marginTop: 18, overflow: "hidden" },
 });

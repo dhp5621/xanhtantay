@@ -14,6 +14,7 @@ import { useLiveRefresh } from "../../../hooks/useLive";
 import type { Colors } from "../../../constants/theme";
 import { useDialog } from "../../../components/Dialog";
 import { PageLoader } from "../../../components/Loader";
+import { EmojiText } from "../../../components/EmojiText";
 
 interface GroupMember { id: string; user_id: string; name: string | null }
 type GroupDetail = GroupOrder & { members: GroupMember[]; joined: boolean };
@@ -117,7 +118,7 @@ export default function GomDonDetailScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 16, paddingBottom: 32, gap: 18 }}>
       <AnimIn>
-        <Text style={styles.title}>{group.title}</Text>
+        <EmojiText style={styles.title}>{group.title}</EmojiText>
         {farm && (
           <TouchableOpacity onPress={() => router.push(`/farms/${farm.id}`)}>
             <Text style={styles.farmLink}><Icon name="potted_plant" size={14} filled color={colors.primary} /> {farm.name} · {farm.location}</Text>
@@ -205,8 +206,8 @@ export default function GomDonDetailScreen() {
 const makeStyles = (colors: Colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
   center: { flex: 1, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center" },
-  body: { ...emojiFont,  ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 13 },
-  title: { ...emojiFont,  ...type.headlineSmall, color: colors.onSurface, fontSize: 24 },
+  body: {  ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 13 },
+  title: {  ...type.headlineSmall, color: colors.onSurface, fontSize: 24 },
   farmLink: { ...type.labelLarge, color: colors.primary, marginTop: 4, fontSize: 14 },
   statusCard: { borderRadius: shape.xlIncreased, padding: 22 },
   statusIcon: { width: 60, height: 60, borderRadius: shape.lg, alignItems: "center", justifyContent: "center" },
@@ -218,5 +219,5 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
   iconBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.secondaryContainer, alignItems: "center", justifyContent: "center" },
   sectionTitle: { ...type.titleLarge, color: colors.onSurface, fontSize: 18, marginBottom: 10 },
   memberRow: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.md, padding: 10 },
-  memberName: { ...emojiFont,  ...type.bodyMedium, color: colors.onSurface, fontSize: 14 },
+  memberName: {  ...type.bodyMedium, color: colors.onSurface, fontSize: 14 },
 });

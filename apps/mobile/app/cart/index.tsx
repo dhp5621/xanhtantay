@@ -200,7 +200,7 @@ export default function CartScreen() {
 const makeStyles = (colors: Colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
   center: { flex: 1, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center", padding: 24 },
-  title: { ...emojiFont,  ...type.headlineSmall, color: colors.onSurface, marginBottom: 16 },
+  title: {  ...type.headlineSmall, color: colors.onSurface, marginBottom: 16 },
   emptyTitle: { ...type.titleLarge, color: colors.onSurface, marginBottom: 4 },
   emptyBody: { ...type.bodyMedium, color: colors.onSurfaceVariant, textAlign: "center", marginBottom: 20 },
   groupHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8, gap: 8 },
@@ -217,7 +217,7 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
     padding: 12,
     marginBottom: 8,
   },
-  lineName: { ...emojiFont,  ...type.titleMedium, color: colors.onSurface, fontSize: 14 },
+  lineName: {  ...type.titleMedium, color: colors.onSurface, fontSize: 14 },
   linePrice: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12, marginTop: 2 },
   stepper: { flexDirection: "row", alignItems: "center", backgroundColor: colors.surfaceContainerHighest, borderRadius: shape.full },
   stepperBtn: { width: 30, height: 30, alignItems: "center", justifyContent: "center" },

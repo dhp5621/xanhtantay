@@ -169,7 +169,7 @@ export default function FarmerHomeScreen() {
 const makeStyles = (colors: Colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
   eyebrow: { ...type.labelLarge, color: colors.primary, fontSize: 12, textTransform: "uppercase", letterSpacing: 0.6 },
-  title: { ...emojiFont,  ...type.headlineSmall, color: colors.onSurface, fontSize: 26 },
+  title: {  ...type.headlineSmall, color: colors.onSurface, fontSize: 26 },
   warn: { backgroundColor: colors.errorContainer, borderRadius: shape.xl, padding: 16 },
   revenue: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: colors.surfaceContainerLow, borderRadius: shape.xl, padding: 18 },
   revenueLabel: { ...type.labelLarge, color: colors.onSurfaceVariant, fontSize: 11, letterSpacing: 0.6 },

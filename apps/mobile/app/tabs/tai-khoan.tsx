@@ -32,7 +32,6 @@ export default function TaiKhoanScreen() {
   const { alert } = useDialog();
   const styles = useStyles(makeStyles);
   const { user, loading, logout, refresh } = useSession();
-  const { preference, setPreference } = useTheme();
   const [me, setMe] = useState<Me | null>(null);
   const [busy, setBusy] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
@@ -124,8 +123,10 @@ export default function TaiKhoanScreen() {
             <Button label="Đăng nhập" icon="login" onPress={() => router.push("/dang-nhap")} />
           </AnimIn>
           <AnimIn delay={140}>
-            <ListItem icon="search" title="Tra cứu gói rau" desc="Nhập mã trên tem QR để xem hành trình" onPress={() => router.push("/tra-cuu")} />
-            <ListItem icon="potted_plant" title="Xem các vườn đang bán" desc="Không cần đăng nhập" onPress={() => router.push("/tabs/farms")} />
+            <ListItem icon="qr_code_2" title="Tra cứu gói rau" desc="Quét tem QR hoặc nhập mã để xem hành trình" onPress={() => router.push("/tra-cuu")} />
+          </AnimIn>
+          <AnimIn delay={200}>
+            <ThemePicker />
           </AnimIn>
         </ScrollView>
       </Screen>
@@ -217,25 +218,7 @@ export default function TaiKhoanScreen() {
         </View>
 
         <AnimIn delay={280}>
-          <Text style={styles.sectionLabel}>GIAO DIỆN</Text>
-          <View style={styles.segmented}>
-            {(
-              [
-                ["system", "brightness_auto", "Theo thiết bị"],
-                ["light", "light_mode", "Sáng"],
-                ["dark", "dark_mode", "Tối"],
-              ] as const
-            ).map(([v, ic, l]) => {
-              const sel = preference === v;
-              return (
-                <PressableScale key={v} haptic scaleTo={0.96} style={[styles.seg, sel && styles.segSelected]} onPress={() => setPreference(v)}>
-                  <Icon name={sel ? "check" : ic} size={18} color={sel ? colors.onSecondaryContainer : colors.onSurfaceVariant} />
-                  <Text style={[styles.segText, sel && { color: colors.onSecondaryContainer }]}>{l}</Text>
-                </PressableScale>
-              );
-            })}
-          </View>
-          <Text style={styles.segHint}>{preference === "system" ? "Đổi theo chế độ sáng/tối của điện thoại." : preference === "dark" ? "Luôn dùng giao diện tối." : "Luôn dùng giao diện sáng."}</Text>
+          <ThemePicker />
         </AnimIn>
 
         <AnimIn delay={320}>
@@ -253,6 +236,35 @@ export default function TaiKhoanScreen() {
         </AnimIn>
       </ScrollView>
     </Screen>
+  );
+}
+
+/** Light / dark / device chooser (M3 segmented buttons) — available signed in or out. */
+function ThemePicker() {
+  const styles = useStyles(makeStyles);
+  const { preference, setPreference } = useTheme();
+  return (
+    <View>
+      <Text style={styles.sectionLabel}>GIAO DIỆN</Text>
+      <View style={styles.segmented}>
+        {(
+          [
+            ["system", "brightness_auto", "Theo thiết bị"],
+            ["light", "light_mode", "Sáng"],
+            ["dark", "dark_mode", "Tối"],
+          ] as const
+        ).map(([v, ic, l]) => {
+          const sel = preference === v;
+          return (
+            <PressableScale key={v} haptic scaleTo={0.96} style={[styles.seg, sel && styles.segSelected]} onPress={() => setPreference(v)}>
+              <Icon name={sel ? "check" : ic} size={18} color={sel ? colors.onSecondaryContainer : colors.onSurfaceVariant} />
+              <Text style={[styles.segText, sel && { color: colors.onSecondaryContainer }]}>{l}</Text>
+            </PressableScale>
+          );
+        })}
+      </View>
+      <Text style={styles.segHint}>{preference === "system" ? "Đổi theo chế độ sáng/tối của điện thoại." : preference === "dark" ? "Luôn dùng giao diện tối." : "Luôn dùng giao diện sáng."}</Text>
+    </View>
   );
 }
 

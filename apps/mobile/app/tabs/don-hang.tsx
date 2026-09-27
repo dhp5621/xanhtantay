@@ -11,6 +11,7 @@ import { ORDER_TYPE_LABELS } from "../../constants/commerce";
 import { AnimIn, Skeleton } from "../../components/motion";
 import { Button, Chip, EmptyState, PageHeader, Screen } from "../../components/ui";
 import { Icon } from "../../components/Icon";
+import { EmojiText } from "../../components/EmojiText";
 
 const STEPS: OrderStatus[] = ["harvesting", "loaded", "delivered"];
 const STEP_SHORT: Record<OrderStatus, string> = { harvesting: "Thu hoạch", loaded: "Lên xe", delivered: "Đã giao" };
@@ -142,9 +143,9 @@ export default function DonHangScreen() {
                   </View>
                 )}
                 {item.note ? (
-                  <Text style={styles.note}>
+                  <EmojiText style={styles.note}>
                     <Icon name="sticky_note_2" size={13} color={colors.onSurfaceVariant} /> {item.note}
-                  </Text>
+                  </EmojiText>
                 ) : null}
 
                 <View style={styles.stepsRow}>
@@ -190,13 +191,13 @@ const makeStyles = (colors: Colors) =>
     errorText: { ...type.bodyMedium, color: colors.onErrorContainer, flex: 1, fontSize: 13 },
     card: { backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.xl, padding: 16 },
     cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 8, marginBottom: 12 },
-    farmName: { ...emojiFont, ...type.titleLarge, color: colors.onSurface, fontSize: 18 },
+    farmName: { ...type.titleLarge, color: colors.onSurface, fontSize: 18 },
     meta: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12, marginTop: 2 },
     total: { ...type.headlineSmall, color: colors.primary, fontSize: 20 },
     statusChip: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 8, paddingHorizontal: 12, borderRadius: shape.full },
     statusText: { ...type.labelLarge, fontSize: 13, flex: 1 },
     itemsRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 12 },
-    note: { ...emojiFont, ...type.bodyMedium, color: colors.onSurfaceVariant, marginTop: 10, fontSize: 13 },
+    note: { ...type.bodyMedium, color: colors.onSurfaceVariant, marginTop: 10, fontSize: 13 },
     stepsRow: { flexDirection: "row", alignItems: "flex-start", marginTop: 16 },
     stepDot: { width: 28, height: 28, borderRadius: 14, backgroundColor: colors.surfaceContainerHighest, alignItems: "center", justifyContent: "center" },
     stepLabel: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 11, marginTop: 4 },

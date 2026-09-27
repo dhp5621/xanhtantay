@@ -146,7 +146,7 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
   triggerActive: { backgroundColor: colors.tertiaryContainer },
   triggerText: { ...type.labelLarge, color: colors.onSurfaceVariant, fontSize: 13 },
   triggerTextActive: { color: colors.onTertiaryContainer },
-  scrim: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" },
+  scrim: { flex: 1, backgroundColor: colors.scrim, justifyContent: "flex-end" },
   sheet: { backgroundColor: colors.surfaceContainerLowest, borderTopLeftRadius: shape.xlIncreased, borderTopRightRadius: shape.xlIncreased, padding: 20, maxHeight: "88%" },
   sheetTitle: { ...type.headlineSmall, color: colors.onSurface, fontSize: 20 },
   sheetSubtitle: { ...type.bodyMedium, color: colors.onSurfaceVariant, marginTop: 2, marginBottom: 16, fontSize: 12 },

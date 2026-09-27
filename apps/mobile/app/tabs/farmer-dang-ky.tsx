@@ -91,7 +91,7 @@ export default function FarmerDangKyScreen() {
 const makeStyles = (colors: Colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
   row: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.lg, padding: 14 },
-  name: { ...emojiFont,  ...type.titleMedium, color: colors.onSurface, fontSize: 15 },
+  name: {  ...type.titleMedium, color: colors.onSurface, fontSize: 15 },
   meta: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12 },
   next: { ...type.titleMedium, color: colors.primary, fontSize: 14 },
 });

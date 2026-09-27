@@ -13,6 +13,7 @@ import { CartStepper } from "../../components/CartStepper";
 import { Icon } from "../../components/Icon";
 import { useLiveRefresh } from "../../hooks/useLive";
 import type { Colors } from "../../constants/theme";
+import { EmojiText } from "../../components/EmojiText";
 
 interface CatalogItem {
   id: string;
@@ -261,7 +262,7 @@ export default function RauCuScreen() {
                       {it.image_url ? <Image source={{ uri: it.image_url }} style={StyleSheet.absoluteFill} contentFit="cover" transition={250} /> : <Icon name={CATEGORY_ICONS[it.category]} size={28} />}
                     </View>
                     <View style={{ flex: 1, minWidth: 0 }}>
-                      <Text style={styles.name} numberOfLines={1}>{it.name}</Text>
+                      <EmojiText style={styles.name} numberOfLines={1}>{it.name}</EmojiText>
                       <TouchableOpacity onPress={() => router.push(`/farms/${it.farm.id}`)} hitSlop={4}>
                         <Text style={styles.farmLink}><Icon name="potted_plant" size={13} filled color={colors.primary} /> {it.farm.name}</Text>
                       </TouchableOpacity>
@@ -310,11 +311,11 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
   aisleText: { ...type.labelLarge, color: colors.onSurface, fontSize: 13 },
   count: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12 },
   groupHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", gap: 8, marginBottom: 10 },
-  groupTitle: { ...emojiFont,  ...type.titleLarge, color: colors.onSurface, fontSize: 18, flex: 1 },
+  groupTitle: {  ...type.titleLarge, color: colors.onSurface, fontSize: 18, flex: 1 },
   groupMeta: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12 },
   row: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.lgIncreased, padding: 12 },
   thumb: { width: 76, height: 76, borderRadius: shape.lg, backgroundColor: colors.surfaceContainerHigh, alignItems: "center", justifyContent: "center", overflow: "hidden" },
-  name: { ...emojiFont,  ...type.titleMedium, color: colors.onSurface, fontSize: 15 },
+  name: {  ...type.titleMedium, color: colors.onSurface, fontSize: 15 },
   farmLink: { ...type.labelLarge, color: colors.primary, fontSize: 12, marginTop: 1 },
   price: { ...type.labelLarge, color: colors.onSurface, fontSize: 15 },
   unit: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12, fontWeight: "400" },

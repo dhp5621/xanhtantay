@@ -13,6 +13,7 @@ import { Button, Chip, EmptyState, PageHeader, Screen } from "../../components/u
 import { Icon } from "../../components/Icon";
 import { Loader } from "../../components/Loader";
 import { useDialog } from "../../components/Dialog";
+import { EmojiText } from "../../components/EmojiText";
 
 interface UserRecipe {
   id: string;
@@ -195,7 +196,7 @@ export default function CongThucScreen() {
                     <Icon name={ai ? "auto_awesome" : "restaurant"} size={22} filled color={ai ? colors.onTertiaryContainer : colors.onPrimaryContainer} />
                   </View>
                   <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={styles.recipeTitle}>{r.title}</Text>
+                    <EmojiText style={styles.recipeTitle}>{r.title}</EmojiText>
                     <Text style={styles.muted}>
                       {r.minutes ? `${r.minutes} phút · ` : ""}
                       {r.kcal ? `≈${r.kcal} kcal · ` : ""}
@@ -213,7 +214,7 @@ export default function CongThucScreen() {
                         {r.tags!.map((t) => <Chip key={t} icon={t === "gym" ? "fitness_center" : t === "diet" ? "monitor_weight" : "check"} label={t.startsWith("custom:") ? t.slice(7) : (TAG_LABEL[t] ?? t)} tone={t === "gym" || t === "diet" ? "tertiary" : "surface"} small />)}
                       </View>
                     )}
-                    {r.description ? <Text style={[styles.body, { marginBottom: 12 }]}>{r.description}</Text> : null}
+                    {r.description ? <EmojiText style={[styles.body, { marginBottom: 12 }]}>{r.description}</EmojiText> : null}
                     <Text style={styles.blockLabel}>NGUYÊN LIỆU</Text>
                     <View style={{ gap: 6, marginBottom: 14 }}>
                       {r.ingredients.map((ing, i) => {
@@ -221,10 +222,10 @@ export default function CongThucScreen() {
                         return (
                           <View key={i} style={{ flexDirection: "row", gap: 8, alignItems: "flex-start" }}>
                             <Icon name={bought ? "eco" : "circle"} size={bought ? 18 : 8} filled color={bought ? colors.primary : colors.onSurfaceVariant} style={bought ? undefined : { marginTop: 6 }} />
-                            <Text style={[styles.line, { flex: 1 }]}>
+                            <EmojiText style={[styles.line, { flex: 1 }]}>
                               {ing}
                               {bought ? <Text style={{ color: colors.primary, fontSize: 12 }}>  đã mua</Text> : null}
-                            </Text>
+                            </EmojiText>
                           </View>
                         );
                       })}
@@ -236,7 +237,7 @@ export default function CongThucScreen() {
                           <View style={styles.stepDot}>
                             <Text style={styles.stepDotText}>{i + 1}</Text>
                           </View>
-                          <Text style={[styles.line, { flex: 1 }]}>{s}</Text>
+                          <EmojiText style={[styles.line, { flex: 1 }]}>{s}</EmojiText>
                         </View>
                       ))}
                     </View>
@@ -269,12 +270,12 @@ const makeStyles = (colors: Colors) =>
     heroHint: { ...type.bodyMedium, color: colors.onSecondaryContainer, opacity: 0.85, fontSize: 12, marginTop: 10 },
     sectionTitle: { ...type.titleLarge, color: colors.onSurface, fontSize: 18 },
     muted: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12 },
-    body: { ...emojiFont, ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 14 },
-    line: { ...emojiFont, ...type.bodyMedium, color: colors.onSurface, fontSize: 14, lineHeight: 21 },
+    body: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 14 },
+    line: { ...type.bodyMedium, color: colors.onSurface, fontSize: 14, lineHeight: 21 },
     card: { backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.lg, overflow: "hidden" },
     cardHead: { flexDirection: "row", alignItems: "center", gap: 14, padding: 14 },
     leading: { width: 44, height: 44, borderRadius: shape.md, backgroundColor: colors.primaryContainer, alignItems: "center", justifyContent: "center" },
-    recipeTitle: { ...emojiFont, ...type.titleMedium, color: colors.onSurface, fontSize: 15 },
+    recipeTitle: { ...type.titleMedium, color: colors.onSurface, fontSize: 15 },
     blockLabel: { ...type.labelLarge, color: colors.onSurfaceVariant, fontSize: 11, letterSpacing: 0.6, marginBottom: 8 },
     stepDot: { width: 24, height: 24, borderRadius: 12, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
     stepDotText: { color: colors.onPrimary, fontWeight: "800", fontSize: 11 },

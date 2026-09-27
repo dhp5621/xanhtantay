@@ -15,6 +15,7 @@ import { MediaGallery } from "../../components/MediaGallery";
 import { Icon } from "../../components/Icon";
 import { useLiveRefresh } from "../../hooks/useLive";
 import type { Colors } from "../../constants/theme";
+import { EmojiText } from "../../components/EmojiText";
 
 interface Feed {
   farms: Farm[];
@@ -23,11 +24,11 @@ interface Feed {
   stats: { farms: number; products: number; groups: number };
 }
 
-const TONE: Record<(typeof PILLAR_TONES)[number], { bg: string; fg: string }> = {
+const tone = (): Record<(typeof PILLAR_TONES)[number], { bg: string; fg: string }> => ({
   primary: { bg: colors.primaryContainer, fg: colors.onPrimaryContainer },
   tertiary: { bg: colors.tertiaryContainer, fg: colors.onTertiaryContainer },
   secondary: { bg: colors.secondaryContainer, fg: colors.onSecondaryContainer },
-};
+});
 
 export default function HomeScreen() {
   const styles = useStyles(makeStyles);
@@ -119,7 +120,7 @@ function FeedView({ feed, user }: { feed: Feed; user: SessionUser }) {
 
       <View style={{ gap: 10 }}>
         {HOME_FEATURES.map((f, i) => {
-          const t = TONE[PILLAR_TONES[i]];
+          const t = tone()[PILLAR_TONES[i]];
           return (
             <AnimIn key={f.title} index={i} delay={100}>
               <View style={[styles.feature, { backgroundColor: t.bg }]}>
@@ -171,7 +172,7 @@ function FeedView({ feed, user }: { feed: Feed; user: SessionUser }) {
                 )}
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Text style={styles.diaryFarm}>{entry.farm?.name ?? "Vườn rau"}</Text>
-                  <Text style={styles.diaryContent} numberOfLines={3}>{entry.content}</Text>
+                  <EmojiText style={styles.diaryContent} numberOfLines={3}>{entry.content}</EmojiText>
                   <Text style={styles.diaryMeta}><Icon name="schedule" size={12} color={colors.onSurfaceVariant} /> {timeAgo(entry.created_at)} · {formatDateTime(entry.created_at)}</Text>
                 </View>
                 <Text style={styles.chevron}>›</Text>
@@ -285,7 +286,7 @@ function LandingView({ feed }: { feed: Feed }) {
         <Text style={styles.centerTitle}>Bốn điều Xanh Tận Tay làm khác</Text>
         <View style={{ gap: 12, marginTop: 16 }}>
           {PILLARS.map((p, i) => {
-            const t = TONE[PILLAR_TONES[i % PILLAR_TONES.length]];
+            const t = tone()[PILLAR_TONES[i % PILLAR_TONES.length]];
             return (
               <AnimIn key={p.eyebrow} index={i}>
                 <View style={[styles.pillar, { backgroundColor: t.bg }]}>
@@ -438,7 +439,7 @@ function LandingView({ feed }: { feed: Feed }) {
 
 const makeStyles = (colors: Colors) => StyleSheet.create({
   error: { color: colors.error },
-  muted: { ...emojiFont,  ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 13 },
+  muted: {  ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 13 },
   chevron: { fontSize: 22, color: colors.onSurfaceVariant },
   leading: { width: 44, height: 44, borderRadius: shape.md, backgroundColor: colors.primaryContainer, alignItems: "center", justifyContent: "center" },
 
@@ -464,24 +465,24 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
   farmMedia: { height: 160, position: "relative", backgroundColor: colors.surfaceContainerHigh },
   farmLocChip: { position: "absolute", left: 12, bottom: 12, backgroundColor: "rgba(0,0,0,.55)", borderRadius: shape.full, paddingVertical: 4, paddingHorizontal: 10 },
   farmLocText: { color: "#fff", fontSize: 12, fontWeight: "600" },
-  farmName: { ...emojiFont,  ...type.titleMedium, color: colors.onSurface, fontSize: 16, marginBottom: 2 },
-  farmDesc: { ...emojiFont,  ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 13 },
+  farmName: {  ...type.titleMedium, color: colors.onSurface, fontSize: 16, marginBottom: 2 },
+  farmDesc: {  ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 13 },
 
   diaryItem: { flexDirection: "row", alignItems: "flex-start", gap: 12, backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.lg, padding: 14 },
   diaryFarm: { ...type.labelLarge, color: colors.primary, fontSize: 12, marginBottom: 3 },
-  diaryContent: { ...emojiFont,  ...type.bodyMedium, color: colors.onSurface, fontSize: 14, lineHeight: 20 },
+  diaryContent: {  ...type.bodyMedium, color: colors.onSurface, fontSize: 14, lineHeight: 20 },
   diaryMeta: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12, marginTop: 6 },
 
   groupCard: { backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.xl, padding: 18 },
-  groupTitle: { ...emojiFont,  ...type.titleMedium, color: colors.onSurface, fontSize: 15 },
+  groupTitle: {  ...type.titleMedium, color: colors.onSurface, fontSize: 15 },
 
   centerEyebrow: { ...type.labelLarge, color: colors.primary, fontSize: 12, textTransform: "uppercase", letterSpacing: 0.6, textAlign: "center" },
   centerTitle: { ...type.headlineSmall, color: colors.onSurface, fontSize: 24, textAlign: "center", marginTop: 4 },
   pillar: { borderRadius: shape.xlIncreased, padding: 18 },
-  pillarIcon: { width: 44, height: 44, borderRadius: shape.md, backgroundColor: "rgba(0,0,0,.08)", alignItems: "center", justifyContent: "center" },
+  pillarIcon: { width: 44, height: 44, borderRadius: shape.md, backgroundColor: colors.tintOverlayStrong, alignItems: "center", justifyContent: "center" },
   pillarEyebrow: { ...type.labelLarge, fontSize: 11, textTransform: "uppercase", letterSpacing: 0.6, opacity: 0.8 },
   pillarTitle: { ...type.titleMedium, fontSize: 16 },
-  tintTile: { backgroundColor: "rgba(255,255,255,.35)", borderRadius: shape.md, padding: 12 },
+  tintTile: { backgroundColor: colors.tintOverlay, borderRadius: shape.md, padding: 12 },
   tileTitle: { ...type.titleMedium, fontSize: 14 },
   tileDesc: { ...type.bodyMedium, fontSize: 12, opacity: 0.85, marginTop: 2 },
   tileMore: { ...type.bodyMedium, fontSize: 12, marginTop: 8, lineHeight: 18 },

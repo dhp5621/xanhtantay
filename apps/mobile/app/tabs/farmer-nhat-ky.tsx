@@ -15,6 +15,7 @@ import { useLiveRefresh } from "../../hooks/useLive";
 import type { Colors } from "../../constants/theme";
 import { useDialog } from "../../components/Dialog";
 import { Loader, PageLoader } from "../../components/Loader";
+import { EmojiText } from "../../components/EmojiText";
 
 const SUGGESTIONS = [
   { icon: "eco", text: "Hôm nay thu hoạch được lứa rau xanh mướt." },
@@ -197,7 +198,7 @@ export default function NhatKyScreen() {
                   <View style={[styles.recentCard, elevation[1]]}>
                     {d.media_urls.length > 0 && <MediaGallery urls={d.media_urls} layout="thumb" size={72} tag={farm.name} />}
                     <View style={{ flex: 1, minWidth: 0 }}>
-                      <Text style={styles.recentText} numberOfLines={3}>{d.content}</Text>
+                      <EmojiText style={styles.recentText} numberOfLines={3}>{d.content}</EmojiText>
                       <Text style={styles.body}><Icon name="schedule" size={12} color={colors.onSurfaceVariant} /> {timeAgo(d.created_at)} · {formatDateTime(d.created_at)}</Text>
                     </View>
                   </View>
@@ -214,7 +215,7 @@ export default function NhatKyScreen() {
 const makeStyles = (colors: Colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
   center: { flex: 1, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center", padding: 24 },
-  body: { ...emojiFont,  ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12 },
+  body: {  ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12 },
   textarea: { backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.lg, padding: 14, color: colors.onSurface, minHeight: 130, textAlignVertical: "top", fontSize: 15, borderWidth: 1, borderColor: colors.outlineVariant },
   counter: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 11, textAlign: "right", marginTop: 4 },
   label: { ...type.labelLarge, color: colors.onSurface, marginBottom: 8, fontSize: 13 },
@@ -229,5 +230,5 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
   doneBannerText: { color: colors.onPrimaryContainer, fontWeight: "700" },
   sectionTitle: { ...type.titleLarge, color: colors.onSurface, fontSize: 18, marginBottom: 10 },
   recentCard: { flexDirection: "row", gap: 12, alignItems: "flex-start", backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.lg, padding: 12 },
-  recentText: { ...emojiFont,  ...type.bodyMedium, color: colors.onSurface, fontSize: 14, marginBottom: 4 },
+  recentText: {  ...type.bodyMedium, color: colors.onSurface, fontSize: 14, marginBottom: 4 },
 });

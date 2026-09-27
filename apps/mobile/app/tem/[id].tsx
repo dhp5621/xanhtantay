@@ -130,10 +130,10 @@ export default function TemScreen() {
 const makeStyles = (colors: Colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
   center: { flex: 1, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center", padding: 24 },
-  body: { ...emojiFont,  ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 13 },
+  body: {  ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 13 },
   label: { flexDirection: "row", gap: 16, backgroundColor: "#fff", borderRadius: shape.lg, padding: 18, borderWidth: 1, borderColor: colors.outlineVariant },
   brand: { fontWeight: "800", fontSize: 17, color: "#191C19" },
   farm: { fontSize: 13, color: "#191C19", marginTop: 2 },
-  muted: { ...emojiFont,  fontSize: 12, color: "#404943", marginTop: 4 },
+  muted: {  fontSize: 12, color: "#404943", marginTop: 4 },
   item: { fontSize: 13, color: "#191C19" },
 });

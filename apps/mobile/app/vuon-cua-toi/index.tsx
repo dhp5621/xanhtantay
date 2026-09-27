@@ -77,7 +77,7 @@ export default function VuonCuaToiScreen() {
           <Text style={styles.heroPoints}>{data.points} điểm</Text>
           {lv.next ? (
             <>
-              <AnimatedProgress value={lv.progress * 100} style={{ width: "100%", marginTop: 10 }} track="rgba(0,0,0,.1)" />
+              <AnimatedProgress value={lv.progress * 100} style={{ width: "100%", marginTop: 10 }} />
               <Text style={styles.heroNext}>
                 Còn {lv.next.min - data.points} điểm nữa lên <Text style={{ fontWeight: "800" }}>{lv.next.name}</Text>
                 {data.pendingPoints > 0 ? ` · ${data.pendingPoints} điểm đang chờ đơn giao xong` : ""}
@@ -160,7 +160,7 @@ export default function VuonCuaToiScreen() {
 const makeStyles = (colors: Colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
   center: { flex: 1, backgroundColor: colors.surface, justifyContent: "center", padding: 24 },
-  body: { ...emojiFont,  ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12 },
+  body: {  ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12 },
   hero: { backgroundColor: colors.primaryContainer, borderRadius: shape.xlIncreased, padding: 24, alignItems: "center", overflow: "hidden" },
   heroEyebrow: { ...type.labelLarge, color: colors.onPrimaryContainer, opacity: 0.8, marginTop: 4, fontSize: 11, letterSpacing: 0.8 },
   heroTitle: { ...type.headlineSmall, color: colors.onPrimaryContainer, fontSize: 28, marginTop: 2 },
@@ -173,6 +173,6 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
   levelMin: { ...type.labelLarge, color: colors.primary, fontSize: 11, marginTop: 6 },
   orderRow: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.lg, padding: 12 },
   orderIcon: { width: 40, height: 40, borderRadius: shape.md, backgroundColor: colors.primaryContainer, alignItems: "center", justifyContent: "center" },
-  orderFarm: { ...emojiFont,  ...type.titleMedium, color: colors.onSurface, fontSize: 14 },
+  orderFarm: {  ...type.titleMedium, color: colors.onSurface, fontSize: 14 },
   orderTotal: { ...type.labelLarge, color: colors.onSurface, fontSize: 14 },
 });

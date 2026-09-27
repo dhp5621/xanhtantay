@@ -71,18 +71,18 @@ export function EmptyState({ icon, title, description, action }: { icon: string;
 }
 
 type Tone = "surface" | "primary" | "secondary" | "tertiary" | "error";
-const TONES: Record<Tone, { bg: string; fg: string }> = {
+const tones = (): Record<Tone, { bg: string; fg: string }> => ({
   surface: { bg: colors.surfaceContainerHighest, fg: colors.onSurfaceVariant },
   primary: { bg: colors.primaryContainer, fg: colors.onPrimaryContainer },
   secondary: { bg: colors.secondaryContainer, fg: colors.onSecondaryContainer },
   tertiary: { bg: colors.tertiaryContainer, fg: colors.onTertiaryContainer },
   error: { bg: colors.errorContainer, fg: colors.onErrorContainer },
-};
+});
 
 /** `.m3-chip` — tonal pill; `selected` flips to primary. */
 export function Chip({ label, icon, tone = "surface", selected, small, onPress, style }: { label: string; icon?: string; tone?: Tone; selected?: boolean; small?: boolean; onPress?: () => void; style?: StyleProp<ViewStyle> }) {
   const styles = useStyles(makeStyles);
-  const t = selected ? { bg: colors.primary, fg: colors.onPrimary } : TONES[tone];
+  const t = selected ? { bg: colors.primary, fg: colors.onPrimary } : tones()[tone];
   const inner = (
     <View style={[styles.chip, small && styles.chipSmall, { backgroundColor: t.bg }, style]}>
       {icon ? <Icon name={icon} size={small ? 14 : 18} color={t.fg} filled={selected} /> : null}
@@ -121,7 +121,7 @@ export function Button({ label, onPress, variant = "filled", disabled, loading, 
 /** Stat tile used on the account / loyalty / farmer dashboards. */
 export function StatTile({ icon, value, label, desc, onPress, tone = "surface", style }: { icon: string; value: string | number; label: string; desc?: string; onPress?: () => void; tone?: Tone; style?: StyleProp<ViewStyle> }) {
   const styles = useStyles(makeStyles);
-  const t = TONES[tone];
+  const t = tones()[tone];
   const fg = tone === "surface" ? colors.primary : t.fg;
   const body = (
     <View style={[styles.stat, { backgroundColor: tone === "surface" ? colors.surfaceContainerLow : t.bg }, style]}>
@@ -149,7 +149,7 @@ export function Avatar({ name, src, size = 40, tone = "primary" }: { name?: stri
 /** `.m3-list-item` — leading icon bubble, title/desc, chevron. */
 export function ListItem({ icon, title, desc, onPress, trailing, tone = "surface" }: { icon: string; title: string; desc?: string; onPress?: () => void; trailing?: ReactNode; tone?: Tone }) {
   const styles = useStyles(makeStyles);
-  const t = TONES[tone];
+  const t = tones()[tone];
   const leadingBg = tone === "surface" ? colors.primaryContainer : t.bg;
   const leadingFg = tone === "surface" ? colors.onPrimaryContainer : t.fg;
   return (
@@ -168,7 +168,7 @@ export function ListItem({ icon, title, desc, onPress, trailing, tone = "surface
 
 /** Leading icon bubble on its own (`.m3-list-leading`). */
 export function Leading({ icon, tone = "primary", size = 44, filled }: { icon: string; tone?: Tone; size?: number; filled?: boolean }) {
-  const t = tone === "surface" ? { bg: colors.surfaceContainerHighest, fg: colors.onSurfaceVariant } : TONES[tone];
+  const t = tone === "surface" ? { bg: colors.surfaceContainerHighest, fg: colors.onSurfaceVariant } : tones()[tone];
   return (
     <View style={{ width: size, height: size, borderRadius: shape.md, backgroundColor: t.bg, alignItems: "center", justifyContent: "center" }}>
       <Icon name={icon} size={size * 0.52} color={t.fg} filled={filled} />

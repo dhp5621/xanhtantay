@@ -113,9 +113,9 @@ export function MediaViewer({ urls, index, onClose, tag, caption }: { urls: stri
           renderItem={({ item }) => (
             <Pressable onPress={onClose} style={{ width, height, alignItems: "center", justifyContent: "center" }}>
               {isVideoUrl(item) ? (
-                <View style={{ width, height: height * 0.7 }}>
+                <Pressable onPress={() => {}} style={{ width, height: height * 0.7 }}>
                   <InlineVideo url={item} controls />
-                </View>
+                </Pressable>
               ) : (
                 <SmartImage uri={item} style={{ width, height: height * 0.8, backgroundColor: "transparent" }} contentFit="contain" loaderSize={44} />
               )}

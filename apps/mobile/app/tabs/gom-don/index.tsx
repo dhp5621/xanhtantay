@@ -12,6 +12,7 @@ import { Icon } from "../../../components/Icon";
 import { useLiveRefresh } from "../../../hooks/useLive";
 import type { Colors } from "../../../constants/theme";
 import { useDialog } from "../../../components/Dialog";
+import { EmojiText } from "../../../components/EmojiText";
 
 const isoDay = (offset: number) => {
   const d = new Date();
@@ -118,7 +119,7 @@ export default function GomDonScreen() {
             <AnimIn index={Math.min(index, 6)} style={{ marginBottom: 12 }}>
               <PressableScale style={[styles.card, elevation[1]]} onPress={() => router.push(`/tabs/gom-don/${g.id}`)}>
                 <View style={styles.cardHeader}>
-                  <Text style={styles.cardTitle} numberOfLines={1}>{g.title}</Text>
+                  <EmojiText style={styles.cardTitle} numberOfLines={1}>{g.title}</EmojiText>
                   {freeship ? <Chip icon="local_shipping" label="Freeship" tone="primary" small /> : <Chip label={`Thiếu ${g.min_members - g.current_members}`} small />}
                 </View>
                 <AnimatedProgress value={pct} wavy={!freeship} color={freeship ? colors.primary : colors.secondary} height={6} track={colors.surfaceContainerHighest} />
@@ -202,18 +203,18 @@ export default function GomDonScreen() {
 const makeStyles = (colors: Colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
   eyebrow: { ...type.labelLarge, color: colors.primary, fontSize: 12, textTransform: "uppercase", letterSpacing: 0.6 },
-  title: { ...emojiFont,  ...type.headlineSmall, color: colors.onSurface },
+  title: {  ...type.headlineSmall, color: colors.onSurface },
   subtitle: { ...type.bodyMedium, color: colors.onSurfaceVariant, marginTop: 2, fontSize: 13 },
   card: { backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.xl, padding: 18 },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12, gap: 8 },
-  cardTitle: { ...emojiFont,  ...type.titleMedium, color: colors.onSurface, flex: 1, fontSize: 16 },
+  cardTitle: {  ...type.titleMedium, color: colors.onSurface, flex: 1, fontSize: 16 },
   cardFooter: { flexDirection: "row", justifyContent: "space-between", marginTop: 10, gap: 8 },
   cardMeta: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12, flex: 1 },
   cardDeadline: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12, fontWeight: "700" },
   fabWrap: { position: "absolute", right: 16, bottom: 20 },
   fab: { backgroundColor: colors.primary, borderRadius: shape.full, paddingVertical: 14, paddingHorizontal: 20 },
   fabText: { ...type.labelLarge, color: colors.onPrimary, fontSize: 15 },
-  scrim: { flex: 1, backgroundColor: "rgba(0,0,0,.4)", justifyContent: "flex-end" },
+  scrim: { flex: 1, backgroundColor: colors.scrim, justifyContent: "flex-end" },
   sheet: { backgroundColor: colors.surfaceContainerLowest, borderTopLeftRadius: shape.xlIncreased, borderTopRightRadius: shape.xlIncreased, padding: 22, paddingBottom: 34, maxHeight: "90%" },
   dialogIcon: { width: 48, height: 48, borderRadius: shape.md, backgroundColor: colors.primaryContainer, alignItems: "center", justifyContent: "center" },
   sheetTitle: { ...type.headlineSmall, color: colors.onSurface, fontSize: 20 },

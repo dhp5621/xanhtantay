@@ -7,6 +7,7 @@ import { DEFAULT_PREFS, RecipePrefs } from "../../constants/recipePrefs";
 import { RecipeSettingsButton, recipePrefsSummary } from "../../components/RecipeSettingsSheet";
 import type { Colors } from "../../constants/theme";
 import { Loader, PageLoader } from "../../components/Loader";
+import { EmojiText } from "../../components/EmojiText";
 
 interface MealRecipe {
   minutes?: number;
@@ -137,7 +138,7 @@ export default function KeHoachScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
       <Text style={styles.title}>Kế hoạch {plan.days} ngày</Text>
-      <Text style={styles.summary}>{plan.summary}</Text>
+      <EmojiText style={styles.summary}>{plan.summary}</EmojiText>
 
       <View style={styles.prefsRow}>
         <RecipeSettingsButton prefs={prefs} onChange={savePrefs} />
@@ -157,9 +158,9 @@ export default function KeHoachScreen() {
                 <View style={styles.mealRow}>
                   <Text style={styles.mealTime}>{m.time}</Text>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.mealTitle}>{m.title}</Text>
-                    <Text style={styles.mealUses}>{m.uses.join(", ")}</Text>
-                    {m.note ? <Text style={styles.mealNote}>{m.note}</Text> : null}
+                    <EmojiText style={styles.mealTitle}>{m.title}</EmojiText>
+                    <EmojiText style={styles.mealUses}>{m.uses.join(", ")}</EmojiText>
+                    {m.note ? <EmojiText style={styles.mealNote}>{m.note}</EmojiText> : null}
                   </View>
                 </View>
                 <TouchableOpacity
@@ -193,7 +194,7 @@ export default function KeHoachScreen() {
               </View>
             );
           })}
-          {d.leftover ? <Text style={styles.leftover}>Còn lại: {d.leftover}</Text> : null}
+          {d.leftover ? <EmojiText style={styles.leftover}>Còn lại: {d.leftover}</EmojiText> : null}
         </View>
       ))}
 
@@ -207,9 +208,9 @@ export default function KeHoachScreen() {
 const makeStyles = (colors: Colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
   center: { flex: 1, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center", padding: 24 },
-  body: { ...emojiFont,  ...type.bodyMedium, color: colors.onSurfaceVariant, textAlign: "center" },
-  title: { ...emojiFont,  ...type.headlineSmall, color: colors.onSurface },
-  summary: { ...emojiFont,  ...type.bodyMedium, color: colors.onSurfaceVariant, marginTop: 6, marginBottom: 12 },
+  body: {  ...type.bodyMedium, color: colors.onSurfaceVariant, textAlign: "center" },
+  title: {  ...type.headlineSmall, color: colors.onSurface },
+  summary: {  ...type.bodyMedium, color: colors.onSurfaceVariant, marginTop: 6, marginBottom: 12 },
   prefsRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 4, flexWrap: "wrap" },
   prefsSummary: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12, flexShrink: 1 },
   prefsHint: { ...type.bodyMedium, color: colors.tertiary, fontSize: 12, marginTop: 4, marginBottom: 12 },
@@ -218,9 +219,9 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
   mealBlock: { marginBottom: 10, paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: colors.surfaceContainerHighest },
   mealRow: { flexDirection: "row", gap: 10, marginBottom: 8 },
   mealTime: { ...type.labelLarge, color: colors.onSurfaceVariant, fontSize: 12, minWidth: 44 },
-  mealTitle: { ...emojiFont,  ...type.bodyLarge, color: colors.onSurface, fontWeight: "600" },
-  mealUses: { ...emojiFont,  ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12 },
-  mealNote: { ...emojiFont,  ...type.bodyMedium, color: colors.tertiary, fontSize: 12, marginTop: 2 },
+  mealTitle: {  ...type.bodyLarge, color: colors.onSurface, fontWeight: "600" },
+  mealUses: {  ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12 },
+  mealNote: {  ...type.bodyMedium, color: colors.tertiary, fontSize: 12, marginTop: 2 },
   howToBtn: {
     alignSelf: "flex-start",
     backgroundColor: colors.secondaryContainer,
@@ -232,8 +233,8 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
   recipeBox: { marginTop: 10, backgroundColor: colors.surfaceContainer, borderRadius: shape.md, padding: 12 },
   recipeMinutes: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12, marginBottom: 8 },
   recipeHeading: { ...type.labelLarge, color: colors.onSurfaceVariant, fontSize: 11, textTransform: "uppercase", marginBottom: 4 },
-  recipeLine: { ...emojiFont,  ...type.bodyMedium, color: colors.onSurface, fontSize: 13, lineHeight: 20 },
-  leftover: { ...emojiFont,  ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12, fontStyle: "italic", marginTop: 4 },
+  recipeLine: {  ...type.bodyMedium, color: colors.onSurface, fontSize: 13, lineHeight: 20 },
+  leftover: {  ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12, fontStyle: "italic", marginTop: 4 },
   regenBtn: { backgroundColor: colors.secondaryContainer, borderRadius: shape.full, padding: 14, alignItems: "center", marginTop: 8 },
   regenBtnText: { color: colors.onSecondaryContainer, fontWeight: "700" },
 });

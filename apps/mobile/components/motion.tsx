@@ -107,9 +107,10 @@ export function PressableScale({ children, style, scaleTo = 0.97, haptic = false
 }
 
 /** `.m3-progress` — width eases to the target; `wavy` pulses while incomplete like the web's wavy track. */
-export function AnimatedProgress({ value, color = colors.primary, track = "rgba(0,0,0,.08)", height = 8, wavy = false, style }: { value: number; color?: string; track?: string; height?: number; wavy?: boolean; style?: StyleProp<ViewStyle> }) {
+export function AnimatedProgress({ value, color = colors.primary, track, height = 8, wavy = false, style }: { value: number; color?: string; track?: string; height?: number; wavy?: boolean; style?: StyleProp<ViewStyle> }) {
   const pct = useSharedValue(0);
   const pulse = useSharedValue(1);
+  const trackColor = track ?? colors.progressTrack;
   useEffect(() => {
     pct.value = withTiming(Math.max(0, Math.min(100, value)), { duration: 700, easing: emphasizedDecel });
   }, [value, pct]);
@@ -118,7 +119,7 @@ export function AnimatedProgress({ value, color = colors.primary, track = "rgba(
   }, [wavy, pulse]);
   const bar = useAnimatedStyle(() => ({ width: `${pct.value}%`, opacity: pulse.value }));
   return (
-    <Animated.View style={[{ height, backgroundColor: track, borderRadius: shape.full, overflow: "hidden" }, style]}>
+    <Animated.View style={[{ height, backgroundColor: trackColor, borderRadius: shape.full, overflow: "hidden" }, style]}>
       <Animated.View style={[{ height, backgroundColor: color, borderRadius: shape.full }, bar]} />
     </Animated.View>
   );
@@ -134,7 +135,7 @@ export function Skeleton({ width = "100%", height = 16, radius = shape.md, style
   return (
     <Animated.View style={[{ width, height, borderRadius: radius, backgroundColor: colors.surfaceContainerHigh, overflow: "hidden" }, style]}>
       <Animated.View style={[StyleSheet.absoluteFill, band]}>
-        <LinearGradient colors={["transparent", "rgba(255,255,255,.55)", "transparent"]} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={{ width: 260, height: "100%" }} />
+        <LinearGradient colors={["transparent", colors.shimmerBand, "transparent"]} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={{ width: 260, height: "100%" }} />
       </Animated.View>
     </Animated.View>
   );

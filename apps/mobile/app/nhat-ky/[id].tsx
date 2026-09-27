@@ -147,7 +147,7 @@ export default function NhatKyScreen() {
 const makeStyles = (colors: Colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
   center: { flex: 1, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center", padding: 24 },
-  muted: { ...emojiFont,  ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12 },
+  muted: {  ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12 },
   head: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 10, gap: 8 },
   navBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.secondaryContainer, alignItems: "center", justifyContent: "center" },
   navBtnText: { fontSize: 22, color: colors.onSecondaryContainer, lineHeight: 24, fontWeight: "700" },
@@ -155,7 +155,7 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
   dotActive: { backgroundColor: colors.primary, width: 16 },
   card: { backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.xlIncreased, overflow: "hidden" },
   cardHead: { flexDirection: "row", alignItems: "center", gap: 12, padding: 18, paddingBottom: 12 },
-  farmName: { ...emojiFont,  ...type.titleMedium, color: colors.onSurface, fontSize: 16 },
-  para: { ...emojiFont,  ...type.bodyLarge, color: colors.onSurface, fontSize: 16, lineHeight: 26 },
+  farmName: {  ...type.titleMedium, color: colors.onSurface, fontSize: 16 },
+  para: {  ...type.bodyLarge, color: colors.onSurface, fontSize: 16, lineHeight: 26 },
   cardFoot: { flexDirection: "row", alignItems: "center", paddingHorizontal: 18, paddingVertical: 8 },
 });
