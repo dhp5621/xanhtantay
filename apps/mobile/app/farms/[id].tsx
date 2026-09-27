@@ -1,20 +1,38 @@
-import { useEffect, useState } from "react";
-import { View, Text, FlatList, StyleSheet, ActivityIndicator, Image, TouchableOpacity } from "react-native";
-import { useLocalSearchParams, router } from "expo-router";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, Modal, Alert, ScrollView, Platform } from "react-native";
+import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Haptics from "expo-haptics";
+import { Stack, useLocalSearchParams, router } from "expo-router";
 import type { Farm, Product, FarmDiaryEntry } from "@xanhtantay/types";
-import { apiFetch } from "../../constants/api";
+import { apiFetch, ApiError } from "../../constants/api";
 import { colors, shape, type, elevation } from "../../constants/theme";
+import { CATEGORY_LABELS, CATEGORY_ICONS, formatVND, formatDateTime, timeAgo } from "../../constants/format";
 import { useCart } from "../../hooks/useCart";
-import { formatVnd } from "../../constants/commerce";
+import { useSession } from "../../hooks/useSession";
+import { AnimIn, AnimInScale, PressableScale, Skeleton } from "../../components/motion";
+import { Button, Chip, SectionHead } from "../../components/ui";
+import { CartStepper } from "../../components/CartStepper";
+import { MediaGallery } from "../../components/MediaGallery";
+import { Icon } from "../../components/Icon";
 
+const FOLLOWS_KEY = "xtt-follows";
+
+/** Mirrors apps/web/src/app/(customer)/farms/[slug]/page.tsx. */
 export default function FarmDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { user } = useSession();
+  const cart = useCart();
   const [farm, setFarm] = useState<Farm | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [diary, setDiary] = useState<FarmDiaryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const cart = useCart();
+  const [following, setFollowing] = useState(false);
+  const [subOpen, setSubOpen] = useState(false);
+  const [freq, setFreq] = useState<"weekly" | "monthly">("weekly");
+  const [subBusy, setSubBusy] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -26,12 +44,70 @@ export default function FarmDetailScreen() {
       })
       .catch((e) => setError(e instanceof Error ? e.message : "Không tải được dữ liệu"))
       .finally(() => setLoading(false));
+    AsyncStorage.getItem(FOLLOWS_KEY)
+      .then((raw) => setFollowing(((JSON.parse(raw ?? "[]") as string[]) ?? []).includes(id)))
+      .catch(() => {});
   }, [id]);
+
+  // A farmer only reaches this page for their own farm; show it as a preview, no buying.
+  const preview = user?.role === "farmer";
+
+  const toggleFollow = useCallback(async () => {
+    if (!farm) return;
+    let list: string[] = [];
+    try {
+      list = JSON.parse((await AsyncStorage.getItem(FOLLOWS_KEY)) ?? "[]");
+    } catch {}
+    const next = following ? list.filter((x) => x !== farm.id) : Array.from(new Set([...list, farm.id]));
+    AsyncStorage.setItem(FOLLOWS_KEY, JSON.stringify(next)).catch(() => {});
+    setFollowing(!following);
+    if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+  }, [farm, following]);
+
+  const farmLines = useMemo(() => (farm ? cart.lines.filter((l) => l.farm_id === farm.id) : []), [cart.lines, farm]);
+
+  const startSubscribe = () => {
+    if (!user) {
+      router.push(`/dang-nhap?next=/farms/${id}`);
+      return;
+    }
+    if (!farmLines.length) {
+      Alert.alert("Giao định kỳ", "Thêm vài món của vườn này vào giỏ trước, rồi đăng ký giao định kỳ.");
+      return;
+    }
+    setSubOpen(true);
+  };
+
+  const submitSubscribe = async () => {
+    if (!farm) return;
+    setSubBusy(true);
+    try {
+      await apiFetch("/subscriptions", {
+        method: "POST",
+        body: JSON.stringify({ farm_id: farm.id, frequency: freq, items: farmLines.map((l) => ({ product_id: l.id, quantity: l.quantity })) }),
+      });
+      cart.clearFarm(farm.id);
+      setSubOpen(false);
+      Alert.alert("Đã tạo gói giao định kỳ!", "Rau sẽ tự lên đơn mỗi kỳ theo lịch bạn chọn.", [
+        { text: "Đóng", style: "cancel" },
+        { text: "Xem gói", onPress: () => router.push("/dinh-ky") },
+      ]);
+    } catch (e) {
+      Alert.alert("Không đăng ký được", e instanceof ApiError ? e.message : "Có lỗi xảy ra");
+    } finally {
+      setSubBusy(false);
+    }
+  };
 
   if (loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator color={colors.primary} />
+      <View style={{ flex: 1, backgroundColor: colors.surface, padding: 16, gap: 12 }}>
+        <Skeleton height={220} radius={shape.xlIncreased} />
+        <Skeleton height={20} width="60%" />
+        <Skeleton height={14} width="40%" />
+        <Skeleton height={80} radius={shape.xl} />
+        <Skeleton height={90} radius={shape.lgIncreased} />
+        <Skeleton height={90} radius={shape.lgIncreased} />
       </View>
     );
   }
@@ -44,190 +120,221 @@ export default function FarmDetailScreen() {
     );
   }
 
-  return (
-    <View style={{ flex: 1 }}>
-    <FlatList
-      style={styles.container}
-      data={products}
-      keyExtractor={(p) => p.id}
-      ListHeaderComponent={
-        <View style={styles.header}>
-          {farm.cover_url ? (
-            <Image source={{ uri: farm.cover_url }} style={styles.cover} />
-          ) : (
-            <View style={[styles.cover, styles.coverFallback]}>
-              <Text style={{ fontSize: 36 }}>🌾</Text>
-            </View>
-          )}
-          <Text style={styles.name}>{farm.name}</Text>
-          <Text style={styles.location}>{farm.location}</Text>
-          {farm.description ? <Text style={styles.description}>{farm.description}</Text> : null}
-          <Text style={styles.sectionTitle}>Nông sản</Text>
-        </View>
-      }
-      ListEmptyComponent={
-        <View style={styles.placeholder}>
-          <Text style={styles.placeholderText}>Vườn chưa có sản phẩm nào.</Text>
-        </View>
-      }
-      ListFooterComponent={
-        diary.length > 0 ? (
-          <View style={{ paddingHorizontal: 16, marginTop: 12 }}>
-            <Text style={styles.sectionTitle}>Nhật ký vườn</Text>
-            {diary.map((d) => (
-              <View key={d.id} style={styles.diaryCard}>
-                {d.media_urls?.[0] ? <Image source={{ uri: d.media_urls[0] }} style={styles.diaryImage} /> : null}
-                <Text style={styles.diaryContent}>{d.content}</Text>
-                <Text style={styles.diaryDate}>{new Date(d.created_at).toLocaleDateString("vi-VN")}</Text>
-              </View>
-            ))}
-          </View>
-        ) : null
-      }
-      contentContainerStyle={{ paddingBottom: 100 }}
-      renderItem={({ item }) => (
-        <View style={[styles.productCard, elevation[1]]}>
-          {item.image_url ? (
-            <Image source={{ uri: item.image_url }} style={styles.productImage} />
-          ) : (
-            <View style={[styles.productImage, styles.productImageFallback]}>
-              <Text style={{ fontSize: 22 }}>🥬</Text>
-            </View>
-          )}
-          <View style={styles.productInfo}>
-            <Text style={styles.productName}>{item.name}</Text>
-            <Text style={styles.productPrice}>
-              {formatVnd(item.price_per_unit)} / {item.unit}
-            </Text>
-            {!item.in_stock || item.stock_qty <= 0 ? (
-              <View style={styles.outOfStockChip}>
-                <Text style={styles.outOfStockText}>Hết hàng</Text>
-              </View>
-            ) : (
-              <CartStepper
-                qty={cart.qtyOf(item.id)}
-                onAdd={() =>
-                  cart.add({
-                    id: item.id,
-                    name: item.name,
-                    unit: item.unit,
-                    price_per_unit: item.price_per_unit,
-                    farm_id: farm.id,
-                    farm_name: farm.name,
-                    farm_slug: farm.slug,
-                    farm_location: farm.location,
-                  })
-                }
-                onSetQty={(n) => cart.setQty(item.id, n)}
-              />
-            )}
-          </View>
-        </View>
-      )}
-    />
-    {cart.count > 0 && (
-      <TouchableOpacity style={styles.cartBar} onPress={() => router.push("/cart")}>
-        <Text style={styles.cartBarText}>🧺 {cart.count} món · {formatVnd(cart.total)}</Text>
-        <Text style={styles.cartBarCta}>Xem giỏ →</Text>
-      </TouchableOpacity>
-    )}
-    </View>
-  );
-}
+  const grouped = products.reduce<Record<string, Product[]>>((acc, p) => {
+    (acc[p.category] ??= []).push(p);
+    return acc;
+  }, {});
+  const inStock = products.filter((p) => p.in_stock && p.stock_qty > 0).length;
 
-function CartStepper({ qty, onAdd, onSetQty }: { qty: number; onAdd: () => void; onSetQty: (n: number) => void }) {
-  if (qty === 0) {
-    return (
-      <TouchableOpacity style={styles.addBtn} onPress={onAdd}>
-        <Text style={styles.addBtnText}>+ Thêm</Text>
-      </TouchableOpacity>
-    );
-  }
   return (
-    <View style={styles.stepperRow}>
-      <TouchableOpacity style={styles.stepperBtn} onPress={() => onSetQty(qty - 1)}>
-        <Text style={styles.stepperBtnText}>{qty === 1 ? "✕" : "–"}</Text>
-      </TouchableOpacity>
-      <Text style={styles.stepperQty}>{qty}</Text>
-      <TouchableOpacity style={styles.stepperBtn} onPress={onAdd}>
-        <Text style={styles.stepperBtnText}>+</Text>
-      </TouchableOpacity>
+    <View style={{ flex: 1, backgroundColor: colors.surface }}>
+      <Stack.Screen options={{ title: farm.name }} />
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: cart.count > 0 ? 110 : 32, gap: 24 }}>
+        {preview && (
+          <AnimIn>
+            <View style={styles.previewBanner}>
+              <Icon name="visibility" size={20} />
+              <Text style={[styles.body, { color: colors.onTertiaryContainer, flex: 1 }]}>Bạn đang xem vườn của mình như khách hàng nhìn thấy.</Text>
+              <Button label="Sửa tồn kho" small variant="filled" style={{ backgroundColor: colors.onTertiaryContainer }} onPress={() => router.push("/tabs/farmer/san-pham")} />
+            </View>
+          </AnimIn>
+        )}
+
+        <AnimInScale>
+          <View style={styles.hero}>
+            {farm.cover_url ? <Image source={{ uri: farm.cover_url }} style={StyleSheet.absoluteFill} contentFit="cover" transition={400} /> : <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.primaryContainer }]} />}
+            <LinearGradient colors={["transparent", "rgba(0,0,0,.65)"]} style={StyleSheet.absoluteFill} />
+            <View style={{ position: "absolute", left: 20, right: 20, bottom: 20 }}>
+              <Text style={styles.heroLoc}><Icon name="location_on" size={14} filled color="#fff" /> {farm.location}</Text>
+              <Text style={styles.heroTitle}>{farm.name}</Text>
+            </View>
+          </View>
+        </AnimInScale>
+
+        {farm.description ? (
+          <AnimIn delay={60}>
+            <Text style={styles.description}>{farm.description}</Text>
+          </AnimIn>
+        ) : null}
+
+        <AnimIn delay={120}>
+          <View style={styles.liveCard}>
+            <View style={styles.liveIcon}>
+              <Icon name="videocam" size={24} />
+            </View>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={styles.liveTitle}>Livestream tại vườn</Text>
+              <Text style={styles.body}>Chưa có phiên live nào. Theo dõi để nhận thông báo khi bắt đầu.</Text>
+            </View>
+          </View>
+          {!preview && (
+            <View style={{ flexDirection: "row", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+              <Button label={following ? "Đang theo dõi" : "Theo dõi"} icon={following ? "🔔" : "🔕"} variant={following ? "filled" : "tonal"} small onPress={toggleFollow} />
+              <Button label="Giao định kỳ" icon="event_repeat" variant="outlined" small onPress={startSubscribe} />
+            </View>
+          )}
+        </AnimIn>
+
+        <View>
+          <SectionHead icon="shopping_basket" title="Sản phẩm từ vườn" />
+          <Text style={[styles.body, { marginTop: -8, marginBottom: 12 }]}>{inStock} món còn hàng</Text>
+          {products.length === 0 && <Text style={styles.body}>Vườn chưa có sản phẩm nào.</Text>}
+          {Object.entries(grouped).map(([cat, items], gi) => (
+            <View key={cat} style={{ marginBottom: 18 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 10 }}>
+                <Icon name={CATEGORY_ICONS[cat] ?? "eco"} size={18} color={colors.onSurfaceVariant} />
+                <Text style={[styles.catLabel, { marginBottom: 0 }]}>{(CATEGORY_LABELS[cat] ?? cat).toUpperCase()}</Text>
+              </View>
+              <View style={{ gap: 8 }}>
+                {items.map((p, i) => {
+                  const soldOut = !p.in_stock || p.stock_qty <= 0;
+                  return (
+                    <AnimIn key={p.id} index={gi * 2 + i} delay={160}>
+                      <View style={[styles.productCard, elevation[1], soldOut && { opacity: 0.6 }]}>
+                        <View style={styles.productImage}>
+                          {p.image_url ? <Image source={{ uri: p.image_url }} style={StyleSheet.absoluteFill} contentFit="cover" transition={250} /> : <Icon name={CATEGORY_ICONS[p.category]} size={26} />}
+                        </View>
+                        <View style={{ flex: 1, minWidth: 0 }}>
+                          <Text style={styles.productName}>{p.name}</Text>
+                          <Text style={styles.productPrice}>
+                            {formatVND(p.price_per_unit)} <Text style={styles.unit}>/ {p.unit}</Text>
+                          </Text>
+                          {soldOut ? (
+                            <Chip icon="block" label="Hết hàng" tone="error" small style={{ marginTop: 6 }} />
+                          ) : (
+                            <Chip label={p.stock_qty <= 5 ? `❗ Chỉ còn ${p.stock_qty} ${p.unit}` : `📦 Còn ${p.stock_qty} ${p.unit}`} tone={p.stock_qty <= 5 ? "error" : "surface"} small style={{ marginTop: 6 }} />
+                          )}
+                        </View>
+                        {!preview && !soldOut && (
+                          <CartStepper compact max={p.stock_qty} product={{ id: p.id, name: p.name, unit: p.unit, price_per_unit: p.price_per_unit, farm_id: farm.id, farm_name: farm.name, farm_slug: farm.slug, farm_location: farm.location }} />
+                        )}
+                      </View>
+                    </AnimIn>
+                  );
+                })}
+              </View>
+            </View>
+          ))}
+        </View>
+
+        {diary.length > 0 && (
+          <View>
+            <SectionHead icon="auto_stories" title="Nhật ký vườn" />
+            <View style={{ gap: 10 }}>
+              {diary.map((entry, i) => (
+                <AnimIn key={entry.id} index={Math.min(i, 5)}>
+                  <View style={[styles.diaryItem, elevation[1]]}>
+                    {entry.media_urls.length ? (
+                      <MediaGallery urls={entry.media_urls} layout="thumb" size={96} tag={farm.name} caption={formatDateTime(entry.created_at)} />
+                    ) : (
+                      <View style={styles.leading}>
+                        <Icon name="eco" size={22} />
+                      </View>
+                    )}
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <TouchableOpacity onPress={() => router.push(`/nhat-ky/${entry.id}`)}>
+                        <Text style={styles.diaryContent} numberOfLines={4}>{entry.content}</Text>
+                      </TouchableOpacity>
+                      <Text style={styles.diaryMeta}>
+                        <Icon name="schedule" size={12} color={colors.onSurfaceVariant} /> <Text style={{ fontWeight: "700" }}>{timeAgo(entry.created_at)}</Text> · {formatDateTime(entry.created_at)}
+                      </Text>
+                      <TouchableOpacity onPress={() => router.push(`/nhat-ky/${entry.id}`)} style={{ marginTop: 6 }}>
+                        <Text style={styles.diaryLink}>Xem bài đầy đủ →</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </AnimIn>
+              ))}
+            </View>
+          </View>
+        )}
+      </ScrollView>
+
+      {cart.count > 0 && !preview && (
+        <AnimIn style={styles.cartBarWrap}>
+          <PressableScale haptic style={[styles.cartBar, elevation[3]]} onPress={() => router.push("/cart")}>
+            <Text style={styles.cartBarText}><Icon name="shopping_basket" size={18} filled color={colors.onPrimary} /> {cart.count} món · {formatVND(cart.total)}</Text>
+            <Text style={styles.cartBarCta}>Xem giỏ →</Text>
+          </PressableScale>
+        </AnimIn>
+      )}
+
+      <Modal visible={subOpen} transparent animationType="slide" onRequestClose={() => setSubOpen(false)}>
+        <View style={styles.scrim}>
+          <View style={styles.sheet}>
+            <Text style={styles.sheetTitle}>Giao định kỳ</Text>
+            <Text style={[styles.body, { marginBottom: 12 }]}>Những món dưới đây (đang trong giỏ, thuộc vườn này) sẽ tự động được đặt lại theo lịch bạn chọn. Các món của vườn khác vẫn ở trong giỏ.</Text>
+            <View style={{ gap: 6, marginBottom: 12 }}>
+              {farmLines.map((l) => (
+                <View key={l.id} style={styles.subLine}>
+                  <Icon name="eco" size={18} />
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={styles.productName} numberOfLines={1}>{l.name}</Text>
+                    <Text style={styles.body}>{formatVND(l.price_per_unit)} / {l.unit}</Text>
+                  </View>
+                  <Text style={styles.productPrice}>{l.quantity} {l.unit}</Text>
+                  <Text style={[styles.body, { minWidth: 70, textAlign: "right" }]}>{formatVND(l.price_per_unit * l.quantity)}</Text>
+                </View>
+              ))}
+            </View>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 16 }}>
+              <Text style={styles.body}>{farmLines.length} món · {farmLines.reduce((s, l) => s + l.quantity, 0)} đơn vị</Text>
+              <Text style={styles.body}>
+                Mỗi kỳ ≈ <Text style={{ fontWeight: "800", color: colors.primary }}>{formatVND(farmLines.reduce((s, l) => s + l.quantity * l.price_per_unit, 0))}</Text>
+              </Text>
+            </View>
+            <View style={styles.segmented}>
+              {(["weekly", "monthly"] as const).map((f) => (
+                <TouchableOpacity key={f} style={[styles.seg, freq === f && styles.segSelected]} onPress={() => setFreq(f)}>
+                  <Text style={[styles.segText, freq === f && { color: colors.onSecondaryContainer }]}>{f === "weekly" ? "Mỗi tuần" : "Mỗi tháng"}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 20 }}>
+              <Button label="Huỷ" variant="text" onPress={() => setSubOpen(false)} />
+              <Button label="Đăng ký" icon="check" onPress={submitSubscribe} loading={subBusy} />
+            </View>
+            {subBusy && <ActivityIndicator color={colors.primary} style={{ marginTop: 8 }} />}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.surface },
   center: { flex: 1, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center" },
   errorText: { color: colors.error },
-  header: { padding: 16 },
-  cover: { width: "100%", height: 160, borderRadius: shape.xl, backgroundColor: colors.surfaceContainerHighest, marginBottom: 12 },
-  coverFallback: { alignItems: "center", justifyContent: "center" },
-  name: { ...type.headlineSmall, color: colors.onSurface },
-  location: { ...type.bodyLarge, color: colors.onSurfaceVariant, marginTop: 2 },
-  description: { ...type.bodyMedium, color: colors.onSurfaceVariant, marginTop: 8 },
-  sectionTitle: { ...type.titleMedium, color: colors.onSurface, marginTop: 20, marginBottom: 4 },
-  placeholder: { marginHorizontal: 16, padding: 20, backgroundColor: colors.surfaceContainer, borderRadius: shape.lg },
-  placeholderText: { ...type.bodyMedium, color: colors.onSurfaceVariant },
-  productCard: {
-    flexDirection: "row",
-    marginHorizontal: 16,
-    marginBottom: 12,
-    backgroundColor: colors.surfaceContainerLowest,
-    borderRadius: shape.lg,
-    overflow: "hidden",
-  },
-  productImage: { width: 76, height: 76, backgroundColor: colors.surfaceContainerHighest },
-  productImageFallback: { alignItems: "center", justifyContent: "center" },
-  productInfo: { flex: 1, padding: 12, justifyContent: "center" },
+  body: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 13 },
+  leading: { width: 44, height: 44, borderRadius: shape.md, backgroundColor: colors.primaryContainer, alignItems: "center", justifyContent: "center" },
+  previewBanner: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: colors.tertiaryContainer, borderRadius: shape.lg, padding: 12 },
+  hero: { height: 240, borderRadius: shape.xlIncreased, overflow: "hidden", backgroundColor: colors.surfaceContainerHigh },
+  heroLoc: { color: "rgba(255,255,255,.9)", fontSize: 13, fontWeight: "600", marginBottom: 4 },
+  heroTitle: { ...type.headlineSmall, color: "#fff", fontSize: 28, lineHeight: 34 },
+  description: { ...type.bodyLarge, color: colors.onSurfaceVariant, fontSize: 15, lineHeight: 24 },
+  liveCard: { flexDirection: "row", alignItems: "center", gap: 14, backgroundColor: colors.surfaceContainerLow, borderRadius: shape.xl, padding: 16 },
+  liveIcon: { width: 52, height: 52, borderRadius: shape.md, backgroundColor: colors.tertiaryContainer, alignItems: "center", justifyContent: "center" },
+  liveTitle: { ...type.titleMedium, color: colors.onSurface, fontSize: 15 },
+  catLabel: { ...type.labelLarge, color: colors.onSurfaceVariant, fontSize: 12, letterSpacing: 0.6, marginBottom: 10 },
+  productCard: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.lgIncreased, padding: 12 },
+  productImage: { width: 76, height: 76, borderRadius: shape.lg, backgroundColor: colors.surfaceContainerHigh, alignItems: "center", justifyContent: "center", overflow: "hidden" },
   productName: { ...type.titleMedium, color: colors.onSurface, fontSize: 15 },
-  productPrice: { ...type.bodyMedium, color: colors.primary, marginTop: 2, fontWeight: "700" },
-  outOfStockChip: {
-    marginTop: 4,
-    alignSelf: "flex-start",
-    paddingVertical: 2,
-    paddingHorizontal: 8,
-    borderRadius: shape.full,
-    backgroundColor: colors.errorContainer,
-  },
-  outOfStockText: { fontSize: 11, fontWeight: "700", color: colors.onErrorContainer },
-  addBtn: {
-    marginTop: 6,
-    alignSelf: "flex-start",
-    backgroundColor: colors.primaryContainer,
-    borderRadius: shape.full,
-    paddingVertical: 6,
-    paddingHorizontal: 14,
-  },
-  addBtnText: { fontSize: 12, fontWeight: "700", color: colors.onPrimaryContainer },
-  stepperRow: {
-    marginTop: 6,
-    flexDirection: "row",
-    alignItems: "center",
-    alignSelf: "flex-start",
-    backgroundColor: colors.primaryContainer,
-    borderRadius: shape.full,
-  },
-  stepperBtn: { width: 28, height: 28, alignItems: "center", justifyContent: "center" },
-  stepperBtnText: { fontSize: 15, fontWeight: "700", color: colors.onPrimaryContainer },
-  stepperQty: { minWidth: 20, textAlign: "center", fontWeight: "700", color: colors.onPrimaryContainer },
-  cartBar: {
-    position: "absolute",
-    left: 16,
-    right: 16,
-    bottom: 16,
-    backgroundColor: colors.primary,
-    borderRadius: shape.full,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  cartBarText: { color: colors.onPrimary, fontWeight: "700" },
-  cartBarCta: { color: colors.onPrimary, fontWeight: "700" },
-  diaryCard: { backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.lg, padding: 14, marginBottom: 10 },
-  diaryImage: { width: "100%", height: 140, borderRadius: shape.md, marginBottom: 8, backgroundColor: colors.surfaceContainerHighest },
-  diaryContent: { ...type.bodyMedium, color: colors.onSurface },
-  diaryDate: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 11, marginTop: 6 },
+  productPrice: { ...type.labelLarge, color: colors.primary, fontSize: 15, marginTop: 2 },
+  unit: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12, fontWeight: "400" },
+  diaryItem: { flexDirection: "row", alignItems: "flex-start", gap: 12, backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.lg, padding: 14 },
+  diaryContent: { ...type.bodyMedium, color: colors.onSurface, fontSize: 14, lineHeight: 21 },
+  diaryMeta: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12, marginTop: 6 },
+  diaryLink: { ...type.labelLarge, color: colors.primary, fontSize: 13 },
+  cartBarWrap: { position: "absolute", left: 16, right: 16, bottom: 20 },
+  cartBar: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: colors.primary, borderRadius: shape.full, paddingVertical: 14, paddingHorizontal: 20 },
+  cartBarText: { ...type.labelLarge, color: colors.onPrimary, fontSize: 15 },
+  cartBarCta: { ...type.labelLarge, color: colors.primaryContainer, fontSize: 14 },
+  scrim: { flex: 1, backgroundColor: "rgba(0,0,0,.4)", justifyContent: "flex-end" },
+  sheet: { backgroundColor: colors.surfaceContainerLowest, borderTopLeftRadius: shape.xlIncreased, borderTopRightRadius: shape.xlIncreased, padding: 22, paddingBottom: 34 },
+  sheetTitle: { ...type.headlineSmall, color: colors.onSurface, fontSize: 22, marginBottom: 4 },
+  subLine: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: colors.surfaceContainerLow, borderRadius: shape.md, padding: 10 },
+  segmented: { flexDirection: "row", borderRadius: shape.full, borderWidth: 1, borderColor: colors.outlineVariant, overflow: "hidden" },
+  seg: { flex: 1, paddingVertical: 11, alignItems: "center" },
+  segSelected: { backgroundColor: colors.secondaryContainer },
+  segText: { ...type.labelLarge, color: colors.onSurfaceVariant, fontSize: 13 },
 });

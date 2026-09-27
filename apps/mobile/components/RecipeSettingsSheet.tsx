@@ -2,11 +2,12 @@ import { useState } from "react";
 import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, ActivityIndicator, ScrollView } from "react-native";
 import { colors, shape, type } from "../constants/theme";
 import { GOALS, DIET_TAGS, RecipePrefs, DEFAULT_PREFS, isDefaultPrefs } from "../constants/recipePrefs";
+import { Icon } from "./Icon";
 
 export function recipePrefsSummary(prefs: RecipePrefs): string {
   const goal = GOALS.find((g) => g.value === prefs.goal);
   return [
-    `${goal?.icon ?? "🍽️"} ${goal?.label ?? ""}`,
+    goal?.label ?? "",
     prefs.tags.length ? `${prefs.tags.length} chế độ ăn` : null,
     prefs.customDiet || null,
     `${prefs.servings} người`,
@@ -43,7 +44,7 @@ export function RecipeSettingsButton({ prefs, onChange, disabled }: { prefs: Rec
   return (
     <>
       <TouchableOpacity style={[styles.trigger, active && styles.triggerActive]} onPress={show} disabled={disabled}>
-        <Text style={[styles.triggerText, active && styles.triggerTextActive]}>{active ? `${goal.icon} ${goal.label}` : "⚙️ Tuỳ chọn"}</Text>
+        <Text style={[styles.triggerText, active && styles.triggerTextActive]}><Icon name={active ? goal.icon : "tune"} size={16} filled={active} color={active ? colors.onTertiaryContainer : colors.onSurfaceVariant} /> {active ? goal.label : "Tuỳ chọn"}</Text>
       </TouchableOpacity>
 
       <Modal visible={open} animationType="slide" transparent onRequestClose={() => setOpen(false)}>
@@ -63,7 +64,7 @@ export function RecipeSettingsButton({ prefs, onChange, disabled }: { prefs: Rec
                       style={[styles.goalCard, sel && styles.goalCardSelected]}
                       onPress={() => setDraft((d) => ({ ...d, goal: g.value }))}
                     >
-                      <Text style={{ fontSize: 22 }}>{g.icon}</Text>
+                      <Icon name={g.icon} size={26} filled={sel} color={sel ? colors.onTertiaryContainer : colors.onSurfaceVariant} />
                       <Text style={[styles.goalLabel, sel && styles.goalLabelSelected]}>{g.label}</Text>
                       <Text style={[styles.goalDesc, sel && styles.goalLabelSelected]}>{g.desc}</Text>
                     </TouchableOpacity>

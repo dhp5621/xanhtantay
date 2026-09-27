@@ -1,23 +1,61 @@
+import { useEffect } from "react";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Stack } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { useFonts } from "expo-font";
+import * as SplashScreen from "expo-splash-screen";
 import { SessionProvider } from "../hooks/useSession";
 import { CartProvider } from "../hooks/useCart";
+import { colors } from "../constants/theme";
+import { ICON_FONT, ICON_FONT_FILLED } from "../components/Icon";
+
+// Keep the native splash up until the icon font is ready so icons never flash as ligature text.
+SplashScreen.preventAutoHideAsync().catch(() => {});
+SplashScreen.setOptions?.({ duration: 300, fade: true });
 
 export default function RootLayout() {
+  const [fontsLoaded, fontError] = useFonts({
+    [ICON_FONT]: require("../assets/fonts/MaterialSymbolsRounded.ttf"),
+    [ICON_FONT_FILLED]: require("../assets/fonts/MaterialSymbolsRoundedFilled.ttf"),
+  });
+
+  useEffect(() => {
+    if (fontsLoaded || fontError) SplashScreen.hideAsync().catch(() => {});
+  }, [fontsLoaded, fontError]);
+
+  if (!fontsLoaded && !fontError) return null;
+
   return (
-    <SessionProvider>
-      <CartProvider>
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="tabs" />
-          <Stack.Screen name="dang-nhap/index" />
-          <Stack.Screen name="farms/[id]" options={{ headerShown: true, title: "Vườn" }} />
-          <Stack.Screen name="cart/index" options={{ headerShown: true, title: "Giỏ rau", presentation: "modal" }} />
-          <Stack.Screen name="vuon-cua-toi/index" options={{ headerShown: true, title: "Vườn của tôi" }} />
-          <Stack.Screen name="dinh-ky/index" options={{ headerShown: true, title: "Đơn định kỳ" }} />
-          <Stack.Screen name="cong-thuc/index" options={{ headerShown: true, title: "Công thức nấu ăn" }} />
-          <Stack.Screen name="ke-hoach/[id]" options={{ headerShown: true, title: "Kế hoạch bữa ăn" }} />
-          <Stack.Screen name="tra-cuu/index" options={{ headerShown: true, title: "Tra cứu gói rau" }} />
-        </Stack>
-      </CartProvider>
-    </SessionProvider>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.surface }}>
+      <SessionProvider>
+        <CartProvider>
+          <StatusBar style="dark" backgroundColor={colors.surface} />
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              animation: "slide_from_right",
+              animationDuration: 320,
+              contentStyle: { backgroundColor: colors.surface },
+              headerStyle: { backgroundColor: colors.surface },
+              headerTintColor: colors.onSurface,
+              headerShadowVisible: false,
+              headerTitleStyle: { fontWeight: "700" },
+              headerBackTitle: "Quay lại",
+            }}
+          >
+            <Stack.Screen name="index" />
+            <Stack.Screen name="tabs" options={{ animation: "fade" }} />
+            <Stack.Screen name="dang-nhap/index" options={{ animation: "fade_from_bottom" }} />
+            <Stack.Screen name="farms/[id]" options={{ headerShown: true, title: "Vườn rau" }} />
+            <Stack.Screen name="nhat-ky/[id]" options={{ headerShown: true, title: "Nhật ký vườn" }} />
+            <Stack.Screen name="cart/index" options={{ headerShown: true, title: "Giỏ rau", presentation: "modal", animation: "slide_from_bottom" }} />
+            <Stack.Screen name="vuon-cua-toi/index" options={{ headerShown: true, title: "Vườn của tôi" }} />
+            <Stack.Screen name="dinh-ky/index" options={{ headerShown: true, title: "Gói đăng ký" }} />
+            <Stack.Screen name="ke-hoach/[id]" options={{ headerShown: true, title: "Kế hoạch ăn" }} />
+            <Stack.Screen name="tra-cuu/index" options={{ headerShown: true, title: "Tra cứu gói rau" }} />
+          </Stack>
+        </CartProvider>
+      </SessionProvider>
+    </GestureHandlerRootView>
   );
 }

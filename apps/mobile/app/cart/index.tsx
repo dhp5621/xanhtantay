@@ -6,6 +6,7 @@ import { useSession } from "../../hooks/useSession";
 import { apiFetch } from "../../constants/api";
 import { colors, shape, type, elevation } from "../../constants/theme";
 import { MIN_DIRECT_ORDER, formatVnd, pointsFor } from "../../constants/commerce";
+import { Icon } from "../../components/Icon";
 
 export default function CartScreen() {
   const cart = useCart();
@@ -54,7 +55,7 @@ export default function CartScreen() {
     return (
       <View style={styles.container}>
         <View style={[styles.successCard, elevation[1]]}>
-          <Text style={{ fontSize: 40 }}>✅</Text>
+          <Icon name="check_circle" size={40} />
           <Text style={styles.successTitle}>{placed.length > 1 ? `Đã đặt ${placed.length} đơn!` : "Đặt hàng thành công!"}</Text>
           <Text style={styles.successBody}>Bác nông dân sẽ hái đúng phần của bạn. Bạn vừa tích được <Text style={{ fontWeight: "700" }}>{pointsFor(total)} điểm</Text>.</Text>
         </View>
@@ -71,7 +72,7 @@ export default function CartScreen() {
   if (cart.lines.length === 0) {
     return (
       <View style={styles.center}>
-        <Text style={{ fontSize: 40, marginBottom: 8 }}>🧺</Text>
+        <Icon name="shopping_basket" size={48} color={colors.onSurfaceVariant} style={{ marginBottom: 8 }} />
         <Text style={styles.emptyTitle}>Giỏ còn trống</Text>
         <Text style={styles.emptyBody}>Ghé một vườn rau và chọn vài món tươi nhé.</Text>
         <TouchableOpacity style={styles.primaryBtn} onPress={() => router.replace("/tabs/farms")}>
@@ -91,7 +92,7 @@ export default function CartScreen() {
       renderItem={({ item: g }) => (
         <View style={{ marginBottom: 16 }}>
           <View style={styles.groupHeader}>
-            <Text style={styles.groupName}>🪴 {g.farm_name}</Text>
+            <Text style={styles.groupName}><Icon name="potted_plant" size={15} filled color={colors.primary} /> {g.farm_name}</Text>
             <TouchableOpacity
               onPress={() => {
                 if (!user) {

@@ -1,14 +1,21 @@
 import { useState } from "react";
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, ScrollView, Image } from "react-native";
-import { apiFetch, ApiError, API_URL } from "../../constants/api";
-import { colors, shape, type } from "../../constants/theme";
-import { formatVnd } from "../../constants/commerce";
+import { View, Text, StyleSheet, TextInput, ActivityIndicator, ScrollView } from "react-native";
+import { Image } from "expo-image";
+import { useLocalSearchParams } from "expo-router";
+import { apiFetch, ApiError } from "../../constants/api";
+import { colors, shape, type, elevation } from "../../constants/theme";
+import { formatDateTime } from "../../constants/format";
+import { AnimIn, AnimInScale, PressableScale } from "../../components/motion";
+import { PageHeader } from "../../components/ui";
+import { QrImage } from "../../components/QrImage";
+import { Icon } from "../../components/Icon";
 
 const STATUS_LABEL: Record<string, string> = {
   harvesting: "Rau đang được nhà vườn thu hoạch 🌿",
   loaded: "Hàng đã lên xe lạnh về phố 🚚",
   delivered: "Đồ quê đã đến tận cửa nhà bạn 🏡",
 };
+const STEPS = ["harvesting", "loaded", "delivered"];
 
 interface TraceResult {
   id: string;
@@ -18,67 +25,97 @@ interface TraceResult {
   items: { id: string; product_name?: string | null; product_unit?: string | null; quantity: number }[];
 }
 
+/** Mirrors apps/web/src/app/tra-cuu/[id] — the public package trace a QR sticker opens. */
 export default function TraCuuScreen() {
-  const [code, setCode] = useState("");
+  const params = useLocalSearchParams<{ id?: string }>();
+  const [code, setCode] = useState(params.id ?? "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<TraceResult | null>(null);
 
   const lookup = async () => {
-    const id = code.trim();
+    // Accept a pasted trace URL as well as the bare order id.
+    const id = code.trim().split("/").filter(Boolean).pop() ?? "";
     if (!id) return;
     setLoading(true);
     setError(null);
     setResult(null);
     try {
-      // No dedicated JSON trace API on the web app (the /tra-cuu/[id] page renders server-side HTML),
-      // so we ask for the order directly — this only works for the signed-in customer's own orders,
-      // which is the common case for scanning a package they just received.
-      const order = await apiFetch(`/orders/${id}`).catch(() => null);
-      if (!order) throw new Error("Không tìm thấy gói rau với mã này");
-      setResult(order);
+      setResult(await apiFetch(`/orders/${id}`));
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : e instanceof Error ? e.message : "Không tra cứu được");
+      setError(e instanceof ApiError ? e.message : "Không tra cứu được");
     } finally {
       setLoading(false);
     }
   };
 
+  const stepIdx = result ? STEPS.indexOf(result.status) : -1;
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
-      <Text style={styles.title}>Tra cứu gói rau 🔍</Text>
-      <Text style={styles.subtitle}>Nhập mã đơn hàng in trên tem QR để xem hành trình gói rau.</Text>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 16, paddingBottom: 32 }} keyboardShouldPersistTaps="handled">
+      <PageHeader icon="search" eyebrow="Quét là biết" title="Tra cứu gói rau" subtitle="Nhập mã đơn hàng in trên tem QR để xem hành trình gói rau." />
 
-      <View style={styles.searchRow}>
-        <TextInput
-          style={styles.input}
-          placeholder="Mã đơn hàng…"
-          placeholderTextColor={colors.onSurfaceVariant}
-          value={code}
-          onChangeText={setCode}
-          autoCapitalize="none"
-        />
-        <TouchableOpacity style={styles.searchBtn} onPress={lookup} disabled={loading}>
-          {loading ? <ActivityIndicator color={colors.onPrimary} /> : <Text style={styles.searchBtnText}>Tra cứu</Text>}
-        </TouchableOpacity>
-      </View>
+      <AnimIn>
+        <View style={styles.searchRow}>
+          <TextInput
+            style={styles.input}
+            placeholder="Mã đơn hàng hoặc link tem…"
+            placeholderTextColor={colors.onSurfaceVariant}
+            value={code}
+            onChangeText={setCode}
+            autoCapitalize="none"
+            autoCorrect={false}
+            returnKeyType="search"
+            onSubmitEditing={lookup}
+          />
+          <PressableScale haptic style={styles.searchBtn} onPress={lookup} disabled={loading || !code.trim()}>
+            {loading ? <ActivityIndicator color={colors.onPrimary} /> : <Text style={styles.searchBtnText}>Tra cứu</Text>}
+          </PressableScale>
+        </View>
+      </AnimIn>
 
-      {error && <Text style={styles.errorText}>{error}</Text>}
+      {error && (
+        <AnimIn>
+          <Text style={styles.errorText}>{error}</Text>
+        </AnimIn>
+      )}
 
       {result && (
-        <View style={styles.resultCard}>
-          {result.farm.cover_url ? <Image source={{ uri: result.farm.cover_url }} style={styles.cover} /> : null}
-          <Text style={styles.farmName}>{result.farm.name}</Text>
-          <Text style={styles.farmLocation}>{result.farm.location}</Text>
-          <View style={styles.statusBadge}>
-            <Text style={styles.statusBadgeText}>{STATUS_LABEL[result.status] ?? result.status}</Text>
+        <AnimInScale>
+          <View style={[styles.resultCard, elevation[1]]}>
+            {result.farm.cover_url ? <Image source={{ uri: result.farm.cover_url }} style={styles.cover} contentFit="cover" transition={300} /> : null}
+            <Text style={styles.farmName}>{result.farm.name}</Text>
+            <Text style={styles.body}>📍 {result.farm.location}</Text>
+
+            <View style={styles.statusBadge}>
+              <Text style={styles.statusBadgeText}>{STATUS_LABEL[result.status] ?? result.status}</Text>
+            </View>
+
+            <View style={styles.stepsRow}>
+              {STEPS.map((s, i) => (
+                <View key={s} style={{ flex: 1, alignItems: "center" }}>
+                  <View style={[styles.stepDot, i <= stepIdx && styles.stepDotDone]}>
+                    <Icon name={["agriculture", "local_shipping", "home"][i]} size={18} filled color={i <= stepIdx ? colors.onPrimaryContainer : colors.onSurfaceVariant} />
+                  </View>
+                  <Text style={[styles.stepLabel, i <= stepIdx && { color: colors.primary, fontWeight: "700" }]}>{["Thu hoạch", "Lên xe", "Đã giao"][i]}</Text>
+                </View>
+              ))}
+            </View>
+
+            <Text style={styles.blockLabel}>TRONG GÓI NÀY</Text>
+            {result.items?.map((it) => (
+              <Text key={it.id} style={styles.itemLine}>
+                • {it.quantity} {it.product_unit} {it.product_name}
+              </Text>
+            ))}
+            <Text style={[styles.body, { marginTop: 10 }]}>Đặt lúc {formatDateTime(result.created_at)} · Mã #{result.id.slice(0, 8).toUpperCase()}</Text>
+
+            <View style={{ alignItems: "center", marginTop: 16 }}>
+              <QrImage orderId={result.id} size={150} />
+              <Text style={[styles.body, { marginTop: 8 }]}>Quét mã để xem vườn, nhật ký và hành trình gói rau.</Text>
+            </View>
           </View>
-          <Text style={styles.blockLabel}>Trong gói này</Text>
-          {result.items?.map((it) => (
-            <Text key={it.id} style={styles.itemLine}>• {it.quantity} {it.product_unit} {it.product_name}</Text>
-          ))}
-          <Image source={{ uri: `${API_URL}/api/qr/${result.id}` }} style={styles.qr} />
-        </View>
+        </AnimInScale>
       )}
     </ScrollView>
   );
@@ -86,20 +123,21 @@ export default function TraCuuScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
-  title: { ...type.headlineSmall, color: colors.onSurface },
-  subtitle: { ...type.bodyMedium, color: colors.onSurfaceVariant, marginTop: 4, marginBottom: 16 },
+  body: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 13 },
   searchRow: { flexDirection: "row", gap: 8 },
-  input: { flex: 1, backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.md, padding: 12, color: colors.onSurface },
-  searchBtn: { backgroundColor: colors.primary, borderRadius: shape.md, paddingHorizontal: 18, justifyContent: "center" },
-  searchBtnText: { color: colors.onPrimary, fontWeight: "700" },
+  input: { flex: 1, backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.full, paddingHorizontal: 18, paddingVertical: 13, color: colors.onSurface, borderWidth: 1, borderColor: colors.outlineVariant },
+  searchBtn: { backgroundColor: colors.primary, borderRadius: shape.full, paddingHorizontal: 20, justifyContent: "center" },
+  searchBtnText: { ...type.labelLarge, color: colors.onPrimary },
   errorText: { color: colors.error, marginTop: 12 },
   resultCard: { backgroundColor: colors.surfaceContainerLow, borderRadius: shape.xl, padding: 18, marginTop: 20 },
-  cover: { width: "100%", height: 140, borderRadius: shape.lg, marginBottom: 10, backgroundColor: colors.surfaceContainerHighest },
+  cover: { width: "100%", height: 150, borderRadius: shape.lg, marginBottom: 12, backgroundColor: colors.surfaceContainerHighest },
   farmName: { ...type.titleLarge, color: colors.onSurface },
-  farmLocation: { ...type.bodyMedium, color: colors.onSurfaceVariant, marginTop: 2 },
-  statusBadge: { backgroundColor: colors.primaryContainer, borderRadius: shape.md, padding: 10, marginTop: 12 },
-  statusBadgeText: { color: colors.onPrimaryContainer, fontWeight: "600", textAlign: "center" },
-  blockLabel: { ...type.labelLarge, color: colors.onSurface, marginTop: 14, marginBottom: 4, textTransform: "uppercase", fontSize: 12 },
-  itemLine: { ...type.bodyMedium, color: colors.onSurface, marginTop: 2 },
-  qr: { width: 140, height: 140, alignSelf: "center", marginTop: 16, backgroundColor: "#fff", borderRadius: 12 },
+  statusBadge: { backgroundColor: colors.primaryContainer, borderRadius: shape.md, padding: 12, marginTop: 14 },
+  statusBadgeText: { color: colors.onPrimaryContainer, fontWeight: "700", textAlign: "center" },
+  stepsRow: { flexDirection: "row", marginTop: 14 },
+  stepDot: { width: 34, height: 34, borderRadius: 17, backgroundColor: colors.surfaceContainerHighest, alignItems: "center", justifyContent: "center" },
+  stepDotDone: { backgroundColor: colors.primaryContainer },
+  stepLabel: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 11, marginTop: 4 },
+  blockLabel: { ...type.labelLarge, color: colors.onSurfaceVariant, marginTop: 16, marginBottom: 4, fontSize: 11, letterSpacing: 0.6 },
+  itemLine: { ...type.bodyMedium, color: colors.onSurface, marginTop: 2, fontSize: 14 },
 });

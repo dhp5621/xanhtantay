@@ -1,13 +1,16 @@
-import { useCallback, useEffect, useState } from "react";
-import { View, Text, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity, Image, RefreshControl } from "react-native";
-import { router } from "expo-router";
+import { useCallback, useState } from "react";
+import { View, Text, FlatList, StyleSheet, RefreshControl } from "react-native";
+import { Image } from "expo-image";
+import { router, useFocusEffect } from "expo-router";
 import type { Farm } from "@xanhtantay/types";
 import { apiFetch } from "../../constants/api";
 import { colors, shape, type, elevation } from "../../constants/theme";
+import { AnimIn, PressableScale, Skeleton } from "../../components/motion";
+import { EmptyState, PageHeader, Screen } from "../../components/ui";
+import { Icon } from "../../components/Icon";
 
 export default function FarmsScreen() {
-  const [farms, setFarms] = useState<Farm[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [farms, setFarms] = useState<Farm[] | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -17,23 +20,22 @@ export default function FarmsScreen() {
       setFarms(await apiFetch("/farms"));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Không tải được dữ liệu");
+      setFarms((f) => f ?? []);
     }
   }, []);
 
-  useEffect(() => {
-    load().finally(() => setLoading(false));
-  }, [load]);
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load])
+  );
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Vườn rau 🌱</Text>
-
-      {loading && <ActivityIndicator color={colors.primary} />}
-      {error && <Text style={styles.errorText}>{error}</Text>}
-
+    <Screen>
       <FlatList
-        data={farms}
+        data={farms ?? []}
         keyExtractor={(f) => f.id}
+        contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -43,57 +45,52 @@ export default function FarmsScreen() {
               setRefreshing(false);
             }}
             colors={[colors.primary]}
+            tintColor={colors.primary}
           />
         }
-        ListEmptyComponent={
-          !loading && !error ? (
-            <View style={styles.placeholder}>
-              <Text style={styles.placeholderText}>Chưa có vườn nào.</Text>
-            </View>
-          ) : null
+        ListHeaderComponent={
+          <>
+            <PageHeader icon="potted_plant" eyebrow="Có tên, có mặt" title="Vườn rau" subtitle="Những nhà vườn đang bán trực tiếp cho bạn" />
+            {error && <Text style={styles.errorText}>{error}</Text>}
+          </>
         }
-        renderItem={({ item }) => (
-          <TouchableOpacity style={[styles.card, elevation[1]]} onPress={() => router.push(`/farms/${item.id}`)}>
-            {item.cover_url ? (
-              <Image source={{ uri: item.cover_url }} style={styles.cover} />
-            ) : (
-              <View style={[styles.cover, styles.coverFallback]}>
-                <Text style={{ fontSize: 26 }}>🌾</Text>
-              </View>
-            )}
-            <View style={styles.info}>
-              <Text style={styles.name}>{item.name}</Text>
-              <Text style={styles.location}>{item.location}</Text>
-              {item.description ? (
-                <Text style={styles.description} numberOfLines={2}>
-                  {item.description}
-                </Text>
-              ) : null}
+        ListEmptyComponent={
+          farms === null ? (
+            <View style={{ gap: 12 }}>
+              <Skeleton height={230} radius={shape.xl} />
+              <Skeleton height={230} radius={shape.xl} />
             </View>
-          </TouchableOpacity>
+          ) : (
+            <EmptyState icon="grass" title="Chưa có vườn nào" description="Các nhà vườn sẽ sớm xuất hiện ở đây." />
+          )
+        }
+        renderItem={({ item, index }) => (
+          <AnimIn index={Math.min(index, 6)} style={{ marginBottom: 14 }}>
+            <PressableScale style={[styles.card, elevation[1]]} onPress={() => router.push(`/farms/${item.id}`)}>
+              <View style={styles.media}>
+                {item.cover_url ? <Image source={{ uri: item.cover_url }} style={StyleSheet.absoluteFill} contentFit="cover" transition={300} /> : <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.primaryContainer, alignItems: "center", justifyContent: "center" }]}><Icon name="agriculture" size={40} /></View>}
+                <View style={styles.locChip}>
+                  <Text style={styles.locText}><Icon name="location_on" size={12} filled color="#fff" /> {item.location}</Text>
+                </View>
+              </View>
+              <View style={{ padding: 16 }}>
+                <Text style={styles.name}>{item.name}</Text>
+                {item.description ? <Text style={styles.description} numberOfLines={2}>{item.description}</Text> : null}
+              </View>
+            </PressableScale>
+          </AnimIn>
         )}
       />
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.surface, paddingTop: 24, paddingHorizontal: 16 },
-  title: { ...type.headlineSmall, color: colors.onSurface, marginBottom: 16 },
   errorText: { color: colors.error, marginBottom: 8 },
-  placeholder: { padding: 20, backgroundColor: colors.surfaceContainer, borderRadius: shape.lg },
-  placeholderText: { ...type.bodyMedium, color: colors.onSurfaceVariant },
-  card: {
-    flexDirection: "row",
-    marginBottom: 12,
-    backgroundColor: colors.surfaceContainerLowest,
-    borderRadius: shape.lg,
-    overflow: "hidden",
-  },
-  cover: { width: 96, height: 96, backgroundColor: colors.surfaceContainerHighest },
-  coverFallback: { alignItems: "center", justifyContent: "center" },
-  info: { flex: 1, padding: 12, justifyContent: "center" },
-  name: { ...type.titleMedium, color: colors.onSurface, fontSize: 15 },
-  location: { ...type.bodyMedium, color: colors.onSurfaceVariant, marginTop: 2 },
-  description: { ...type.bodyMedium, color: colors.onSurfaceVariant, marginTop: 4, fontSize: 13 },
+  card: { backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.xl, overflow: "hidden" },
+  media: { height: 170, position: "relative", backgroundColor: colors.surfaceContainerHigh },
+  locChip: { position: "absolute", left: 12, bottom: 12, backgroundColor: "rgba(0,0,0,.55)", borderRadius: shape.full, paddingVertical: 4, paddingHorizontal: 10 },
+  locText: { color: "#fff", fontSize: 12, fontWeight: "600" },
+  name: { ...type.titleMedium, color: colors.onSurface, fontSize: 17, marginBottom: 3 },
+  description: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 13 },
 });

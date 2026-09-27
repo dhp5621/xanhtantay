@@ -33,7 +33,7 @@ export function levelFor(points: number) {
 export const treesFor = (points: number) => Math.floor(points / 200);
 
 export function formatVnd(amount: number) {
-  return amount.toLocaleString("vi-VN") + "đ";
+  return `${Math.round(amount).toLocaleString("vi-VN")}₫`;
 }
 
 export const ORDER_TYPE_LABELS: Record<string, string> = {

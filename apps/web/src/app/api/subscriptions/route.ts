@@ -1,14 +1,46 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { subscriptions, products } from "@/db/schema";
+import { subscriptions, products, farms, users } from "@/db/schema";
 import { eq, inArray } from "drizzle-orm";
 import { getSessionUser } from "@/lib/session";
 
 export async function GET() {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Chưa đăng nhập" }, { status: 401 });
-  const subs = await db.select().from(subscriptions).where(eq(subscriptions.user_id, user.id));
-  return NextResponse.json(subs);
+
+  // Farmers see the customers subscribed to their own farm (what /farmer/dang-ky renders on the web).
+  if (user.role === "farmer") {
+    const [myFarm] = await db.select({ id: farms.id }).from(farms).where(eq(farms.owner_id, user.id));
+    if (!myFarm) return NextResponse.json([]);
+    const rows = await db
+      .select({ sub: subscriptions, customer_name: users.name, customer_phone: users.phone })
+      .from(subscriptions)
+      .leftJoin(users, eq(subscriptions.user_id, users.id))
+      .where(eq(subscriptions.farm_id, myFarm.id));
+    return NextResponse.json(rows.map(({ sub, customer_name, customer_phone }) => ({ ...sub, customer_name, customer_phone })));
+  }
+
+  const subs = await db
+    .select({ sub: subscriptions, farm: { id: farms.id, name: farms.name, slug: farms.slug } })
+    .from(subscriptions)
+    .leftJoin(farms, eq(subscriptions.farm_id, farms.id))
+    .where(eq(subscriptions.user_id, user.id));
+
+  // Resolve product names/prices so clients never have to print raw product ids.
+  const productIds = Array.from(new Set(subs.flatMap(({ sub }) => sub.items.map((i) => i.product_id))));
+  const prods = productIds.length ? await db.select().from(products).where(inArray(products.id, productIds)) : [];
+  const byId = new Map(prods.map((p) => [p.id, p]));
+
+  return NextResponse.json(
+    subs.map(({ sub, farm }) => ({
+      ...sub,
+      farm,
+      items: sub.items.map((i) => {
+        const p = byId.get(i.product_id);
+        return { ...i, name: p?.name ?? null, unit: p?.unit ?? null, price_per_unit: p?.price_per_unit ?? null };
+      }),
+    }))
+  );
 }
 
 export async function POST(req: Request) {

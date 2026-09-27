@@ -1,98 +1,134 @@
 import { useCallback, useState } from "react";
-import { View, Text, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity, Alert } from "react-native";
-import { useFocusEffect } from "expo-router";
+import { View, Text, FlatList, StyleSheet, Alert, RefreshControl } from "react-native";
+import { router, useFocusEffect } from "expo-router";
 import type { Subscription } from "@xanhtantay/types";
 import { apiFetch, ApiError } from "../../constants/api";
-import { colors, shape, type } from "../../constants/theme";
-import { formatVnd } from "../../constants/commerce";
+import { colors, shape, type, elevation } from "../../constants/theme";
+import { formatDate, formatVND } from "../../constants/format";
+import { AnimIn, Skeleton } from "../../components/motion";
+import { Button, Chip, EmptyState, PageHeader } from "../../components/ui";
 
-const FREQ_LABEL: Record<string, string> = { weekly: "Hàng tuần", monthly: "Hàng tháng" };
+type Sub = Omit<Subscription, "items"> & {
+  farm: { id: string; name: string; slug: string } | null;
+  items: { product_id: string; quantity: number; name: string | null; unit: string | null; price_per_unit: number | null }[];
+};
 
+const FREQ_LABEL: Record<string, string> = { weekly: "Mỗi tuần", monthly: "Mỗi tháng" };
+
+/** Mirrors apps/web/src/app/(customer)/dang-ky/page.tsx + SubscriptionActions. */
 export default function DinhKyScreen() {
-  const [subs, setSubs] = useState<Subscription[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [subs, setSubs] = useState<Sub[] | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
       setSubs(await apiFetch("/subscriptions"));
     } catch {
-      // ignore; empty state / login prompt covers it
+      setSubs((s) => s ?? []);
     }
   }, []);
 
   useFocusEffect(
     useCallback(() => {
-      load().finally(() => setLoading(false));
+      load();
     }, [load])
   );
 
-  const toggleActive = async (s: Subscription) => {
+  const toggleActive = async (s: Sub) => {
     setBusy(s.id);
     try {
       await apiFetch("/subscriptions", { method: "PATCH", body: JSON.stringify({ id: s.id, active: !s.active }) });
-      setSubs((xs) => xs.map((x) => (x.id === s.id ? { ...x, active: !x.active } : x)));
+      setSubs((xs) => (xs ?? []).map((x) => (x.id === s.id ? { ...x, active: !x.active } : x)));
+      Alert.alert(s.active ? "Đã tạm dừng gói" : "Gói đã hoạt động trở lại", s.active ? "Bật lại bất cứ lúc nào." : undefined);
     } catch (e) {
-      Alert.alert("Lỗi", e instanceof ApiError ? e.message : "Không cập nhật được");
+      Alert.alert("Không cập nhật được", e instanceof ApiError ? e.message : "Có lỗi xảy ra");
     } finally {
       setBusy(null);
     }
   };
 
-  if (loading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
-    );
-  }
-
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Đơn định kỳ 🔄</Text>
-      <Text style={styles.subtitle}>Rau được giao đều đặn, không cần đặt lại mỗi lần. Tạo gói mới bằng cách thêm sản phẩm vào giỏ ở trang vườn, rồi liên hệ nhà vườn để chuyển sang định kỳ.</Text>
-      <FlatList
-        data={subs}
-        keyExtractor={(s) => s.id}
-        contentContainerStyle={{ paddingTop: 16, paddingBottom: 32 }}
-        ListEmptyComponent={<Text style={styles.placeholderText}>Bạn chưa có gói định kỳ nào.</Text>}
-        renderItem={({ item: s }) => (
-          <View style={[styles.card, !s.active && { opacity: 0.6 }]}>
-            <View style={styles.cardHeader}>
-              <Text style={styles.freq}>{FREQ_LABEL[s.frequency] ?? s.frequency}</Text>
-              <TouchableOpacity style={[styles.toggleBtn, { backgroundColor: s.active ? colors.primaryContainer : colors.errorContainer }]} disabled={busy === s.id} onPress={() => toggleActive(s)}>
-                <Text style={{ color: s.active ? colors.onPrimaryContainer : colors.onErrorContainer, fontWeight: "700", fontSize: 12 }}>
-                  {s.active ? "Đang hoạt động" : "Đã tạm dừng"}
-                </Text>
-              </TouchableOpacity>
-            </View>
-            <Text style={styles.nextDelivery}>Giao tiếp theo: {new Date(s.next_delivery).toLocaleDateString("vi-VN")}</Text>
-            <View style={styles.itemsRow}>
-              {s.items.map((it, i) => (
-                <View key={i} style={styles.itemChip}>
-                  <Text style={styles.itemChipText}>{it.quantity} × sản phẩm</Text>
-                </View>
-              ))}
-            </View>
+    <FlatList
+      style={styles.container}
+      data={subs ?? []}
+      keyExtractor={(s) => s.id}
+      contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={async () => {
+            setRefreshing(true);
+            await load();
+            setRefreshing(false);
+          }}
+          colors={[colors.primary]}
+          tintColor={colors.primary}
+        />
+      }
+      ListHeaderComponent={<PageHeader icon="event_repeat" eyebrow="Tự động, đúng hẹn" title="Gói đăng ký" subtitle="Rau củ giao định kỳ, không cần đặt lại" />}
+      ListEmptyComponent={
+        subs === null ? (
+          <View style={{ gap: 12 }}>
+            <Skeleton height={160} radius={shape.xl} />
+            <Skeleton height={160} radius={shape.xl} />
           </View>
-        )}
-      />
-    </View>
+        ) : (
+          <EmptyState icon="event_repeat" title="Chưa có gói đăng ký nào" description="Thêm món vào giỏ ở trang vườn, rồi bấm “Giao định kỳ” để tạo gói tuần / tháng." action={<Button label="Chọn vườn rau" icon="potted_plant" onPress={() => router.push("/tabs/farms")} />} />
+        )
+      }
+      renderItem={({ item: s, index }) => {
+        const est = s.items.reduce((sum, i) => sum + (i.price_per_unit ?? 0) * i.quantity, 0);
+        return (
+          <AnimIn index={Math.min(index, 6)} style={{ marginBottom: 14 }}>
+            <View style={[styles.card, elevation[1], !s.active && { opacity: 0.75 }]}>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 12 }}>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={styles.farmName}>{s.farm?.name ?? "Vườn rau"}</Text>
+                  <View style={{ flexDirection: "row", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
+                    <Chip icon={s.frequency === "weekly" ? "date_range" : "calendar_month"} label={FREQ_LABEL[s.frequency] ?? s.frequency} tone="primary" small />
+                    <Chip icon={s.active ? "check_circle" : "pause_circle"} label={s.active ? "Đang hoạt động" : "Đã tạm dừng"} tone={s.active ? "secondary" : "error"} small />
+                  </View>
+                </View>
+                <View style={{ alignItems: "flex-end" }}>
+                  <Text style={styles.body}>Giao tiếp theo</Text>
+                  <Text style={styles.next}>{formatDate(s.next_delivery, { weekday: "long", day: "numeric", month: "long" })}</Text>
+                </View>
+              </View>
+
+              {s.items.length > 0 && (
+                <View style={styles.itemsBox}>
+                  <Text style={styles.label}>GIỎ HÀNG ĐỊNH KỲ · ~{formatVND(est)}</Text>
+                  {s.items.map((it, i) => (
+                    <View key={i} style={{ flexDirection: "row", justifyContent: "space-between", gap: 8, marginTop: 6 }}>
+                      <Text style={styles.itemText}>
+                        {it.quantity} {it.unit ?? "×"} {it.name ?? "Sản phẩm không còn"}
+                      </Text>
+                      {it.price_per_unit !== null && <Text style={styles.body}>{formatVND(it.price_per_unit * it.quantity)}</Text>}
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              <View style={{ flexDirection: "row", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
+                {s.farm && <Button label="Đổi món" icon="edit" variant="outlined" small onPress={() => router.push(`/farms/${s.farm!.id}`)} />}
+                <Button label={s.active ? "Tạm dừng" : "Kích hoạt lại"} icon={s.active ? "pause_circle" : "play_circle"} variant={s.active ? "error" : "tonal"} small loading={busy === s.id} onPress={() => toggleActive(s)} />
+              </View>
+            </View>
+          </AnimIn>
+        );
+      }}
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.surface, padding: 16 },
-  center: { flex: 1, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center" },
-  title: { ...type.headlineSmall, color: colors.onSurface },
-  subtitle: { ...type.bodyMedium, color: colors.onSurfaceVariant, marginTop: 6, fontSize: 13 },
-  placeholderText: { ...type.bodyMedium, color: colors.onSurfaceVariant },
-  card: { backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.lg, padding: 14, marginBottom: 12 },
-  cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  freq: { ...type.titleMedium, color: colors.onSurface, fontSize: 14 },
-  toggleBtn: { borderRadius: shape.full, paddingVertical: 5, paddingHorizontal: 10 },
-  nextDelivery: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12, marginTop: 6 },
-  itemsRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 10 },
-  itemChip: { backgroundColor: colors.surfaceContainerHighest, borderRadius: shape.full, paddingVertical: 4, paddingHorizontal: 10 },
-  itemChipText: { fontSize: 12, color: colors.onSurface, fontWeight: "600" },
+  container: { flex: 1, backgroundColor: colors.surface },
+  body: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12 },
+  card: { backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.xl, padding: 20 },
+  farmName: { ...type.titleLarge, color: colors.onSurface, fontSize: 18 },
+  next: { ...type.titleMedium, color: colors.primary, fontSize: 14, textAlign: "right" },
+  itemsBox: { backgroundColor: colors.surfaceContainerLow, borderRadius: shape.md, padding: 12, marginTop: 14 },
+  label: { ...type.labelLarge, color: colors.onSurfaceVariant, fontSize: 11, letterSpacing: 0.6 },
+  itemText: { ...type.bodyMedium, color: colors.onSurface, fontSize: 14, flex: 1 },
 });

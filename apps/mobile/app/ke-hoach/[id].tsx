@@ -135,7 +135,7 @@ export default function KeHoachScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
-      <Text style={styles.title}>Kế hoạch {plan.days} ngày 🍽️</Text>
+      <Text style={styles.title}>Kế hoạch {plan.days} ngày</Text>
       <Text style={styles.summary}>{plan.summary}</Text>
 
       <View style={styles.prefsRow}>
@@ -158,7 +158,7 @@ export default function KeHoachScreen() {
                   <View style={{ flex: 1 }}>
                     <Text style={styles.mealTitle}>{m.title}</Text>
                     <Text style={styles.mealUses}>{m.uses.join(", ")}</Text>
-                    {m.note ? <Text style={styles.mealNote}>💡 {m.note}</Text> : null}
+                    {m.note ? <Text style={styles.mealNote}>{m.note}</Text> : null}
                   </View>
                 </View>
                 <TouchableOpacity
@@ -169,12 +169,12 @@ export default function KeHoachScreen() {
                   {mealLoading ? (
                     <ActivityIndicator size="small" color={colors.onSecondaryContainer} />
                   ) : (
-                    <Text style={styles.howToBtnText}>{open ? "Thu gọn" : "📖 Xem cách làm"}</Text>
+                    <Text style={styles.howToBtnText}>{open ? "Thu gọn" : "Xem cách làm"}</Text>
                   )}
                 </TouchableOpacity>
                 {open && m.recipe && (
                   <View style={styles.recipeBox}>
-                    {m.recipe.minutes ? <Text style={styles.recipeMinutes}>⏱ Khoảng {m.recipe.minutes} phút</Text> : null}
+                    {m.recipe.minutes ? <Text style={styles.recipeMinutes}>Khoảng {m.recipe.minutes} phút</Text> : null}
                     <Text style={styles.recipeHeading}>Nguyên liệu</Text>
                     {m.recipe.ingredients.map((ing, k) => (
                       <Text key={k} style={styles.recipeLine}>

@@ -9,9 +9,9 @@ export interface RecipePrefs {
 }
 
 export const GOALS: { value: RecipeGoal; label: string; icon: string; desc: string }[] = [
-  { value: "normal", label: "Bình thường", icon: "🍚", desc: "Cơm nhà ngon miệng" },
-  { value: "diet", label: "Ăn kiêng", icon: "⚖️", desc: "Giảm cân, ít calo" },
-  { value: "gym", label: "Tập gym", icon: "💪", desc: "Tăng cơ, nhiều đạm" },
+  { value: "normal", label: "Bình thường", icon: "restaurant", desc: "Cơm nhà ngon miệng" },
+  { value: "diet", label: "Ăn kiêng", icon: "monitor_weight", desc: "Giảm cân, ít calo" },
+  { value: "gym", label: "Tập gym", icon: "fitness_center", desc: "Tăng cơ, nhiều đạm" },
 ];
 
 export const DIET_TAGS: { value: string; label: string }[] = [

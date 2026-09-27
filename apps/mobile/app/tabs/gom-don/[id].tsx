@@ -1,49 +1,55 @@
 import { useCallback, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from "react-native";
-import { useLocalSearchParams, useFocusEffect } from "expo-router";
-import type { GroupOrder } from "@xanhtantay/types";
-import { apiFetch, ApiError } from "../../../constants/api";
+import { View, Text, StyleSheet, ActivityIndicator, Alert, ScrollView, Share, TouchableOpacity } from "react-native";
+import * as Clipboard from "expo-clipboard";
+import { useLocalSearchParams, useFocusEffect, router } from "expo-router";
+import type { Farm, GroupOrder } from "@xanhtantay/types";
+import { apiFetch, ApiError, API_URL } from "../../../constants/api";
 import { useSession } from "../../../hooks/useSession";
 import { colors, shape, type, elevation } from "../../../constants/theme";
+import { daysUntil, formatDate } from "../../../constants/format";
+import { AnimIn, AnimInScale, AnimatedProgress, PressableScale } from "../../../components/motion";
+import { Avatar, Button, Chip } from "../../../components/ui";
+import { Icon } from "../../../components/Icon";
 
 interface GroupMember { id: string; user_id: string; name: string | null }
 type GroupDetail = GroupOrder & { members: GroupMember[]; joined: boolean };
 
-function daysUntil(d: string | Date) {
-  return Math.ceil((new Date(d).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-}
-
+/** Mirrors apps/web/src/app/(customer)/gom-don/[id]/page.tsx + JoinGroupButton. */
 export default function GomDonDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useSession();
   const [group, setGroup] = useState<GroupDetail | null>(null);
+  const [farm, setFarm] = useState<Farm | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const load = useCallback(() => {
     if (!id) return;
     apiFetch(`/groups/${id}`)
-      .then((row: GroupDetail) => setGroup(row))
+      .then(async (row: GroupDetail) => {
+        setGroup(row);
+        setFarm(await apiFetch(`/farms/${row.farm_id}`).catch(() => null));
+      })
       .catch(() => setGroup(null))
       .finally(() => setLoading(false));
   }, [id]);
 
   useFocusEffect(
     useCallback(() => {
-      setLoading(true);
       load();
     }, [load])
   );
 
   const join = async () => {
     if (!user) {
-      Alert.alert("Cần đăng nhập", "Đăng nhập để tham gia nhóm gom đơn.");
+      router.push(`/dang-nhap?next=/tabs/gom-don/${id}&role=customer`);
       return;
     }
     setBusy(true);
     try {
       await apiFetch(`/groups/${id}/join`, { method: "POST", body: JSON.stringify({ items: [] }) });
-      Alert.alert("Đã tham gia!", "Bạn đã ở trong nhóm gom đơn này. Rủ thêm hàng xóm để được freeship nhé.");
+      Alert.alert("Bạn đã vào nhóm!", "Rủ thêm hàng xóm để được freeship nhé.");
       load();
     } catch (e) {
       Alert.alert("Không tham gia được", e instanceof ApiError ? e.message : "Có lỗi xảy ra");
@@ -62,7 +68,7 @@ export default function GomDonDetailScreen() {
           setBusy(true);
           try {
             await apiFetch(`/groups/${id}/leave`, { method: "POST" });
-            Alert.alert("Đã rời nhóm", "Bạn có thể tham gia lại bất cứ lúc nào trước hạn chốt.");
+            Alert.alert("Đã rời nhóm", "Vào lại bất cứ lúc nào trước hạn chốt.");
             load();
           } catch (e) {
             Alert.alert("Không rời được", e instanceof ApiError ? e.message : "Có lỗi xảy ra");
@@ -74,6 +80,14 @@ export default function GomDonDetailScreen() {
     ]);
   };
 
+  const inviteUrl = `${API_URL}/gom-don/${id}`;
+  const copy = async () => {
+    await Clipboard.setStringAsync(inviteUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  const share = () => Share.share({ message: `Cùng gom đơn rau sạch với mình nhé: ${inviteUrl}`, url: inviteUrl, title: group?.title }).catch(() => {});
+
   if (loading) {
     return (
       <View style={styles.center}>
@@ -81,7 +95,6 @@ export default function GomDonDetailScreen() {
       </View>
     );
   }
-
   if (!group) {
     return (
       <View style={styles.center}>
@@ -94,80 +107,111 @@ export default function GomDonDetailScreen() {
   const freeship = group.current_members >= group.min_members;
   const left = daysUntil(group.deadline);
   const canAct = group.status === "open" && left >= 0;
+  const fg = freeship ? colors.onPrimaryContainer : colors.onSurface;
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>{group.title}</Text>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 16, paddingBottom: 32, gap: 18 }}>
+      <AnimIn>
+        <Text style={styles.title}>{group.title}</Text>
+        {farm && (
+          <TouchableOpacity onPress={() => router.push(`/farms/${farm.id}`)}>
+            <Text style={styles.farmLink}><Icon name="potted_plant" size={14} filled color={colors.primary} /> {farm.name} · {farm.location}</Text>
+          </TouchableOpacity>
+        )}
+      </AnimIn>
 
-      <View style={[styles.statusCard, elevation[1], freeship && { backgroundColor: colors.primaryContainer }]}>
-        <Text style={[styles.statusTitle, freeship && { color: colors.onPrimaryContainer }]}>
-          {freeship ? "🎉 Đủ điều kiện freeship!" : `Cần thêm ${group.min_members - group.current_members} người nữa`}
-        </Text>
-        <Text style={[styles.statusMeta, freeship && { color: colors.onPrimaryContainer }]}>{group.current_members}/{group.min_members} người tham gia</Text>
-        <View style={styles.progressTrack}>
-          <View style={[styles.progressBar, { width: `${pct}%`, backgroundColor: freeship ? colors.primary : colors.secondary }]} />
-        </View>
-        <Text style={[styles.statusMeta, freeship && { color: colors.onPrimaryContainer }, { marginTop: 8 }]}>
-          📍 {group.shipping_address}
-        </Text>
-        <Text style={[styles.statusMeta, freeship && { color: colors.onPrimaryContainer }]}>
-          📅 {left > 0 ? `Còn ${left} ngày để chốt đơn` : "Chốt hôm nay"}
-        </Text>
-      </View>
-
-      <Text style={styles.sectionTitle}>Thành viên ({group.members.length})</Text>
-      {group.members.length === 0 ? (
-        <Text style={styles.body}>Chưa có ai. Hãy là người đầu tiên!</Text>
-      ) : (
-        group.members.map((m) => (
-          <View key={m.id} style={styles.memberRow}>
-            <View style={[styles.memberAvatar, user && m.user_id === user.id && { backgroundColor: colors.primary }]}>
-              <Text style={[styles.memberAvatarText, user && m.user_id === user.id && { color: colors.onPrimary }]}>
-                {(m.name ?? "?").trim().charAt(0).toUpperCase()}
-              </Text>
+      <AnimInScale delay={60}>
+        <View style={[styles.statusCard, elevation[1], { backgroundColor: freeship ? colors.primaryContainer : colors.surfaceContainer }]}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 16 }}>
+            <View style={[styles.statusIcon, { backgroundColor: freeship ? colors.primary : colors.secondaryContainer }]}>
+              <Icon name={freeship ? "celebration" : "group_add"} size={32} filled color={freeship ? colors.onPrimary : colors.onSecondaryContainer} />
             </View>
-            <Text style={styles.memberName}>
-              {m.name ?? "Thành viên ẩn danh"}
-              {user && m.user_id === user.id ? " (bạn)" : ""}
-            </Text>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.statusTitle, { color: fg }]}>{freeship ? "Đủ điều kiện freeship!" : `Cần thêm ${group.min_members - group.current_members} người nữa`}</Text>
+              <Text style={[styles.body, { color: fg, opacity: 0.8 }]}>{group.current_members}/{group.min_members} người tham gia</Text>
+            </View>
           </View>
-        ))
-      )}
+          <AnimatedProgress value={pct} wavy={!freeship} color={freeship ? colors.primary : colors.secondary} height={10} />
+          <View style={{ gap: 4, marginTop: 12 }}>
+            <Text style={[styles.body, { color: fg, opacity: 0.85 }]}><Icon name="event" size={13} color={fg} /> Chốt {formatDate(group.deadline, { weekday: "long", day: "numeric", month: "long" })}{left > 0 ? ` (còn ${left} ngày)` : " (hôm nay)"}</Text>
+            <Text style={[styles.body, { color: fg, opacity: 0.85 }]}><Icon name="location_on" size={13} color={fg} /> {group.shipping_address}</Text>
+          </View>
+        </View>
+      </AnimInScale>
+
+      <AnimIn delay={120}>
+        <View style={styles.inviteCard}>
+          <Text style={styles.label}><Icon name="share" size={13} color={colors.onSurfaceVariant} /> MỜI BẠN BÈ THAM GIA</Text>
+          <View style={{ flexDirection: "row", gap: 8, alignItems: "center", marginTop: 10 }}>
+            <View style={styles.codeBox}>
+              <Text style={styles.code} numberOfLines={1}>{inviteUrl}</Text>
+            </View>
+            <PressableScale haptic style={styles.iconBtn} onPress={copy}>
+              <Icon name={copied ? "check" : "content_copy"} size={20} color={colors.onSecondaryContainer} />
+            </PressableScale>
+            <PressableScale haptic style={[styles.iconBtn, { backgroundColor: colors.primary }]} onPress={share}>
+              <Icon name="share" size={20} color={colors.onPrimary} />
+            </PressableScale>
+          </View>
+          {copied && <Text style={[styles.body, { color: colors.primary, marginTop: 6 }]}>Đã sao chép link mời</Text>}
+        </View>
+      </AnimIn>
+
+      <AnimIn delay={180}>
+        <Text style={styles.sectionTitle}><Icon name="groups" size={20} filled color={colors.primary} /> Thành viên ({group.members.length})</Text>
+        {group.members.length === 0 ? (
+          <Text style={styles.body}>Chưa có ai. Hãy là người đầu tiên!</Text>
+        ) : (
+          <View style={{ gap: 8 }}>
+            {group.members.map((m, i) => {
+              const me = !!user && m.user_id === user.id;
+              return (
+                <AnimIn key={m.id} index={i} delay={200}>
+                  <View style={styles.memberRow}>
+                    <Avatar name={m.name} size={36} tone={me ? "primary" : "tertiary"} />
+                    <Text style={styles.memberName}>
+                      {m.name ?? "Thành viên ẩn danh"}
+                      {me ? " (bạn)" : ""}
+                    </Text>
+                  </View>
+                </AnimIn>
+              );
+            })}
+          </View>
+        )}
+      </AnimIn>
 
       {canAct && (
-        <View style={{ marginTop: 20 }}>
+        <AnimIn delay={260} style={{ alignItems: "center", marginTop: 6 }}>
           {group.joined ? (
-            <TouchableOpacity style={styles.leaveBtn} disabled={busy} onPress={leave}>
-              {busy ? <ActivityIndicator color={colors.error} /> : <Text style={styles.leaveBtnText}>Rời nhóm</Text>}
-            </TouchableOpacity>
+            <View style={{ flexDirection: "row", gap: 10, alignItems: "center", flexWrap: "wrap", justifyContent: "center" }}>
+              <Chip icon="check_circle" label="Bạn đã tham gia nhóm này" tone="primary" />
+              <Button label="Rời nhóm" icon="logout" variant="error" small onPress={leave} loading={busy} />
+            </View>
           ) : (
-            <TouchableOpacity style={styles.joinBtn} disabled={busy} onPress={join}>
-              {busy ? <ActivityIndicator color={colors.onPrimary} /> : <Text style={styles.joinBtnText}>Tham gia nhóm</Text>}
-            </TouchableOpacity>
+            <Button label={busy ? "Đang tham gia…" : "Tham gia nhóm này"} icon="groups" onPress={join} loading={busy} style={{ paddingHorizontal: 30 }} />
           )}
-        </View>
+        </AnimIn>
       )}
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.surface, padding: 16 },
+  container: { flex: 1, backgroundColor: colors.surface },
   center: { flex: 1, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center" },
-  body: { ...type.bodyMedium, color: colors.onSurfaceVariant },
-  title: { ...type.headlineSmall, color: colors.onSurface, marginBottom: 16 },
-  statusCard: { backgroundColor: colors.surfaceContainerLow, borderRadius: shape.xlIncreased, padding: 22, marginBottom: 20 },
-  statusTitle: { ...type.titleLarge, color: colors.onSurface },
-  statusMeta: { ...type.bodyMedium, color: colors.onSurfaceVariant, marginTop: 4 },
-  progressTrack: { height: 8, backgroundColor: "rgba(0,0,0,.08)", borderRadius: shape.full, overflow: "hidden", marginTop: 12 },
-  progressBar: { height: 8, borderRadius: shape.full },
-  sectionTitle: { ...type.titleMedium, color: colors.onSurface, marginBottom: 8 },
-  memberRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 6 },
-  memberAvatar: { width: 32, height: 32, borderRadius: shape.full, backgroundColor: colors.surfaceContainerHighest, alignItems: "center", justifyContent: "center" },
-  memberAvatarText: { ...type.labelLarge, color: colors.onSurface, fontSize: 13 },
-  memberName: { ...type.bodyMedium, color: colors.onSurface },
-  joinBtn: { backgroundColor: colors.primary, borderRadius: shape.full, padding: 16, alignItems: "center" },
-  joinBtnText: { ...type.labelLarge, color: colors.onPrimary, fontSize: 16 },
-  leaveBtn: { borderWidth: 1.5, borderColor: colors.error, borderRadius: shape.full, padding: 16, alignItems: "center" },
-  leaveBtnText: { ...type.labelLarge, color: colors.error, fontSize: 16 },
+  body: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 13 },
+  title: { ...type.headlineSmall, color: colors.onSurface, fontSize: 24 },
+  farmLink: { ...type.labelLarge, color: colors.primary, marginTop: 4, fontSize: 14 },
+  statusCard: { borderRadius: shape.xlIncreased, padding: 22 },
+  statusIcon: { width: 60, height: 60, borderRadius: shape.lg, alignItems: "center", justifyContent: "center" },
+  statusTitle: { ...type.titleLarge, fontSize: 18 },
+  inviteCard: { backgroundColor: colors.surfaceContainerLow, borderRadius: shape.xl, padding: 16 },
+  label: { ...type.labelLarge, color: colors.onSurfaceVariant, fontSize: 11, letterSpacing: 0.6 },
+  codeBox: { flex: 1, backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.md, paddingVertical: 12, paddingHorizontal: 14 },
+  code: { fontSize: 12, color: colors.onSurface, fontFamily: "monospace" },
+  iconBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.secondaryContainer, alignItems: "center", justifyContent: "center" },
+  sectionTitle: { ...type.titleLarge, color: colors.onSurface, fontSize: 18, marginBottom: 10 },
+  memberRow: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.md, padding: 10 },
+  memberName: { ...type.bodyMedium, color: colors.onSurface, fontSize: 14 },
 });

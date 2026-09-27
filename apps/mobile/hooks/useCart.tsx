@@ -1,4 +1,5 @@
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export interface CartProduct {
   id: string;
@@ -39,14 +40,34 @@ interface CartCtx {
 }
 
 const Ctx = createContext<CartCtx | null>(null);
+const CART_STORAGE_KEY = "xtt_cart_lines";
 
 /**
  * Mirrors apps/web/src/components/cart/CartProvider.tsx: multi-farm cart, one order per farm at
- * checkout. No AsyncStorage is installed in the mobile app, so this is in-memory for the session
- * (cart resets on app restart) rather than persisted like the web localStorage version.
+ * checkout. Persisted to AsyncStorage so the cart survives an app restart, matching a real app's
+ * behavior instead of the "browser tab" in-memory-only behavior the original port had.
  */
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [lines, setLines] = useState<CartLine[]>([]);
+  const hydrated = useRef(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const raw = await AsyncStorage.getItem(CART_STORAGE_KEY);
+        if (raw) setLines(JSON.parse(raw));
+      } catch {
+        // ignore corrupt storage
+      } finally {
+        hydrated.current = true;
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated.current) return; // don't clobber storage with the initial empty state
+    AsyncStorage.setItem(CART_STORAGE_KEY, JSON.stringify(lines)).catch(() => {});
+  }, [lines]);
 
   const qtyOf = useCallback((id: string) => lines.find((l) => l.id === id)?.quantity ?? 0, [lines]);
 

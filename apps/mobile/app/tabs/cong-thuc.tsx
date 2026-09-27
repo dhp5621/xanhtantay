@@ -6,6 +6,7 @@ import { apiFetch, ApiError } from "../../constants/api";
 import { colors, shape, type, elevation } from "../../constants/theme";
 import { DEFAULT_PREFS, RecipePrefs } from "../../constants/recipePrefs";
 import { RecipeSettingsButton, recipePrefsSummary } from "../../components/RecipeSettingsSheet";
+import { Screen } from "../../components/ui";
 
 type UserRecipe = Recipe & { description?: string | null; minutes?: number | null; kcal?: number | null; based_on?: string[] };
 
@@ -63,10 +64,10 @@ export default function CongThucScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <Screen style={{ padding: 16 }}>
       <View style={styles.headerRow}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.title}>Công thức của bạn 🍲</Text>
+          <Text style={styles.title}>Công thức của bạn</Text>
           <Text style={styles.subtitle}>Gợi ý món ăn từ rau bạn vừa nhận</Text>
         </View>
         <TouchableOpacity style={styles.suggestBtn} disabled={suggesting} onPress={suggest}>
@@ -107,7 +108,7 @@ export default function CongThucScreen() {
           );
         }}
       />
-    </View>
+    </Screen>
   );
 }
 
