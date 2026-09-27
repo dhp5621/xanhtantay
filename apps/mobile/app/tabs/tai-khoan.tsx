@@ -159,6 +159,7 @@ export default function TaiKhoanScreen() {
         ...(me?.farm ? [{ href: `/farms/${me.farm.id}`, icon: "storefront", label: "Xem trang vườn của tôi", desc: "Như khách hàng nhìn thấy" }] : []),
       ]
     : [
+        { href: "/cart", icon: "shopping_basket", label: "Giỏ hàng của tôi", desc: "Các món đã chọn chờ đặt hàng" },
         { href: "/vuon-cua-toi", icon: "park", label: "Vườn của tôi", desc: "Điểm, hạng và cây bạn đã trồng" },
         { href: "/tabs/don-hang", icon: "package_2", label: "Đơn hàng của tôi", desc: "Theo dõi hành trình rau" },
         { href: "/dinh-ky", icon: "event_repeat", label: "Gói đăng ký", desc: "Giao định kỳ tuần / tháng" },

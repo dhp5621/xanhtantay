@@ -58,12 +58,17 @@ export default function NhatKyScreen() {
       alert(`Tối đa ${MAX_FILES} tệp mỗi bài`);
       return;
     }
-    setProcessing(kind === "video" ? "Đang chuẩn bị video…" : "Đang nén ảnh…");
+    setProcessing(kind === "video" ? "Đang nén video…" : kind === "image" ? "Đang nén ảnh…" : "Đang xử lý…");
     try {
-      const picked = await pickMedia({ source, kind, max: MAX_FILES - media.length });
+      const picked = await pickMedia({
+        source,
+        kind,
+        max: MAX_FILES - media.length,
+        onStatus: (status) => setProcessing(status),
+      });
       setMedia((m) => [...m, ...picked].slice(0, MAX_FILES));
     } catch (e) {
-      alert("Không lấy được ảnh", e instanceof Error ? e.message : undefined);
+      alert("Không lấy được tệp", e instanceof Error ? e.message : undefined);
     } finally {
       setProcessing(null);
     }

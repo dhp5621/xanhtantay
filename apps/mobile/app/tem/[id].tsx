@@ -95,7 +95,7 @@ export default function TemScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 16, paddingBottom: 32, gap: 16 }}>
       <AnimIn>
-        <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
+        <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
           <Button label="In tem" icon="print" onPress={print} loading={busy} />
           <Button label="Chia sẻ PDF" icon="share" variant="tonal" onPress={share} loading={busy} />
         </View>

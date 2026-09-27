@@ -166,7 +166,7 @@ export default function DonHangScreen() {
                   })}
                 </View>
 
-                <View style={{ flexDirection: "row", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
+                <View style={{ flexDirection: "row", gap: 8, marginTop: 14, flexWrap: "wrap", alignItems: "center" }}>
                   {item.status === "delivered" && (
                     <>
                       <Button label="Kế hoạch ăn" icon="calendar_month" variant="tonal" small onPress={() => router.push(`/ke-hoach/${item.id}`)} />

@@ -253,5 +253,5 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
   photoBox: { width: 88, height: 88, borderRadius: shape.lg, backgroundColor: colors.surfaceContainerHigh, alignItems: "center", justifyContent: "center", overflow: "hidden" },
   input: { backgroundColor: colors.surfaceContainer, borderRadius: shape.md, padding: 13, color: colors.onSurface, fontSize: 15, borderWidth: 1, borderColor: colors.outlineVariant },
   wrap: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
-  modalActions: { flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 8 },
+  modalActions: { flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 8, alignItems: "center" },
 });

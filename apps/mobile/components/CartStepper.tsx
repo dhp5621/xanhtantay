@@ -56,10 +56,10 @@ export function CartStepper({ product, max, compact }: { product: CartProduct; m
 }
 
 const makeStyles = (colors: Colors) => StyleSheet.create({
-  addBtn: { backgroundColor: colors.primary, borderRadius: shape.full, paddingVertical: 8, paddingHorizontal: 16 },
+  addBtn: { backgroundColor: colors.primary, borderRadius: shape.full, paddingVertical: 8, paddingHorizontal: 16, flexShrink: 0 },
   addBtnCompact: { paddingVertical: 7, paddingHorizontal: 12 },
-  addBtnText: { ...type.labelLarge, color: colors.onPrimary, fontSize: 13 },
-  row: { flexDirection: "row", alignItems: "center", backgroundColor: colors.primaryContainer, borderRadius: shape.full, padding: 3, gap: 2 },
+  addBtnText: { ...type.labelLarge, color: colors.onPrimary, fontSize: 13, lineHeight: 18, flexShrink: 0, includeFontPadding: false },
+  row: { flexDirection: "row", alignItems: "center", backgroundColor: colors.primaryContainer, borderRadius: shape.full, padding: 3, gap: 2, flexShrink: 0 },
   rowCompact: { padding: 2 },
   btn: { width: 30, height: 30, borderRadius: shape.full, alignItems: "center", justifyContent: "center", backgroundColor: colors.surfaceContainerLowest },
   btnCompact: { width: 26, height: 26 },

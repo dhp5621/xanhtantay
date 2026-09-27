@@ -236,5 +236,5 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
   recipeLine: {  ...type.bodyMedium, color: colors.onSurface, fontSize: 13, lineHeight: 20 },
   leftover: {  ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12, fontStyle: "italic", marginTop: 4 },
   regenBtn: { backgroundColor: colors.secondaryContainer, borderRadius: shape.full, padding: 14, alignItems: "center", marginTop: 8 },
-  regenBtnText: { color: colors.onSecondaryContainer, fontWeight: "700" },
+  regenBtnText: { ...type.labelLarge, color: colors.onSecondaryContainer, fontSize: 15, includeFontPadding: false },
 });

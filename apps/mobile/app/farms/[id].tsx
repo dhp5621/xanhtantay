@@ -181,7 +181,7 @@ export default function FarmDetailScreen() {
             </View>
           </View>
           {!preview && (
-            <View style={{ flexDirection: "row", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+            <View style={{ flexDirection: "row", gap: 8, marginTop: 10, flexWrap: "wrap", alignItems: "center" }}>
               <Button label={following ? "Đang theo dõi" : "Theo dõi"} icon={following ? "notifications_active" : "notifications"} variant={following ? "filled" : "tonal"} small onPress={toggleFollow} />
               <Button label="Giao định kỳ" icon="event_repeat" variant="outlined" small onPress={startSubscribe} />
             </View>

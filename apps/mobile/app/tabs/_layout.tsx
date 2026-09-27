@@ -14,12 +14,13 @@ const icon = (name: string) => ({ color, focused }: { color: string; focused: bo
  * Hidden routes (href: null) stay reachable by deep link.
  */
 export default function TabsLayout() {
-  const { user } = useSession();
+  const { user, loading } = useSession();
   const header = { headerShown: true, headerStyle: { backgroundColor: colors.surface }, headerTintColor: colors.onSurface, headerShadowVisible: false, headerTitleStyle: { fontWeight: "700" as const } };
   const isFarmer = user?.role === "farmer";
   // Like the web's VISITOR_NAV: signed-out visitors only get Home and Account; everything else needs a session.
-  const customerOnly = user && !isFarmer ? undefined : null;
-  const farmerOnly = isFarmer ? undefined : null;
+  // Don't hide tabs with href: null while loading, otherwise Expo Router flashes +not-found for the active tab.
+  const customerOnly = loading ? undefined : (user && !isFarmer ? undefined : null);
+  const farmerOnly = loading ? undefined : (isFarmer ? undefined : null);
   // Edge-to-edge: the system navigation bar overlays the app, so the tab bar grows by the bottom inset.
   const insets = useSafeAreaInsets();
   const bottom = Math.max(insets.bottom, 10);

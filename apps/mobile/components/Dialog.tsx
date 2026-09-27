@@ -95,8 +95,8 @@ const makeStyles = (c: Colors) =>
     iconWrap: { alignItems: "center", marginBottom: 16 },
     title: {  ...type.headlineSmall, color: c.onSurface, fontSize: 22, lineHeight: 28, fontWeight: "600" },
     message: { ...type.bodyMedium, color: c.onSurfaceVariant, marginTop: 12, lineHeight: 21 },
-    actions: { flexDirection: "row", justifyContent: "flex-end", flexWrap: "wrap", gap: 6, marginTop: 24 },
-    btn: { paddingVertical: 10, paddingHorizontal: 14, borderRadius: shape.full, minWidth: 64, alignItems: "center" },
+    actions: { flexDirection: "row", justifyContent: "flex-end", flexWrap: "wrap", gap: 6, marginTop: 24, alignItems: "center" },
+    btn: { paddingVertical: 10, paddingHorizontal: 14, borderRadius: shape.full, minWidth: 64, alignItems: "center", flexShrink: 0 },
     btnFilled: { backgroundColor: c.primary, paddingHorizontal: 20 },
-    btnText: { ...type.labelLarge, color: c.primary, fontSize: 14 },
+    btnText: { ...type.labelLarge, color: c.primary, fontSize: 14, lineHeight: 20, flexShrink: 0, includeFontPadding: false },
   });

@@ -21,7 +21,7 @@ export interface PickedMedia {
  * `kind` picks what the camera opens in: "video" starts the recorder (with the 30s cap) instead of
  * the photo shutter — passing both types to the system camera on Android only ever takes photos.
  */
-export async function pickMedia(opts: { source: "library" | "camera"; kind?: "image" | "video" | "any"; allowVideo?: boolean; max?: number }): Promise<PickedMedia[]> {
+export async function pickMedia(opts: { source: "library" | "camera"; kind?: "image" | "video" | "any"; allowVideo?: boolean; max?: number; onStatus?: (status: string) => void }): Promise<PickedMedia[]> {
   const kind = opts.kind ?? (opts.allowVideo ? "any" : "image");
   const mediaTypes: ImagePicker.MediaType[] = kind === "video" ? ["videos"] : kind === "any" ? ["images", "videos"] : ["images"];
   let result: ImagePicker.ImagePickerResult;
@@ -45,8 +45,10 @@ export async function pickMedia(opts: { source: "library" | "camera"; kind?: "im
   const out: PickedMedia[] = [];
   for (const a of result.assets) {
     if (a.type === "video") {
+      opts.onStatus?.("Đang nén video…");
       out.push({ uri: a.uri, kind: "video", mimeType: a.mimeType ?? "video/mp4", fileName: a.fileName ?? `video-${Date.now()}.mp4`, size: a.fileSize ?? undefined, durationMs: a.duration ?? undefined });
     } else {
+      opts.onStatus?.("Đang nén ảnh…");
       out.push(await compressImage(a.uri, a.width, a.height));
     }
   }

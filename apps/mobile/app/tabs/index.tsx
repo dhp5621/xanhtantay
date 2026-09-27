@@ -111,7 +111,7 @@ function FeedView({ feed, user }: { feed: Feed; user: SessionUser }) {
           <Text style={styles.eyebrow}>Chào {user.name?.split(" ").pop()}, hôm nay ăn gì?</Text>
           <Text style={styles.heroTitle}>Biết rõ từng cây rau trước khi lên bàn ăn</Text>
           <Text style={styles.heroBody}>Đặt hàng trực tiếp từ vườn nhà bác Ba, cô Tư, u Thắm. Xem nhật ký canh tác hàng ngày, biết rau thu hoạch lúc nào và đến tay bạn ra sao.</Text>
-          <View style={{ flexDirection: "row", gap: 10, flexWrap: "wrap", marginTop: 18 }}>
+          <View style={{ flexDirection: "row", gap: 10, flexWrap: "wrap", marginTop: 18, alignItems: "center" }}>
             <Button label="Khám phá vườn rau" icon="potted_plant" onPress={() => router.push("/tabs/farms")} />
             <Button label="Gom đơn cùng hàng xóm" icon="groups" variant="tonal" onPress={() => router.push("/tabs/gom-don")} style={{ backgroundColor: colors.surfaceContainerLowest }} />
           </View>

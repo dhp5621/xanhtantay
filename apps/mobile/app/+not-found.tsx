@@ -1,12 +1,19 @@
 import { View, Text, StyleSheet } from "react-native";
 import { Link, Stack } from "expo-router";
-import { colors, shape, type, emojiFont, useStyles } from "../constants/theme";
+import { colors, shape, type, useStyles } from "../constants/theme";
 import { AnimInScale } from "../components/motion";
 import { Icon } from "../components/Icon";
+import { useSession } from "../hooks/useSession";
 import type { Colors } from "../constants/theme";
 
 export default function NotFoundScreen() {
   const styles = useStyles(makeStyles);
+  const { loading } = useSession();
+
+  if (loading) {
+    return <View style={{ flex: 1, backgroundColor: colors.surface }} />;
+  }
+
   return (
     <>
       <Stack.Screen options={{ title: "Không tìm thấy", headerShown: true }} />

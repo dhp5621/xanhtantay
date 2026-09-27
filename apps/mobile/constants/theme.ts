@@ -160,13 +160,13 @@ export const isAndroid = Platform.OS === "android";
 
 // M3 type scale (subset actually used by mobile screens).
 export const type = {
-  displaySmall: { fontSize: 36, fontWeight: "400" as const, lineHeight: 44 },
-  headlineSmall: { fontSize: 24, fontWeight: "800" as const, lineHeight: 32 },
-  titleLarge: { fontSize: 22, fontWeight: "700" as const, lineHeight: 28 },
-  titleMedium: { fontSize: 16, fontWeight: "700" as const, lineHeight: 24 },
-  bodyLarge: { fontSize: 16, fontWeight: "400" as const, lineHeight: 24 },
-  bodyMedium: { fontSize: 14, fontWeight: "400" as const, lineHeight: 20 },
-  labelLarge: { fontSize: 14, fontWeight: "700" as const, lineHeight: 20 },
+  displaySmall: { fontSize: 36, fontWeight: "400" as const, lineHeight: 44, includeFontPadding: false },
+  headlineSmall: { fontSize: 24, fontWeight: "800" as const, lineHeight: 32, includeFontPadding: false },
+  titleLarge: { fontSize: 22, fontWeight: "700" as const, lineHeight: 28, includeFontPadding: false },
+  titleMedium: { fontSize: 16, fontWeight: "700" as const, lineHeight: 24, includeFontPadding: false },
+  bodyLarge: { fontSize: 16, fontWeight: "400" as const, lineHeight: 24, includeFontPadding: false },
+  bodyMedium: { fontSize: 14, fontWeight: "400" as const, lineHeight: 20, includeFontPadding: false },
+  labelLarge: { fontSize: 14, fontWeight: "700" as const, lineHeight: 20, includeFontPadding: false },
 };
 
 export const elevation = {

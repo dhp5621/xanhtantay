@@ -116,7 +116,7 @@ export default function DinhKyScreen() {
                 </View>
               )}
 
-              <View style={{ flexDirection: "row", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
+              <View style={{ flexDirection: "row", gap: 8, marginTop: 14, flexWrap: "wrap", alignItems: "center" }}>
                 {s.farm && <Button label="Đổi món" icon="edit" variant="outlined" small onPress={() => router.push(`/farms/${s.farm!.id}`)} />}
                 <Button label={s.active ? "Tạm dừng" : "Kích hoạt lại"} icon={s.active ? "pause_circle" : "play_circle"} variant={s.active ? "error" : "tonal"} small loading={busy === s.id} onPress={() => toggleActive(s)} />
               </View>

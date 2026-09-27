@@ -85,15 +85,15 @@ export function Chip({ label, icon, tone = "surface", selected, small, onPress, 
   const t = selected ? { bg: colors.primary, fg: colors.onPrimary } : tones()[tone];
   const inner = (
     <View style={[styles.chip, small && styles.chipSmall, { backgroundColor: t.bg }, style]}>
-      {icon ? <Icon name={icon} size={small ? 14 : 18} color={t.fg} filled={selected} /> : null}
-      <Text style={[styles.chipText, small && { fontSize: 11 }, { color: t.fg }]} numberOfLines={1}>
+      {icon ? <Icon name={icon} size={small ? 14 : 18} color={t.fg} filled={selected} style={{ flexShrink: 0 }} /> : null}
+      <Text style={[styles.chipText, small && styles.chipTextSmall, { color: t.fg }]} numberOfLines={1}>
         {label}
       </Text>
     </View>
   );
   if (!onPress) return inner;
   return (
-    <PressableScale onPress={onPress} scaleTo={0.94}>
+    <PressableScale onPress={onPress} scaleTo={0.94} style={{ alignSelf: "flex-start", flexShrink: 0 }}>
       {inner}
     </PressableScale>
   );
@@ -112,8 +112,8 @@ export function Button({ label, onPress, variant = "filled", disabled, loading, 
   }[variant];
   return (
     <PressableScale onPress={onPress} disabled={disabled || loading} haptic style={[styles.btn, small && styles.btnSmall, { backgroundColor: v.bg, borderColor: v.border, borderWidth: v.border === "transparent" ? 0 : 1.5 }, style]}>
-      {icon && !loading ? <Icon name={icon} size={small ? 18 : 20} color={v.fg} filled={variant === "filled"} /> : null}
-      <Text style={[styles.btnText, small && { fontSize: 13 }, { color: v.fg }]}>{loading ? "Đang xử lý…" : label}</Text>
+      {icon && !loading ? <Icon name={icon} size={small ? 18 : 20} color={v.fg} filled={variant === "filled"} style={{ flexShrink: 0 }} /> : null}
+      <Text numberOfLines={1} style={[styles.btnText, small && styles.btnTextSmall, { color: v.fg }]}>{loading ? "Đang xử lý…" : label}</Text>
     </PressableScale>
   );
 }
@@ -186,18 +186,20 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
   emptyIcon: { width: 64, height: 64, borderRadius: 32, backgroundColor: colors.surfaceContainerHighest, alignItems: "center", justifyContent: "center", marginBottom: 12 },
   emptyTitle: { ...type.titleLarge, color: colors.onSurface, textAlign: "center", fontSize: 18 },
   emptyDesc: { ...type.bodyMedium, color: colors.onSurfaceVariant, textAlign: "center", marginTop: 4 },
-  chip: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 8, paddingHorizontal: 14, borderRadius: shape.full, alignSelf: "flex-start" },
-  chipSmall: { paddingVertical: 4, paddingHorizontal: 10, gap: 4 },
-  chipText: { ...type.labelLarge, fontSize: 13 },
-  btn: { flexDirection: "row", gap: 8, paddingVertical: 14, paddingHorizontal: 22, borderRadius: shape.full, alignItems: "center", justifyContent: "center" },
-  btnSmall: { paddingVertical: 9, paddingHorizontal: 16, gap: 6 },
-  btnText: { ...type.labelLarge, fontSize: 15 },
+  chip: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 8, paddingHorizontal: 14, borderRadius: shape.full, alignSelf: "flex-start", flexShrink: 0 },
+  chipSmall: { paddingVertical: 4, paddingHorizontal: 10, gap: 4, flexShrink: 0 },
+  chipText: { ...type.labelLarge, fontSize: 13, lineHeight: 18, flexShrink: 0, includeFontPadding: false },
+  chipTextSmall: { fontSize: 11, lineHeight: 16, flexShrink: 0, includeFontPadding: false },
+  btn: { flexDirection: "row", gap: 8, paddingVertical: 14, paddingHorizontal: 22, borderRadius: shape.full, alignItems: "center", justifyContent: "center", alignSelf: "flex-start", flexShrink: 0 },
+  btnSmall: { paddingVertical: 9, paddingHorizontal: 16, gap: 6, flexShrink: 0 },
+  btnText: { ...type.labelLarge, fontSize: 15, lineHeight: 22, flexShrink: 0, includeFontPadding: false },
+  btnTextSmall: { fontSize: 13, lineHeight: 18, flexShrink: 0, includeFontPadding: false },
   stat: { borderRadius: shape.lgIncreased, padding: 14, gap: 2 },
   statValue: { ...type.headlineSmall, color: colors.onSurface, fontSize: 22, lineHeight: 28, marginTop: 4 },
   statLabel: { ...type.titleMedium, color: colors.onSurface, fontSize: 13, lineHeight: 18 },
   statDesc: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 11, lineHeight: 15 },
   listItem: { flexDirection: "row", alignItems: "center", gap: 14, backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.lg, padding: 14, marginBottom: 10 },
-  listLeading: { width: 44, height: 44, borderRadius: shape.md, alignItems: "center", justifyContent: "center" },
-  listTitle: { ...type.titleMedium, color: colors.onSurface, fontSize: 15 },
+  listLeading: { width: 44, height: 44, borderRadius: shape.md, alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  listTitle: { ...type.titleMedium, color: colors.onSurface, fontSize: 15, includeFontPadding: false },
   listDesc: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12, marginTop: 1 },
 });

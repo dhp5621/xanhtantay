@@ -34,7 +34,10 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       // while the network round-trip to /api/auth/session completes), then verify in background.
       try {
         const cached = await SecureStore.getItemAsync(CACHED_USER_KEY);
-        if (cached && !cancelled) setUser(JSON.parse(cached));
+        if (cached && !cancelled) {
+          setUser(JSON.parse(cached));
+          setLoading(false);
+        }
       } catch {
         // ignore
       }

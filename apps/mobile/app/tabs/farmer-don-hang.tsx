@@ -139,7 +139,7 @@ export default function FarmerDonHangScreen() {
                 </View>
               )}
               {item.note ? <EmojiText style={styles.note}><Icon name="sticky_note_2" size={13} color={colors.onSurfaceVariant} /> {item.note}</EmojiText> : null}
-              <View style={{ flexDirection: "row", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
+              <View style={{ flexDirection: "row", gap: 8, marginTop: 12, flexWrap: "wrap", alignItems: "center" }}>
                 {next && <Button label={next.label} icon={next.icon} small loading={updating === item.id} onPress={() => advance(item)} />}
                 <Button label="Tem QR" icon="qr_code_2" variant="outlined" small onPress={() => router.push(`/tem/${item.id}`)} />
               </View>

@@ -188,7 +188,7 @@ export default function GomDonScreen() {
               <Text style={styles.label}>Địa chỉ nhận chung</Text>
               <TextInput style={styles.input} placeholder="Sảnh chung cư, số nhà, phường…" placeholderTextColor={colors.onSurfaceVariant} value={form.shipping_address} onChangeText={(v) => setForm({ ...form, shipping_address: v })} maxLength={160} />
 
-              <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 8 }}>
+              <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 8, alignItems: "center" }}>
                 <Button label="Huỷ" variant="text" onPress={() => setOpen(false)} />
                 <Button label="Tạo nhóm" icon="rocket_launch" onPress={submit} loading={busy} disabled={!farms.length} />
               </View>
