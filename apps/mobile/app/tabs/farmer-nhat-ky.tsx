@@ -126,7 +126,7 @@ export default function NhatKyScreen() {
         <AnimIn delay={60}>
           <Text style={styles.label}>Gợi ý nhanh</Text>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-            {SUGGESTIONS.map((s) => <Chip key={s.text} label={`${s.icon} ${s.text}`} small onPress={() => setContent(s.text)} style={{ maxWidth: "100%" }} />)}
+            {SUGGESTIONS.map((s) => <Chip key={s.text} icon={s.icon} label={s.text} small onPress={() => setContent(s.text)} style={{ maxWidth: "100%" }} />)}
           </View>
         </AnimIn>
 
