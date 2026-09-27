@@ -1,11 +1,11 @@
 import { useEffect } from "react";
 import { Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { Stack } from "expo-router";
+import { Redirect, Stack, usePathname } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
-import { SessionProvider } from "../hooks/useSession";
+import { SessionProvider, useSession } from "../hooks/useSession";
 import { CartProvider } from "../hooks/useCart";
 import { LiveProvider } from "../hooks/useLive";
 import { ThemeProvider, useTheme } from "../hooks/useTheme";
@@ -50,10 +50,19 @@ export default function RootLayout() {
   );
 }
 
+// Signed-out visitors may only open these (the web shows visitors just the landing page + login;
+// the public package trace stays reachable since a QR sticker links straight to it).
+const PUBLIC_PATHS = new Set(["/", "/tabs", "/tabs/index", "/tabs/tai-khoan", "/dang-nhap", "/tra-cuu"]);
+
 function Navigator() {
   const { scheme } = useTheme();
+  const { user, loading } = useSession();
+  const pathname = usePathname();
+  const gated = !loading && !user && !PUBLIC_PATHS.has(pathname) && !pathname.startsWith("/tra-cuu");
+  const loginHref = "/dang-nhap?next=" + encodeURIComponent(pathname);
   return (
     <>
+      {gated ? <Redirect href={loginHref as never} /> : null}
       <StatusBar style={scheme === "dark" ? "light" : "dark"} backgroundColor={colors.surface} />
       <Stack
         screenOptions={{

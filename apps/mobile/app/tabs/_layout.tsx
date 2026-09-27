@@ -17,7 +17,8 @@ const header = { headerShown: true, headerStyle: { backgroundColor: colors.surfa
 export default function TabsLayout() {
   const { user } = useSession();
   const isFarmer = user?.role === "farmer";
-  const customerOnly = isFarmer ? null : undefined;
+  // Like the web's VISITOR_NAV: signed-out visitors only get Home and Account; everything else needs a session.
+  const customerOnly = user && !isFarmer ? undefined : null;
   const farmerOnly = isFarmer ? undefined : null;
   // Edge-to-edge: the system navigation bar overlays the app, so the tab bar grows by the bottom inset.
   const insets = useSafeAreaInsets();
@@ -36,7 +37,7 @@ export default function TabsLayout() {
         sceneStyle: { backgroundColor: colors.surface },
       }}
     >
-      <Tabs.Screen name="index" options={{ title: "Trang chủ", tabBarIcon: icon("home"), href: customerOnly }} />
+      <Tabs.Screen name="index" options={{ title: "Trang chủ", tabBarIcon: icon("home"), href: isFarmer ? null : undefined }} />
       <Tabs.Screen name="rau-cu" options={{ title: "Rau củ", tabBarIcon: icon("nutrition"), href: customerOnly }} />
       <Tabs.Screen name="farms" options={{ title: "Vườn", tabBarIcon: icon("potted_plant"), href: customerOnly }} />
       <Tabs.Screen name="cong-thuc" options={{ title: "Bếp", tabBarIcon: icon("skillet"), href: customerOnly }} />

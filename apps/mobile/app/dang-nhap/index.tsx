@@ -119,7 +119,7 @@ export default function DangNhapScreen() {
           </AnimIn>
 
           <TouchableOpacity onPress={() => router.replace("/tabs")} style={{ alignSelf: "center", padding: 12 }}>
-            <Text style={styles.skip}>Xem trước không đăng nhập →</Text>
+            <Text style={styles.skip}>Về trang chủ →</Text>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
