@@ -1337,7 +1337,8 @@ input[type="number"].tabular::-webkit-inner-spin-button { -webkit-appearance: no
 .m3-shutter:disabled { opacity: 0.4; cursor: not-allowed; }
 .m3-shutter:active { transform: scale(0.92); }
 .m3-shutter.video { border-color: transparent; }
-.m3-shutter-ring { position: absolute; inset: -4px; width: 88px; height: 88px; }
+/* The button's padding box is 72px (80px minus the 4px border), so an 88px ring is centred with -8px insets. */
+.m3-shutter-ring { position: absolute; inset: -8px; width: 88px; height: 88px; pointer-events: none; }
 .m3-shutter-core {
   width: 60px; height: 60px;
   border-radius: 50%;
