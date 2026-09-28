@@ -74,13 +74,41 @@ export async function pickMedia(opts: PickOptions): Promise<PickedMedia[]> {
       }
       const mimeType = a.mimeType ?? (/\.mov$/i.test(a.uri) ? "video/quicktime" : "video/mp4");
       const ext = mimeType === "video/quicktime" ? "mov" : mimeType === "video/webm" ? "webm" : "mp4";
-      out.push({ uri: a.uri, kind: "video", mimeType, fileName: `video-${Date.now()}.${ext}`, size: a.fileSize ?? undefined, durationMs });
+      const original: PickedMedia = { uri: a.uri, kind: "video", mimeType, fileName: `video-${Date.now()}.${ext}`, size: a.fileSize ?? undefined, durationMs };
+      out.push(await compressVideo(original, (p) => opts.onStatus?.(`Đang nén video… ${Math.round(p * 100)}%`)));
     } else {
       opts.onStatus?.("Đang nén ảnh…");
       out.push(await compressImage(a.uri));
     }
   }
   return out;
+}
+
+const VIDEO_MAX_EDGE = 1280;
+const VIDEO_BITRATE = 1_200_000;
+
+/**
+ * Re-encodes a video to at most 720p at about 1.2 Mbps (H.264, MP4), the same budget as the web.
+ * Android needs this: its picker hands over whatever the camera recorded. On iOS the picker has
+ * already exported at 720p, so the file is left alone. Falls back to the original when the
+ * encoder is missing (an older build) or fails, or when the result is not smaller.
+ */
+export async function compressVideo(m: PickedMedia, onProgress?: (fraction: number) => void): Promise<PickedMedia> {
+  if (Platform.OS !== "android") return m;
+  try {
+    // Required lazily: importing the module throws in builds made before it was added.
+    const { Video, getVideoMetaData } = require("react-native-compressor") as typeof import("react-native-compressor");
+    onProgress?.(0);
+    const uri = await Video.compress(m.uri, { compressionMethod: "manual", maxSize: VIDEO_MAX_EDGE, bitrate: VIDEO_BITRATE, progressDivider: 5 }, (p) => onProgress?.(Math.min(1, Math.max(0, p))));
+    if (!uri) return m;
+    const meta = await getVideoMetaData(uri).catch(() => null);
+    const size = meta && Number(meta.size) > 0 ? Number(meta.size) : undefined;
+    if (size && m.size && size >= m.size) return m;
+    return { ...m, uri: uri.startsWith("file://") || uri.startsWith("content://") ? uri : `file://${uri}`, mimeType: "video/mp4", fileName: `video-${Date.now()}.mp4`, size };
+  } catch (e) {
+    console.warn("[media] video compression unavailable, sending the original", e);
+    return m;
+  }
 }
 
 /** Downscale to ≤1280 px on the long edge and re-encode as JPEG (quality 0.8). Never enlarges. */
