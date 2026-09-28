@@ -8,6 +8,7 @@ import { colors, shape, type, useStyles, type Colors } from "../../constants/the
 import { formatDateTime } from "../../constants/format";
 import type { FarmProfile } from "../../constants/types";
 import { useSession } from "../../hooks/useSession";
+import { useAddress } from "../../hooks/useAddress";
 import { PressableScale, Skeleton } from "../../components/motion";
 import { Button, EmptyState } from "../../components/ui";
 import { KeyboardScroll } from "../../components/keyboard";
@@ -42,6 +43,7 @@ export default function FarmInfoScreen() {
   const insets = useSafeAreaInsets();
   const { alert } = useDialog();
   const { user, loading: sessionLoading } = useSession();
+  const { pronoun, Pronoun } = useAddress();
   const isFarmer = user?.role === "farmer";
   const [farm, setFarm] = useState<FarmProfile | null>(null);
   const [form, setForm] = useState<Form | null>(null);
@@ -74,7 +76,7 @@ export default function FarmInfoScreen() {
         setState("none");
         return;
       }
-      setError(e instanceof ApiError ? e.message : "Không tải được dữ liệu. Bác kéo xuống để thử lại.");
+      setError(e instanceof ApiError ? e.message : "Không tải được dữ liệu. Xin kéo xuống để thử lại giúp ạ.");
       setState((s) => (s === "ready" ? s : "error"));
     }
   }, [isFarmer]);
@@ -124,7 +126,7 @@ export default function FarmInfoScreen() {
     if (!form || !changed.length) return;
     // Back to what is in force: there is nothing to ask for, only the open request to take back.
     if (!wanted.length) {
-      askWithdraw("Bác đã sửa lại giống thông tin đang có hiệu lực, nên không còn gì để duyệt.");
+      askWithdraw(`${Pronoun} đã sửa lại giống thông tin đang có hiệu lực, nên không còn gì để duyệt.`);
       return;
     }
     const short = (["name", "location", "province"] as const).find((k) => wanted.includes(k) && clean(k, form[k]).length < 2);
@@ -209,7 +211,7 @@ export default function FarmInfoScreen() {
 
         {state === "ready" && form && farm ? (
           <>
-            <Text style={styles.intro}>Đây là những gì khách hàng đọc được về vườn của bác. Mọi thay đổi cần quản trị duyệt rồi mới có hiệu lực.</Text>
+            <Text style={styles.intro}>Đây là những gì khách hàng đọc được về vườn của {pronoun}. Mọi thay đổi cần quản trị duyệt rồi mới có hiệu lực.</Text>
 
             {pending ? (
               <View style={styles.pending}>
@@ -265,7 +267,7 @@ export default function FarmInfoScreen() {
                 maxLength={MAX.description}
                 multiline
                 textAlignVertical="top"
-                placeholder="Bác trồng rau thế nào, đất và nước ở vườn ra sao…"
+                placeholder={`${Pronoun} trồng rau thế nào, đất và nước ở vườn ra sao…`}
                 placeholderTextColor={colors.onSurfaceVariant}
               />
               <Text style={styles.counter}>
@@ -275,7 +277,7 @@ export default function FarmInfoScreen() {
 
             <View style={styles.note}>
               <Icon name="info" size={24} color={colors.onSecondaryContainer} />
-              <Text style={styles.noteText}>Thay đổi chỉ có hiệu lực sau khi quản trị duyệt. Đường dẫn và mã QR của trang vườn không đổi khi bác sửa tên.</Text>
+              <Text style={styles.noteText}>Thay đổi chỉ có hiệu lực sau khi quản trị duyệt. Đường dẫn và mã QR của trang vườn không đổi khi {pronoun} sửa tên.</Text>
             </View>
 
             <Button label="Xem trang vườn như khách thấy" icon="visibility" variant="outlined" onPress={() => router.push(`/farms/${farm.slug}` as never)} style={{ alignSelf: "stretch", paddingVertical: 16 }} />

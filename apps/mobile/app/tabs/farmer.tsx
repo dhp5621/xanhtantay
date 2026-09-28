@@ -6,8 +6,9 @@ import type { HarvestCommand } from "@xanhtantay/types";
 import { apiFetch, ApiError } from "../../constants/api";
 import { colors, shape, type, elevation, useStyles, type Colors } from "../../constants/theme";
 import { formatClock, formatClockDay, formatDay, formatKg, greetingOf } from "../../constants/format";
-import type { FarmerCapacity, FarmerCommands, FarmProfile, Me } from "../../constants/types";
+import type { FarmerCapacity, FarmerCommands, FarmProfile } from "../../constants/types";
 import { useLiveRefresh } from "../../hooks/useLive";
+import { useAddress } from "../../hooks/useAddress";
 import { AnimIn, AnimInScale, PressableScale, Skeleton } from "../../components/motion";
 import { Chip } from "../../components/ui";
 import { useDialog } from "../../components/Dialog";
@@ -27,16 +28,13 @@ export default function FarmerScreen() {
   const [busy, setBusy] = useState<"confirm" | "decline" | null>(null);
   const [capacity, setCapacity] = useState<FarmerCapacity | null>(null);
   const [farmPending, setFarmPending] = useState(false);
-  // "Chào bác Ba!", once the profile says how the farmer is addressed.
-  const [greeting, setGreeting] = useState<string | null>(null);
+  // "Chào cô Tư!" and "cô": how the server says this farmer is addressed.
+  const { call, pronoun, Pronoun } = useAddress();
 
   const load = useCallback(async () => {
     // Only feeds the subtitle of "Rau củ đăng ký"; the row works without it.
     apiFetch("/farmer/capacity")
       .then(setCapacity)
-      .catch(() => {});
-    apiFetch("/users/me")
-      .then((p: Me) => setGreeting(greetingOf(p)))
       .catch(() => {});
     // Only feeds the "Chờ duyệt" chip of "Thông tin vườn".
     apiFetch("/farms/mine")
@@ -82,7 +80,7 @@ export default function FarmerScreen() {
   const declined = current?.status === "declined";
   const supplied = capacity?.items.filter((i) => Number(i.daily_kg) > 0) ?? [];
   const links = [
-    { href: "/farmer/nang-suat", icon: "scale", title: "Rau củ đăng ký", desc: capacity ? `${supplied.length} loại · ${formatKg(supplied.reduce((s, i) => s + Number(i.daily_kg), 0))} mỗi ngày` : "Mỗi ngày bác cắt được bao nhiêu ký", pending: !!capacity?.pending },
+    { href: "/farmer/nang-suat", icon: "scale", title: "Rau củ đăng ký", desc: capacity ? `${supplied.length} loại · ${formatKg(supplied.reduce((s, i) => s + Number(i.daily_kg), 0))} mỗi ngày` : `Mỗi ngày ${pronoun} cắt được bao nhiêu ký`, pending: !!capacity?.pending },
     { href: "/farmer/vuon", icon: "potted_plant", title: "Thông tin vườn", desc: "Tên, địa chỉ, lời giới thiệu", pending: farmPending },
   ];
 
@@ -103,7 +101,7 @@ export default function FarmerScreen() {
         />
       }
     >
-      {greeting ? <Text style={styles.greeting}>{greeting}!</Text> : null}
+      <Text style={styles.greeting}>{greetingOf({ call_name: call })}!</Text>
 
       {data?.farm ? (
         <AnimIn>
@@ -187,7 +185,7 @@ export default function FarmerScreen() {
               {declined ? (
                 <View style={styles.declined} accessibilityRole="alert">
                   <Icon name="cancel" size={32} filled color={colors.onErrorContainer} />
-                  <Text style={styles.declinedText}>Bác đã báo không cắt được{current.declined_at ? ` lúc ${formatClock(current.declined_at)}` : ""}</Text>
+                  <Text style={styles.declinedText}>{Pronoun} đã báo không cắt được{current.declined_at ? ` lúc ${formatClock(current.declined_at)}` : ""}</Text>
                 </View>
               ) : null}
               <PressableScale
@@ -235,7 +233,7 @@ export default function FarmerScreen() {
 
       {data?.farm ? (
         <View style={{ gap: 10 }}>
-          <Text style={styles.sectionTitle}>Vườn của bác</Text>
+          <Text style={styles.sectionTitle}>Vườn của {pronoun}</Text>
           {links.map((l) => (
             <PressableScale key={l.href} haptic scaleTo={0.98} style={styles.link} onPress={() => router.push(l.href as never)} accessibilityRole="button" accessibilityLabel={l.pending ? `${l.title}, đang chờ duyệt` : l.title}>
               <View style={styles.linkIcon}>

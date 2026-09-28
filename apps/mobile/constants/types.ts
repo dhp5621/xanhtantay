@@ -137,8 +137,20 @@ export interface Feed {
   stats: { farms: number; clusters: number; boxes_delivered: number };
 }
 
-/** `GET /users/me`. `salutation` ("bác", "chị"…) and `short_name` ("Ba", "Lan") say how the person is addressed. */
-export type Me = User & { cluster?: Cluster | null; salutation?: string | null; short_name?: string | null };
+export type Gender = "male" | "female";
+
+/**
+ * `GET /users/me`. `gender`, the hand-chosen `salutation` ("" = follow gender) and `short_name` are what
+ * the person set; `call_name` ("Cô Tư") and `pronoun` ("cô") are what the server resolved from them.
+ */
+export type Me = User & {
+  cluster?: Cluster | null;
+  gender?: Gender | null;
+  salutation?: string | null;
+  short_name?: string | null;
+  call_name?: string | null;
+  pronoun?: string | null;
+};
 
 /** `POST /farmer/commands/{id}/confirm|decline`: the command, and the server's words to show after the answer. */
 export type CommandAnswer = HarvestCommand & { notice?: { title: string; body: string } | null };

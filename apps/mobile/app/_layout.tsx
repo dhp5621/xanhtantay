@@ -6,6 +6,7 @@ import { Redirect, Stack, usePathname } from "expo-router";
 import * as Font from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import { SessionProvider, useSession } from "../hooks/useSession";
+import { AddressProvider } from "../hooks/useAddress";
 import { LiveProvider } from "../hooks/useLive";
 import { ThemeProvider, useTheme } from "../hooks/useTheme";
 import { usePushNotifications } from "../hooks/usePushNotifications";
@@ -45,11 +46,13 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.surface }}>
       <ThemeProvider>
         <SessionProvider>
-          <LiveProvider>
-            <DialogProvider>
-              <Navigator />
-            </DialogProvider>
-          </LiveProvider>
+          <AddressProvider>
+            <LiveProvider>
+              <DialogProvider>
+                <Navigator />
+              </DialogProvider>
+            </LiveProvider>
+          </AddressProvider>
         </SessionProvider>
       </ThemeProvider>
     </GestureHandlerRootView>

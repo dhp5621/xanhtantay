@@ -8,6 +8,7 @@ import { colors, shape, type, useStyles, type Colors } from "../../constants/the
 import { formatDateTime, formatKg } from "../../constants/format";
 import type { FarmerCapacity, FarmerCapacityItem, ProduceProposal, ProduceProposals } from "../../constants/types";
 import { useSession } from "../../hooks/useSession";
+import { useAddress } from "../../hooks/useAddress";
 import { useLiveRefresh } from "../../hooks/useLive";
 import { AnimIn, PressableScale, Skeleton } from "../../components/motion";
 import { Button, Chip, EmptyState } from "../../components/ui";
@@ -33,6 +34,7 @@ export default function FarmerCapacityScreen() {
   const insets = useSafeAreaInsets();
   const { alert } = useDialog();
   const { user, loading: sessionLoading } = useSession();
+  const { Pronoun } = useAddress();
   const isFarmer = user?.role === "farmer";
   const [data, setData] = useState<FarmerCapacity | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -131,7 +133,7 @@ export default function FarmerCapacityScreen() {
     if (!changed.length) return;
     // Back to what is in force: there is nothing to ask for, only the open request to take back.
     if (!wanted.length) {
-      askWithdraw("Bác đã sửa lại giống số ký đang có hiệu lực, nên không còn gì để duyệt.");
+      askWithdraw(`${Pronoun} đã sửa lại giống số ký đang có hiệu lực, nên không còn gì để duyệt.`);
       return;
     }
     setSaving(true);
@@ -236,7 +238,7 @@ export default function FarmerCapacityScreen() {
           />
         }
       >
-        <Text style={styles.intro}>Bác đăng ký mỗi ngày cắt được bao nhiêu ký. Hệ thống không bao giờ gửi lệnh nhiều hơn số này. Mọi thay đổi cần quản trị duyệt rồi mới có hiệu lực.</Text>
+        <Text style={styles.intro}>{Pronoun} đăng ký mỗi ngày cắt được bao nhiêu ký. Hệ thống không bao giờ gửi lệnh nhiều hơn số này. Mọi thay đổi cần quản trị duyệt rồi mới có hiệu lực.</Text>
 
         {error ? (
           <View style={styles.errorBox}>
@@ -299,7 +301,7 @@ export default function FarmerCapacityScreen() {
 
             <View style={{ gap: 10 }}>
               <Text style={styles.sectionTitle}>Đang cung cấp</Text>
-              {supplied.length ? supplied.map(row) : <Text style={styles.hint}>Bác chưa đăng ký loại nào. Xin bấm “Đăng ký” ở loại rau củ bên dưới ạ.</Text>}
+              {supplied.length ? supplied.map(row) : <Text style={styles.hint}>{Pronoun} chưa đăng ký loại nào. Xin bấm “Đăng ký” ở loại rau củ bên dưới ạ.</Text>}
             </View>
 
             {others.length ? (
@@ -311,7 +313,7 @@ export default function FarmerCapacityScreen() {
 
             <View style={{ gap: 10 }}>
               <Text style={styles.sectionTitle}>Rau củ khác</Text>
-              <Text style={styles.hint}>Vườn có loại rau củ chưa có trong danh sách? Bác gửi tên, ảnh và sản lượng, quản trị duyệt xong là có trong danh sách.</Text>
+              <Text style={styles.hint}>Vườn có loại rau củ chưa có trong danh sách? {Pronoun} gửi tên, ảnh và sản lượng, quản trị duyệt xong là có trong danh sách.</Text>
               <Button label="Đăng ký rau củ mới" icon="add" variant="tonal" onPress={() => setProposing(true)} style={styles.proposeBtn} />
               {proposals.map((p) => (
                 <View key={p.id} style={styles.row}>

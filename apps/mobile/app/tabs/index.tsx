@@ -1,14 +1,14 @@
 import { useCallback, useState } from "react";
 import { View, Text, ScrollView, StyleSheet, RefreshControl, useWindowDimensions } from "react-native";
 import { Redirect, router, useFocusEffect } from "expo-router";
-import type { SessionUser } from "../../constants/api";
 import { apiFetch } from "../../constants/api";
 import { colors, shape, type, elevation, useStyles, type Colors } from "../../constants/theme";
 import { BENEFITS, FARMER_POINTS, MODEL_STEPS, TONES, type LandingTone } from "../../constants/landing";
 import { groupMixes } from "../../constants/commerce";
 import { formatDay, greetingOf } from "../../constants/format";
-import type { Feed, Me } from "../../constants/types";
+import type { Feed } from "../../constants/types";
 import { useSession } from "../../hooks/useSession";
+import { useAddress } from "../../hooks/useAddress";
 import { useLiveRefresh } from "../../hooks/useLive";
 import { AnimIn, AnimInScale, HeroBlob, PressableScale, Skeleton } from "../../components/motion";
 import { Button, Chip, SectionHead, Screen } from "../../components/ui";
@@ -35,25 +35,17 @@ export default function HomeScreen() {
   const styles = useStyles(makeStyles);
   const { user, loading: sessionLoading } = useSession();
   const [feed, setFeed] = useState<Feed | null>(null);
-  // Only feeds the greeting; the screen works without it.
-  const [me, setMe] = useState<Me | null>(null);
-  const userId = user?.id ?? null;
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    if (userId) {
-      apiFetch("/users/me")
-        .then((p: Me) => setMe(p?.id === userId ? p : null))
-        .catch(() => {});
-    } else setMe(null);
     try {
       setError(null);
       setFeed(await apiFetch("/feed"));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Không tải được dữ liệu");
     }
-  }, [userId]);
+  }, []);
 
   useLiveRefresh(load);
   useFocusEffect(
@@ -83,7 +75,7 @@ export default function HomeScreen() {
         }
       >
         {error && <Text style={styles.error}>{error}</Text>}
-        {!feed || sessionLoading ? <HomeSkeleton /> : user ? <FeedView feed={feed} user={user} me={me?.id === user.id ? me : null} /> : <LandingView feed={feed} />}
+        {!feed || sessionLoading ? <HomeSkeleton /> : user ? <FeedView feed={feed} /> : <LandingView feed={feed} />}
       </ScrollView>
     </Screen>
   );
@@ -106,7 +98,9 @@ function HomeSkeleton() {
 
 /* ───────────────────────────── Signed-in home ───────────────────────────── */
 
-function FeedView({ feed, user, me }: { feed: Feed; user: SessionUser; me: Me | null }) {
+function FeedView({ feed }: { feed: Feed }) {
+  // "Chào chị Lan": how the server says this customer is addressed.
+  const { call } = useAddress();
   const styles = useStyles(makeStyles);
   const { width } = useWindowDimensions();
   const cardW = Math.min(320, width * 0.84);
@@ -123,7 +117,7 @@ function FeedView({ feed, user, me }: { feed: Feed; user: SessionUser; me: Me | 
         <View style={styles.hero}>
           <HeroBlob size={300} right={-90} top={-130} />
           <HeroBlob size={180} right={140} top={120} delay={2000} color="rgba(255,255,255,.18)" />
-          <Text style={styles.eyebrow}>{greetingOf(me) ?? `Chào ${user.name?.split(" ").pop()}`}, nhà mình ăn rau gì tuần này?</Text>
+          <Text style={styles.eyebrow}>{greetingOf({ call_name: call })}, nhà mình ăn rau gì tuần này?</Text>
           <Text style={styles.heroTitle}>Thùng rau mẹ gửi</Text>
           <Text style={styles.heroBody}>
             Rau theo mùa từ các vườn {pilot.provinces}. Đặt trước 18h00, 4h00 sáng bác nông dân cắt đúng lượng, 16h00 hộp rau có mặt ở sảnh nhà bạn.

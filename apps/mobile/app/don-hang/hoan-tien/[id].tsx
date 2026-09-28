@@ -28,6 +28,7 @@ import { KeyboardScroll } from "../../../components/keyboard";
 import { InlineVideo } from "../../../components/MediaGallery";
 import { Loader, PageLoader } from "../../../components/Loader";
 import { Icon } from "../../../components/Icon";
+import { useAddress } from "../../../hooks/useAddress";
 
 /** A picked file; `url` is set once it has been uploaded, so a retry does not send it again. */
 type Evidence = PickedMedia & { url?: string };
@@ -41,6 +42,7 @@ export default function RefundRequestScreen() {
   const styles = useStyles(makeStyles);
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { pronoun } = useAddress();
   const [state, setState] = useState<RefundState | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [reason, setReason] = useState<RefundReason | null>(null);
@@ -218,7 +220,7 @@ export default function RefundRequestScreen() {
           <Text style={[styles.muted, { marginBottom: 12 }]}>
             {needEvidence
               ? `Cần đủ ${REFUND_PHOTOS} ảnh chụp các mặt của hộp và 1 video quay hộp, dài không quá ${REFUND_VIDEO_SECONDS} giây.`
-              : `Chưa nhận được hàng thì không cần ảnh hay video ạ. Nếu có (ví dụ ảnh sảnh nhận hàng), bạn gửi kèm được đến ${REFUND_PHOTOS} ảnh và 1 video.`}
+              : `Chưa nhận được hàng thì không cần ảnh hay video ạ. Nếu có (ví dụ ảnh sảnh nhận hàng), ${pronoun} gửi kèm được đến ${REFUND_PHOTOS} ảnh và 1 video.`}
           </Text>
 
           <View style={{ gap: 10 }}>
@@ -283,7 +285,7 @@ export default function RefundRequestScreen() {
               <Option key={m.value} icon={m.icon} label={m.label} hint={m.hint} selected={method === m.value} disabled={busy} onPress={() => setMethod(m.value)} />
             ))}
           </View>
-          <Text style={[styles.muted, { marginTop: 10 }]}>Chúng tôi sẽ xác minh rồi báo lại cho bạn. Cách xử lý cuối cùng tuỳ theo tình trạng hộp rau.</Text>
+          <Text style={[styles.muted, { marginTop: 10 }]}>Chúng tôi sẽ xác minh rồi báo lại cho {pronoun}. Cách xử lý cuối cùng tuỳ theo tình trạng hộp rau.</Text>
         </View>
 
         {error ? (

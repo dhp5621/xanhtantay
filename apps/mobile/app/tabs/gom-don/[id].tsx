@@ -10,6 +10,7 @@ import { formatCountdown, formatDateTime, formatDay, formatVND } from "../../../
 import type { GroupDetail, Me } from "../../../constants/types";
 import { useCountdown } from "../../../hooks/useCountdown";
 import { useLiveRefresh } from "../../../hooks/useLive";
+import { useAddress } from "../../../hooks/useAddress";
 import { AnimIn, AnimInScale, AnimatedProgress, PressableScale } from "../../../components/motion";
 import { Avatar, Button, Chip, EmptyState } from "../../../components/ui";
 import { SmartImage } from "../../../components/SmartImage";
@@ -22,6 +23,7 @@ import { EmojiText } from "../../../components/EmojiText";
 /** One group order: progress to the minimum, who is in, when the book closes, join or leave. */
 export default function GomDonDetailScreen() {
   const { alert } = useDialog();
+  const { pronoun, Pronoun } = useAddress();
   const styles = useStyles(makeStyles);
   const { id } = useLocalSearchParams<{ id: string }>();
   const [group, setGroup] = useState<GroupDetail | null>(null);
@@ -59,7 +61,7 @@ export default function GomDonDetailScreen() {
     setBusy(true);
     try {
       await apiFetch(`/groups/${id}/join`, { method: "POST", body: JSON.stringify({ quantity, address: address.trim() || undefined }) });
-      alert("Bạn đã vào nhóm!", "Rủ thêm hàng xóm cho đủ số nhà để cả nhóm miễn phí giao nhé.", undefined, { icon: "celebration" });
+      alert(`${Pronoun} đã vào nhóm!`, "Rủ thêm hàng xóm cho đủ số nhà để cả nhóm miễn phí giao nhé.", undefined, { icon: "celebration" });
       await load();
     } catch (e) {
       alert("Không tham gia được", e instanceof ApiError ? e.message : "Có lỗi xảy ra, xin thử lại giúp ạ.");
@@ -69,7 +71,7 @@ export default function GomDonDetailScreen() {
   };
 
   const leave = () => {
-    alert("Rời nhóm gom đơn?", "Phần hộp rau của bạn trong nhóm sẽ bị huỷ và nhóm bớt một nhà. Bạn vẫn có thể vào lại trước giờ chốt sổ.", [
+    alert("Rời nhóm gom đơn?", `Phần hộp rau của ${pronoun} trong nhóm sẽ bị huỷ và nhóm bớt một nhà. ${Pronoun} vẫn có thể vào lại trước giờ chốt sổ.`, [
       { text: "Ở lại", style: "cancel" },
       {
         text: "Rời nhóm",

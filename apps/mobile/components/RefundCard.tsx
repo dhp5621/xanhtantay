@@ -9,6 +9,7 @@ import type { Refund, RefundState } from "../constants/types";
 import { PressableScale } from "./motion";
 import { Button } from "./ui";
 import { useDialog } from "./Dialog";
+import { useAddress } from "../hooks/useAddress";
 import { SmartImage } from "./SmartImage";
 import { MediaViewer } from "./MediaGallery";
 import { EmojiText } from "./EmojiText";
@@ -21,6 +22,7 @@ import { Icon } from "./Icon";
 export function RefundCard({ orderId, state, onChange }: { orderId: string; state: RefundState; onChange: (next: RefundState) => void }) {
   const styles = useStyles(makeStyles);
   const { alert } = useDialog();
+  const { pronoun, Pronoun } = useAddress();
   const [busy, setBusy] = useState(false);
   const request = state.request;
 
@@ -32,7 +34,7 @@ export function RefundCard({ orderId, state, onChange }: { orderId: string; stat
           <Icon name="help" size={26} color={colors.primary} />
           <Text style={styles.title}>Hộp rau chưa như ý?</Text>
         </View>
-        <Text style={styles.muted}>Xin gửi ảnh và video của hộp rau, chúng tôi sẽ xác minh rồi báo lại cho bạn ạ.</Text>
+        <Text style={styles.muted}>Xin gửi ảnh và video của hộp rau, chúng tôi sẽ xác minh rồi báo lại cho {pronoun} ạ.</Text>
         <Button label="Gửi yêu cầu trả hàng / hoàn tiền" icon="send" variant="tonal" onPress={() => router.push(`/don-hang/hoan-tien/${orderId}` as never)} style={{ alignSelf: "stretch", marginTop: 4 }} />
         {state.until ? <Text style={styles.muted}>Gửi được đến hết {formatDateTime(state.until)}</Text> : null}
       </View>
@@ -52,7 +54,7 @@ export function RefundCard({ orderId, state, onChange }: { orderId: string; stat
     }
   };
   const askWithdraw = () =>
-    alert("Rút yêu cầu này?", "Ảnh, video và mô tả đã gửi sẽ được xoá. Bạn vẫn gửi lại được yêu cầu mới khi còn trong hạn.", [
+    alert("Rút yêu cầu này?", `Ảnh, video và mô tả đã gửi sẽ được xoá. ${Pronoun} vẫn gửi lại được yêu cầu mới khi còn trong hạn.`, [
       { text: "Không", style: "cancel" },
       { text: "Rút yêu cầu", style: "destructive", onPress: withdraw },
     ]);
@@ -82,7 +84,7 @@ export function RefundCard({ orderId, state, onChange }: { orderId: string; stat
         </View>
       ) : (
         <>
-          <Text style={styles.muted}>Chúng tôi sẽ xác minh rồi báo lại cho bạn. Cách xử lý cuối cùng tuỳ theo tình trạng hộp rau.</Text>
+          <Text style={styles.muted}>Chúng tôi sẽ xác minh rồi báo lại cho {pronoun}. Cách xử lý cuối cùng tuỳ theo tình trạng hộp rau.</Text>
           <Button label="Rút yêu cầu" icon="cancel" variant="outlined" small onPress={askWithdraw} loading={busy} />
         </>
       )}

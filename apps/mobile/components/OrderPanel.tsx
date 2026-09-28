@@ -9,6 +9,7 @@ import { FREQUENCIES, FREQUENCY_LABELS, GROUP_MIN_MEMBERS, ORDER_MODES, SHIP_FEE
 import { formatDay, formatVND } from "../constants/format";
 import type { Me, PlacedOrder } from "../constants/types";
 import { useLiveRefresh } from "../hooks/useLive";
+import { useAddress } from "../hooks/useAddress";
 import { AnimIn, AnimatedProgress, PressableScale } from "./motion";
 import { Button, Chip } from "./ui";
 import { Icon } from "./Icon";
@@ -26,6 +27,7 @@ import { EmojiText } from "./EmojiText";
 export function OrderPanel({ box, deliveryDate, shipFee = SHIP_FEE, initialMode = "single", onPlaced }: { box: Box; deliveryDate: string | null; shipFee?: number; initialMode?: OrderMode; onPlaced: (order: PlacedOrder) => void }) {
   const styles = useStyles(makeStyles);
   const { alert } = useDialog();
+  const { pronoun, Pronoun } = useAddress();
   const [mode, setMode] = useState<OrderMode>(initialMode);
   const [quantity, setQuantity] = useState(1);
   const [clusters, setClusters] = useState<Cluster[]>([]);
@@ -82,7 +84,7 @@ export function OrderPanel({ box, deliveryDate, shipFee = SHIP_FEE, initialMode 
 
   const requireCluster = () => {
     if (clusterId) return true;
-    alert("Chọn cụm chung cư", "Hộp rau được giao tới sảnh toà nhà, bạn chọn cụm chung cư của mình trước nhé.", undefined, { icon: "apartment" });
+    alert("Chọn cụm chung cư", `Hộp rau được giao tới sảnh toà nhà, ${pronoun} chọn cụm chung cư của mình trước nhé.`, undefined, { icon: "apartment" });
     return false;
   };
 
@@ -113,13 +115,13 @@ export function OrderPanel({ box, deliveryDate, shipFee = SHIP_FEE, initialMode 
         method: "POST",
         body: JSON.stringify({ box_id: box.id, quantity, frequency, cluster_id: clusterId, address: address.trim() || undefined }),
       });
-      alert("Đã đăng ký gói định kỳ", `${FREQUENCY_LABELS[frequency]} bạn sẽ nhận ${quantity} ${box.name}, miễn phí giao. Đổi số lượng hay tạm dừng lúc nào cũng được.`, [
+      alert("Đã đăng ký gói định kỳ", `${FREQUENCY_LABELS[frequency]} ${pronoun} sẽ nhận ${quantity} ${box.name}, miễn phí giao. Đổi số lượng hay tạm dừng lúc nào cũng được.`, [
         { text: "Đóng", style: "cancel" },
         { text: "Xem gói định kỳ", onPress: () => router.push("/dinh-ky") },
       ], { icon: "event_repeat" });
     } catch (e) {
       if (e instanceof ApiError && e.status === 409) {
-        alert("Bạn đã có gói cho hộp này", "Mỗi hộp chỉ cần một gói định kỳ đang chạy. Bạn có thể đổi số lượng hoặc tần suất trong mục Gói định kỳ.", [
+        alert(`${Pronoun} đã có gói cho hộp này`, `Mỗi hộp chỉ cần một gói định kỳ đang chạy. ${Pronoun} có thể đổi số lượng hoặc tần suất trong mục Gói định kỳ.`, [
           { text: "Đóng", style: "cancel" },
           { text: "Mở gói định kỳ", onPress: () => router.push("/dinh-ky") },
         ]);

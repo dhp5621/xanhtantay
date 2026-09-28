@@ -67,11 +67,10 @@ export function formatCountdown(ms: number) {
 }
 
 /**
- * "Chào bác Ba" / "Chào chị Lan" from the profile's form of address (`GET /users/me`), or null
- * when the profile does not say how the person is addressed.
+ * "Chào cô Tư" / "Chào chị Lan" from the `call_name` the server resolved (`GET /users/me`), with a
+ * lower-case first letter after "Chào"; "Chào bạn" while it is not known.
  */
-export function greetingOf(me: { salutation?: string | null; short_name?: string | null } | null | undefined): string | null {
-  const salutation = me?.salutation?.trim();
-  const name = me?.short_name?.trim();
-  return salutation && name ? `Chào ${salutation} ${name}` : null;
+export function greetingOf(me: { call_name?: string | null } | null | undefined): string {
+  const call = me?.call_name?.trim() || "bạn";
+  return `Chào ${call.charAt(0).toLocaleLowerCase("vi")}${call.slice(1)}`;
 }

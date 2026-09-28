@@ -9,8 +9,9 @@ import { apiFetch, ApiError } from "../../constants/api";
 import { colors, shape, type, useStyles } from "../../constants/theme";
 import { makeAvatarDataUrl } from "../../constants/media";
 import { formatKg } from "../../constants/format";
-import type { FarmerCapacity, FarmerCommands, FarmProfile, Me } from "../../constants/types";
+import type { FarmerCapacity, FarmerCommands, FarmProfile, Gender, Me } from "../../constants/types";
 import { useSession } from "../../hooks/useSession";
+import { useAddress } from "../../hooks/useAddress";
 import { useTheme } from "../../hooks/useTheme";
 import { useLiveRefresh } from "../../hooks/useLive";
 import { AnimIn, AnimInScale, PressableScale, Skeleton } from "../../components/motion";
@@ -31,11 +32,37 @@ const CUSTOMER_MENU = [
 
 const FARMER_MENU = [
   { href: "/tabs/farmer", icon: "agriculture", label: "Lệnh thu hoạch", desc: "Tin nhắn hôm nay và nút xác nhận" },
-  { href: "/farmer/nang-suat", icon: "scale", label: "Rau củ đăng ký", desc: "Mỗi ngày bác cắt được bao nhiêu ký" },
+  { href: "/farmer/nang-suat", icon: "scale", label: "Rau củ đăng ký", desc: "Mỗi ngày cắt được bao nhiêu ký" },
   { href: "/farmer/vuon", icon: "potted_plant", label: "Thông tin vườn", desc: "Tên, địa chỉ, lời giới thiệu" },
   { href: "farm-page", icon: "storefront", label: "Trang vườn của tôi", desc: "Khách hàng thấy vườn như thế nào" },
   { href: "/tra-cuu", icon: "qr_code_2", label: "Truy xuất hộp rau", desc: "Quét mã QR trên hộp để xem hành trình" },
 ];
+
+const GENDERS: { value: Gender | null; label: string }[] = [
+  { value: null, label: "Không nêu" },
+  { value: "female", label: "Nữ" },
+  { value: "male", label: "Nam" },
+];
+/** The forms of address offered by hand; anything else is typed under "Khác". */
+const SALUTATIONS = { farmer: ["bác", "cô", "chú"], customer: ["anh", "chị", "bạn"] };
+/** What follows from gender: farmers bác / cô, customers anh / chị, "bạn" when not given. */
+const byGender = (gender: Gender | null, farmer: boolean) => (gender === "female" ? (farmer ? "cô" : "chị") : gender === "male" ? (farmer ? "bác" : "anh") : "bạn");
+const capitalise = (s: string) => s.charAt(0).toLocaleUpperCase("vi") + s.slice(1);
+/** Letters only: Vietnamese letters have an upper and a lower case, digits and signs do not. */
+const lettersOnly = (s: string) => Array.from(s.normalize("NFC")).filter((ch) => ch.toLowerCase() !== ch.toUpperCase()).join("");
+
+type ProfileFormState = {
+  name: string;
+  phone: string;
+  cluster_id: string | null;
+  address: string;
+  gender: Gender | null;
+  /** "" follows gender. */
+  salutation: string;
+  short_name: string;
+  /** "Khác": the person types their own form of address. */
+  custom: boolean;
+};
 
 /** A request that has not answered yet is not the same as one that answered "nothing". */
 type LoadState = "loading" | "ready" | "none" | "error";
@@ -45,6 +72,7 @@ export default function TaiKhoanScreen() {
   const { alert } = useDialog();
   const styles = useStyles(makeStyles);
   const { user, loading, logout, refresh } = useSession();
+  const { pronoun, apply: applyAddress, refresh: refreshAddress } = useAddress();
   const [me, setMe] = useState<Me | null>(null);
   const [farm, setFarm] = useState<FarmProfile | null>(null);
   const [meState, setMeState] = useState<LoadState>("loading");
@@ -54,7 +82,7 @@ export default function TaiKhoanScreen() {
   // Only feeds the "Chờ duyệt" chip of "Rau củ đăng ký".
   const [capacityPending, setCapacityPending] = useState(false);
   const [clusters, setClusters] = useState<Cluster[]>([]);
-  const [form, setForm] = useState<{ name: string; phone: string; cluster_id: string | null; address: string } | null>(null);
+  const [form, setForm] = useState<ProfileFormState | null>(null);
   const [busy, setBusy] = useState(false);
   const [saving, setSaving] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
@@ -74,8 +102,11 @@ export default function TaiKhoanScreen() {
       try {
         const p: Me = await apiFetch("/users/me");
         setMe(p);
+        applyAddress(p);
         // Keep what the user is typing; only seed the form the first time.
-        setForm((f) => f ?? { name: p.name ?? "", phone: p.phone ?? "", cluster_id: p.cluster_id ?? null, address: p.address ?? "" });
+        const salutation = p.salutation?.trim() ?? "";
+        const offered = SALUTATIONS[user.role === "farmer" ? "farmer" : "customer"];
+        setForm((f) => f ?? { name: p.name ?? "", phone: p.phone ?? "", cluster_id: p.cluster_id ?? null, address: p.address ?? "", gender: p.gender ?? null, salutation, short_name: p.short_name ?? "", custom: !!salutation && !offered.includes(salutation) });
         setMeState("ready");
       } catch {
         setMeState(keep);
@@ -109,7 +140,7 @@ export default function TaiKhoanScreen() {
         .then((c: FarmerCapacity) => setCapacityPending(!!c?.pending))
         .catch(() => {}),
     ]);
-  }, [user]);
+  }, [user, applyAddress]);
 
   useLiveRefresh(load);
   useFocusEffect(
@@ -166,7 +197,18 @@ export default function TaiKhoanScreen() {
     ], { icon: "photo_camera" });
   };
 
-  const dirty = !!form && !!me && (form.name.trim() !== (me.name ?? "") || form.phone.trim() !== (me.phone ?? "") || (!isFarmer && (form.cluster_id !== (me.cluster_id ?? null) || form.address.trim() !== (me.address ?? ""))));
+  // Gender, form of address and the name to call: only what was changed is sent.
+  const addressChanges = (): { gender?: Gender | null; salutation?: string; short_name?: string } => {
+    if (!form || !me) return {};
+    const salutation = form.salutation.trim();
+    const short_name = form.short_name.trim();
+    return {
+      ...(form.gender !== (me.gender ?? null) ? { gender: form.gender } : {}),
+      ...(salutation !== (me.salutation?.trim() ?? "") ? { salutation } : {}),
+      ...(short_name !== (me.short_name?.trim() ?? "") ? { short_name } : {}),
+    };
+  };
+  const dirty = !!form && !!me && (form.name.trim() !== (me.name ?? "") || form.phone.trim() !== (me.phone ?? "") || Object.keys(addressChanges()).length > 0 || (!isFarmer && (form.cluster_id !== (me.cluster_id ?? null) || form.address.trim() !== (me.address ?? ""))));
 
   const saveProfile = async () => {
     if (!form) return;
@@ -174,23 +216,36 @@ export default function TaiKhoanScreen() {
       alert("Thiếu tên", isFarmer ? "Xin điền tên để khách hàng biết ai trồng rau ạ." : "Xin điền tên để người giao hàng gọi cho đúng ạ.");
       return;
     }
+    if (form.custom && !form.salutation.trim()) {
+      alert("Thiếu cách xưng hô", "Xin điền cách xưng hô tự nhập, hoặc chọn một cách có sẵn ạ.");
+      return;
+    }
     setSaving(true);
     try {
+      const called = addressChanges();
+      // The answer carries the form of address the server resolved from what was just saved.
+      const afterSave = (saved: Me | null) => {
+        setMe((m) => (m ? { ...m, ...called, call_name: saved?.call_name ?? m.call_name, pronoun: saved?.pronoun ?? m.pronoun } : m));
+        setForm((f) => (f ? { ...f, salutation: f.salutation.trim(), short_name: f.short_name.trim() } : f));
+        if (saved?.pronoun) applyAddress({ id: user?.id ?? "", call_name: saved.call_name, pronoun: saved.pronoun });
+        else refreshAddress().catch(() => {});
+        refresh().catch(() => {});
+      };
       if (isFarmer) {
-        // Farmers have no delivery address: only name and phone, as on the web.
+        // Farmers have no delivery address: only name, phone and how they are addressed, as on the web.
         const body = { name: form.name.trim(), phone: form.phone.trim() };
-        await apiFetch("/users/me", { method: "PATCH", body: JSON.stringify(body) });
+        const saved: Me | null = await apiFetch("/users/me", { method: "PATCH", body: JSON.stringify({ ...body, ...called }) });
         setMe((m) => (m ? { ...m, ...body, phone: body.phone || null } : m));
         setForm((f) => (f ? { ...f, ...body } : f));
-        refresh().catch(() => {});
-        alert("Đã lưu thông tin", `Tên và số điện thoại của ${me?.salutation?.trim() || "bác"} đã được cập nhật ạ.`, undefined, { icon: "check_circle" });
+        afterSave(saved);
+        alert("Đã lưu thông tin", `Thông tin của ${saved?.pronoun?.trim() || pronoun} đã được cập nhật ạ.`, undefined, { icon: "check_circle" });
         return;
       }
       const body = { name: form.name.trim(), phone: form.phone.trim(), cluster_id: form.cluster_id, address: form.address.trim() };
-      await apiFetch("/users/me", { method: "PATCH", body: JSON.stringify(body) });
+      const saved: Me | null = await apiFetch("/users/me", { method: "PATCH", body: JSON.stringify({ ...body, ...called }) });
       setMe((m) => (m ? { ...m, ...body, phone: body.phone || null, address: body.address || null, cluster: clusters.find((c) => c.id === body.cluster_id) ?? null } : m));
-      setForm({ ...body });
-      refresh().catch(() => {});
+      setForm((f) => (f ? { ...f, ...body } : f));
+      afterSave(saved);
       alert("Đã lưu thông tin", "Các đơn mới sẽ mặc định giao tới địa chỉ này.", undefined, { icon: "check_circle" });
     } catch (e) {
       alert("Không lưu được", e instanceof ApiError ? e.message : "Có lỗi xảy ra, xin thử lại giúp ạ.");
@@ -246,6 +301,46 @@ export default function TaiKhoanScreen() {
     { icon: "thumb_up", label: "Đã xác nhận", value: list.filter((c) => c.status === "confirmed").length },
     { icon: "pending_actions", label: "Chờ xác nhận", value: list.filter((c) => c.status === "sent").length },
   ];
+  // How the person is addressed: the same fields for farmers and customers.
+  const offered = SALUTATIONS[isFarmer ? "farmer" : "customer"];
+  const auto = byGender(form?.gender ?? null, isFarmer);
+  const given = form?.short_name.trim() || form?.name.trim().split(/\s+/).pop() || "";
+  const used = form?.salutation.trim().toLowerCase() || auto;
+  const addressFields = form ? (
+    <>
+      <Text style={styles.label}>Giới tính</Text>
+      <View style={styles.segmented}>
+        {GENDERS.map((g) => {
+          const sel = form.gender === g.value;
+          return (
+            <PressableScale key={g.label} haptic scaleTo={0.96} style={[styles.seg, sel && styles.segSelected]} onPress={() => setForm((f) => (f ? { ...f, gender: g.value } : f))}>
+              {sel ? <Icon name="check" size={18} color={colors.onSecondaryContainer} /> : null}
+              <Text style={[styles.segText, sel && { color: colors.onSecondaryContainer }]}>{g.label}</Text>
+            </PressableScale>
+          );
+        })}
+      </View>
+      <Text style={styles.label}>Cách xưng hô</Text>
+      <View style={styles.chips}>
+        <Chip label={`Theo giới tính (${auto})`} selected={!form.custom && !form.salutation} onPress={() => setForm((f) => (f ? { ...f, custom: false, salutation: "" } : f))} />
+        {offered.map((o) => (
+          <Chip key={o} label={capitalise(o)} selected={!form.custom && form.salutation === o} onPress={() => setForm((f) => (f ? { ...f, custom: false, salutation: o } : f))} />
+        ))}
+        <Chip label="Khác" selected={form.custom} onPress={() => setForm((f) => (f ? { ...f, custom: true, salutation: f.custom ? f.salutation : "" } : f))} />
+      </View>
+      {form.custom ? (
+        <>
+          <Text style={styles.label}>Xưng hô tự nhập</Text>
+          <TextInput style={styles.input} value={form.salutation} onChangeText={(v) => setForm((f) => (f ? { ...f, salutation: lettersOnly(v).slice(0, 12) } : f))} placeholder="Ví dụ: u, dì, thầy" placeholderTextColor={colors.onSurfaceVariant} maxLength={12} autoCapitalize="none" autoCorrect={false} />
+        </>
+      ) : null}
+      <Text style={styles.label}>Tên gọi</Text>
+      <TextInput style={styles.input} value={form.short_name} onChangeText={(v) => setForm((f) => (f ? { ...f, short_name: v } : f))} placeholder={form.name.trim().split(/\s+/).pop() || "Ví dụ: Lan"} placeholderTextColor={colors.onSurfaceVariant} maxLength={24} />
+      <Text style={[styles.muted, { marginTop: 12 }]}>
+        Chúng tôi sẽ gọi bạn là <Text style={styles.preview}>{`${used} ${given}`.trim()}</Text> trong lời chào và thông báo.
+      </Text>
+    </>
+  ) : null;
   const profileCard = (title: string) =>
     form ? null : (
       <View>
@@ -396,9 +491,10 @@ export default function TaiKhoanScreen() {
                     <Text style={styles.sectionLabel}>THÔNG TIN CỦA TÔI</Text>
                     <View style={styles.card}>
                       <Text style={styles.label}>Họ tên</Text>
-                      <TextInput style={styles.input} value={form?.name ?? ""} onChangeText={(v) => setForm((f) => (f ? { ...f, name: v } : f))} placeholder="Tên của bác" placeholderTextColor={colors.onSurfaceVariant} maxLength={80} autoComplete="name" />
+                      <TextInput style={styles.input} value={form?.name ?? ""} onChangeText={(v) => setForm((f) => (f ? { ...f, name: v } : f))} placeholder={`Tên của ${used}`} placeholderTextColor={colors.onSurfaceVariant} maxLength={80} autoComplete="name" />
                       <Text style={styles.label}>Số điện thoại</Text>
                       <TextInput style={styles.input} value={form?.phone ?? ""} onChangeText={(v) => setForm((f) => (f ? { ...f, phone: v } : f))} placeholder="Để xe tải lạnh gọi khi tới vườn" placeholderTextColor={colors.onSurfaceVariant} keyboardType="phone-pad" maxLength={20} autoComplete="tel" />
+                      {addressFields}
                       <Button label="Lưu thông tin" icon="check" onPress={saveProfile} loading={saving} disabled={!dirty} style={{ alignSelf: "stretch", marginTop: 16 }} />
                     </View>
                   </>
@@ -413,13 +509,14 @@ export default function TaiKhoanScreen() {
                   <Text style={styles.sectionLabel}>THÔNG TIN NHẬN RAU</Text>
                   <View style={styles.card}>
                     <Text style={styles.label}>Họ tên</Text>
-                    <TextInput style={styles.input} value={form?.name ?? ""} onChangeText={(v) => setForm((f) => (f ? { ...f, name: v } : f))} placeholder="Tên của bạn" placeholderTextColor={colors.onSurfaceVariant} maxLength={80} autoComplete="name" />
+                    <TextInput style={styles.input} value={form?.name ?? ""} onChangeText={(v) => setForm((f) => (f ? { ...f, name: v } : f))} placeholder={`Tên của ${used}`} placeholderTextColor={colors.onSurfaceVariant} maxLength={80} autoComplete="name" />
                     <Text style={styles.label}>Số điện thoại</Text>
-                    <TextInput style={styles.input} value={form?.phone ?? ""} onChangeText={(v) => setForm((f) => (f ? { ...f, phone: v } : f))} placeholder="Để bác giao hàng gọi khi rau tới sảnh" placeholderTextColor={colors.onSurfaceVariant} keyboardType="phone-pad" maxLength={20} autoComplete="tel" />
+                    <TextInput style={styles.input} value={form?.phone ?? ""} onChangeText={(v) => setForm((f) => (f ? { ...f, phone: v } : f))} placeholder="Để người giao hàng gọi khi rau tới sảnh" placeholderTextColor={colors.onSurfaceVariant} keyboardType="phone-pad" maxLength={20} autoComplete="tel" />
                     <Text style={styles.label}>Cụm chung cư</Text>
                     <ClusterPicker clusters={clusters} value={form?.cluster_id ?? null} onChange={(id) => setForm((f) => (f ? { ...f, cluster_id: id } : f))} />
                     <Text style={styles.label}>Toà, tầng, số căn hộ</Text>
                     <TextInput style={styles.input} value={form?.address ?? ""} onChangeText={(v) => setForm((f) => (f ? { ...f, address: v } : f))} placeholder="Ví dụ: Toà S2, căn 1508" placeholderTextColor={colors.onSurfaceVariant} maxLength={160} />
+                    {addressFields}
                     <Button label="Lưu thông tin" icon="check" onPress={saveProfile} loading={saving} disabled={!dirty} style={{ alignSelf: "stretch", marginTop: 16 }} />
                   </View>
                 </View>
@@ -507,6 +604,8 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
   seg: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 11 },
   segSelected: { backgroundColor: colors.secondaryContainer },
   segText: { ...type.labelLarge, color: colors.onSurfaceVariant, fontSize: 12 },
+  chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  preview: { ...type.labelLarge, color: colors.onSurface, fontSize: 13 },
   segHint: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12, marginTop: 8 },
   logoutBtn: { borderWidth: 1.5, borderColor: colors.error, borderRadius: shape.full, padding: 14, alignItems: "center", alignSelf: "center", paddingHorizontal: 32 },
   logoutBtnText: { ...type.labelLarge, color: colors.error, fontSize: 15 },
