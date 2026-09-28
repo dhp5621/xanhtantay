@@ -4,7 +4,7 @@
  * Client-side media compression so the 1 GB Blob store lasts.
  * Images  → max 1280px on the long edge, WebP q0.72 (≈150–300 KB from a phone photo).
  * Videos  → max 720p, 30 fps, ~1.2 Mbps, cut at 30 s (≈4–5 MB max) via canvas + MediaRecorder.
- * Avatars → 96×96 WebP q0.7 as a data URL (≈3–5 KB) stored straight in the database.
+ * Avatars → 256×256 WebP q0.8 as a data URL (≈15–30 KB) stored straight in the database.
  */
 
 export const VIDEO_MAX_SECONDS = 30;
@@ -66,12 +66,12 @@ export async function compressImage(file: File): Promise<File> {
   }
 }
 
-/** 96×96 WebP data URL for avatars (a few KB). */
-export async function makeAvatarDataUrl(file: File, size = 96): Promise<string> {
+/** 256×256 WebP data URL for avatars: sharp at the largest size shown (88 px) on 3x screens. */
+export async function makeAvatarDataUrl(file: File, size = 256): Promise<string> {
   const bmp = await loadBitmap(file);
   const canvas = drawScaled(bmp, size, size);
-  let blob = await toBlob(canvas, "image/webp", 0.7);
-  if (blob.type !== "image/webp") blob = await toBlob(canvas, "image/jpeg", 0.75);
+  let blob = await toBlob(canvas, "image/webp", 0.8);
+  if (blob.type !== "image/webp") blob = await toBlob(canvas, "image/jpeg", 0.8);
   return await new Promise<string>((resolve, reject) => {
     const r = new FileReader();
     r.onload = () => resolve(String(r.result));

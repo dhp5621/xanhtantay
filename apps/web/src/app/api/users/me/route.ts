@@ -1,3 +1,4 @@
+import { AVATAR_DATA_URL, MAX_AVATAR_CHARS } from "@/lib/avatar";
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
@@ -5,9 +6,7 @@ import { callName, clusters, users } from "@/db/schema";
 import { addressPerson } from "@/lib/commerce";
 import { getSessionUser } from "@/lib/session";
 
-// Avatars are stored inline as a tiny data URL (96×96 WebP ≈ 3–5 KB), never in Blob storage.
-const MAX_AVATAR_CHARS = 24 * 1024;
-const DATA_URL = /^data:image\/(webp|jpeg|png);base64,[A-Za-z0-9+/=]+$/;
+// Avatars are stored inline as a data URL (256×256), never in Blob storage.
 const FIELDS = { id: users.id, name: users.name, email: users.email, phone: users.phone, role: users.role, avatar_url: users.avatar_url, cluster_id: users.cluster_id, address: users.address, gender: users.gender, salutation: users.salutation, short_name: users.short_name, call: callName };
 
 /** `call_name` ("Cô Tư") and `pronoun` ("cô") are how every screen and notification addresses this person. */
@@ -32,7 +31,7 @@ export async function PATCH(req: Request) {
 
   if (body.avatar_url === null) updates.avatar_url = null;
   else if (typeof body.avatar_url === "string") {
-    if (body.avatar_url.length > MAX_AVATAR_CHARS || !DATA_URL.test(body.avatar_url)) return NextResponse.json({ error: "Ảnh đại diện phải là ảnh đã nén (tối đa 24KB)" }, { status: 400 });
+    if (body.avatar_url.length > MAX_AVATAR_CHARS || !AVATAR_DATA_URL.test(body.avatar_url)) return NextResponse.json({ error: "Ảnh đại diện phải là ảnh đã nén (tối đa khoảng 90KB)" }, { status: 400 });
     updates.avatar_url = body.avatar_url;
   }
   if (typeof body.name === "string" && body.name.trim().length >= 2) updates.name = body.name.trim().slice(0, 60);

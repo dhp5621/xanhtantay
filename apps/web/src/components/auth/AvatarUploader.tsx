@@ -10,7 +10,7 @@ import { makeAvatarDataUrl } from "@/lib/media";
 import { Portal } from "@/components/ui/Portal";
 import { CameraCapture, hasCameraApi } from "@/components/ui/CameraCapture";
 
-/** Avatar with a change menu: take a photo, pick from device, or remove. Stores a 96×96 WebP in the DB. */
+/** Avatar with a change menu: take a photo, pick from device, or remove. Stores a 256×256 WebP in the DB. */
 export function AvatarUploader({ name, src, tone = "primary" }: { name?: string | null; src?: string | null; tone?: "primary" | "tertiary" }) {
   const [current, setCurrent] = useState<string | null>(src ?? null);
   const [busy, setBusy] = useState(false);
@@ -44,7 +44,7 @@ export function AvatarUploader({ name, src, tone = "primary" }: { name?: string 
   const useFile = async (f: File) => {
     setBusy(true);
     try {
-      const dataUrl = await makeAvatarDataUrl(f, 96);
+      const dataUrl = await makeAvatarDataUrl(f);
       await save(dataUrl);
     } catch {
       show("Không đọc được ảnh này", { kind: "error" });
@@ -58,7 +58,7 @@ export function AvatarUploader({ name, src, tone = "primary" }: { name?: string 
     if (!f) return;
     setBusy(true);
     try {
-      const dataUrl = await makeAvatarDataUrl(f, 96);
+      const dataUrl = await makeAvatarDataUrl(f);
       await save(dataUrl);
     } catch {
       show("Không đọc được ảnh này", { kind: "error" });
@@ -106,7 +106,7 @@ export function AvatarUploader({ name, src, tone = "primary" }: { name?: string 
                   </button>
                 ))}
               </div>
-              <p className="body-sm text-on-surface-variant" style={{ padding: "12px 4px 0" }}>Ảnh được cắt vuông và nén còn 96×96, chỉ vài KB.</p>
+              <p className="body-sm text-on-surface-variant" style={{ padding: "12px 4px 0" }}>Ảnh được cắt vuông và nén còn 256×256.</p>
             </div>
           </div>
         </Portal>

@@ -5,7 +5,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import * as ImagePicker from "expo-image-picker";
 import { router, useFocusEffect } from "expo-router";
 import type { Cluster } from "@xanhtantay/types";
-import { apiFetch, ApiError } from "../../constants/api";
+import { apiFetch, ApiError, API_URL } from "../../constants/api";
 import { colors, shape, type, useStyles } from "../../constants/theme";
 import { makeAvatarDataUrl } from "../../constants/media";
 import { formatKg } from "../../constants/format";
@@ -181,7 +181,7 @@ export default function TaiKhoanScreen() {
       if (res.canceled) return;
       const a = res.assets[0];
       setBusy(true);
-      await saveAvatar(await makeAvatarDataUrl(a.uri, a.width, a.height, 96));
+      await saveAvatar(await makeAvatarDataUrl(a.uri, a.width, a.height));
     } catch (e) {
       setBusy(false);
       alert("Không đọc được ảnh này", e instanceof Error ? e.message : undefined);
@@ -378,7 +378,7 @@ export default function TaiKhoanScreen() {
           <AnimInScale>
             <LinearGradient colors={isFarmer ? [colors.tertiaryContainer, colors.primaryContainer] : [colors.primaryContainer, colors.tertiaryContainer]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.hero}>
               <View style={{ position: "relative" }}>
-                <Avatar name={name} src={me?.avatar_url ?? user.image} size={80} tone={isFarmer ? "tertiary" : "primary"} />
+                <Avatar name={name} src={me?.avatar_url ?? (user.image?.startsWith("/") ? `${API_URL}${user.image}` : user.image)} size={80} tone={isFarmer ? "tertiary" : "primary"} />
                 <PressableScale haptic scaleTo={0.9} style={styles.avatarBtn} onPress={changeAvatar} disabled={busy}>
                   {busy ? <Loader size={18} color={colors.onPrimary} /> : <Icon name="photo_camera" size={15} filled color={colors.onPrimary} />}
                 </PressableScale>

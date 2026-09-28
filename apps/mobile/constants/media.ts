@@ -149,8 +149,8 @@ export const fmtDuration = (ms: number) => {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 };
 
-/** Square-crop + shrink to 96×96 and return a JPEG data URL small enough for the users.avatar_url column. */
-export async function makeAvatarDataUrl(uri: string, width: number, height: number, size = 96): Promise<string> {
+/** Square-crop + shrink to 256×256 and return a JPEG data URL small enough for the users.avatar_url column. */
+export async function makeAvatarDataUrl(uri: string, width: number, height: number, size = 256): Promise<string> {
   const side = Math.min(width, height);
   const ctx = ImageManipulator.manipulate(uri)
     .crop({ originX: Math.floor((width - side) / 2), originY: Math.floor((height - side) / 2), width: side, height: side })

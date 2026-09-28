@@ -43,7 +43,7 @@ Font tự host trong `apps/web/public/fonts`. Icon là bản rút gọn theo tê
 | `CRON_SECRET` | ✔ cho chốt sổ tự động | Bảo vệ `/api/cron/cutoff` (Vercel Cron chạy 11:00 UTC = 18h00 giờ Việt Nam) |
 | `CHAT_API_SECRET` | cho AI | Khoá chat API ([gemini-web2api](https://github.com/Sophomoresty/gemini-web2api), OpenAI-compatible). Dùng để tìm công thức mới trên mạng và viết tóm tắt chuyến. `CHAT_API_URL`, `CHAT_API_MODEL` tuỳ chọn; `CHAT_SEARCH_MODEL` (mặc định `gemini-3.6-flash`) là model dùng khi cần tìm kiếm web. Không có khoá thì thực đơn đổi sang các món khác của bếp nhà |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | cho thông báo đẩy | Web Push; app mobile dùng Expo push |
-| `BLOB_READ_WRITE_TOKEN` | ✔ cho trả hàng / hoàn tiền | Vercel Blob lưu ảnh và video bằng chứng. Avatar và ảnh rau củ mới lưu thẳng trong DB, không cần Blob |
+| `BLOB_READ_WRITE_TOKEN` | ✔ cho trả hàng / hoàn tiền | Vercel Blob lưu ảnh và video bằng chứng. Avatar (256×256) và ảnh rau củ mới (320 px) lưu thẳng trong DB, không cần Blob |
 
 ### Thông báo
 

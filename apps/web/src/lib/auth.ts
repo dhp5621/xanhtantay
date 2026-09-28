@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { users, farms } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { hasOwnPassword, verifyPassword } from "./password";
+import { avatarHref } from "./avatar";
 
 /** Demo accounts advertised on the login page. Password for all: DEMO_PASSWORD (default demo123). */
 export const DEMO_ACCOUNTS = {
@@ -38,7 +39,7 @@ export const authOptions: NextAuthOptions = {
           const [farm] = await db.select({ slug: farms.slug }).from(farms).where(eq(farms.owner_id, user.id));
           farmSlug = farm?.slug ?? null;
         }
-        return { id: user.id, name: user.name, email: user.email, role: user.role, farmSlug, image: user.avatar_url };
+        return { id: user.id, name: user.name, email: user.email, role: user.role, farmSlug, image: avatarHref(user.id, user.avatar_url) };
       },
     }),
   ],
@@ -53,7 +54,7 @@ export const authOptions: NextAuthOptions = {
       // useSession().update() after an avatar/name change: re-read from the database.
       if (trigger === "update" && token.id) {
         const [row] = await db.select({ name: users.name, avatar_url: users.avatar_url }).from(users).where(eq(users.id, token.id as string));
-        if (row) { token.name = row.name; token.picture = row.avatar_url; }
+        if (row) { token.name = row.name; token.picture = avatarHref(token.id as string, row.avatar_url); }
       }
       return token;
     },
