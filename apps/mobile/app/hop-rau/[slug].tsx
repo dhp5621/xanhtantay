@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { View, Text, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -6,8 +6,8 @@ import * as Haptics from "expo-haptics";
 import { Stack, router, useLocalSearchParams } from "expo-router";
 import type { Box } from "@xanhtantay/types";
 import { apiFetch } from "../../constants/api";
-import { colors, shape, type, elevation, useStyles, type Colors } from "../../constants/theme";
-import { SHIP_FEE, SIZE_LABELS, type OrderMode } from "../../constants/commerce";
+import { colors, shape, type, useStyles, type Colors } from "../../constants/theme";
+import { SHIP_FEE, SIZE_LABELS, sizesOf, type OrderMode } from "../../constants/commerce";
 import { formatDay, formatKg, formatVND } from "../../constants/format";
 import type { BoxesResponse, PlacedOrder } from "../../constants/types";
 import { useLiveRefresh } from "../../hooks/useLive";
@@ -17,6 +17,7 @@ import { SmartImage } from "../../components/SmartImage";
 import { CutoffBanner } from "../../components/CutoffBanner";
 import { BoxContents } from "../../components/BoxContents";
 import { BoxMenu } from "../../components/BoxMenu";
+import { SizePicker } from "../../components/SizePicker";
 import { OrderPanel } from "../../components/OrderPanel";
 import { CareMessage } from "../../components/CareMessage";
 import { StatusBanner } from "../../components/OrderTimeline";
@@ -31,18 +32,19 @@ export default function BoxDetailScreen() {
   const insets = useSafeAreaInsets();
   const { slug, mode } = useLocalSearchParams<{ slug: string; mode?: string }>();
   const [box, setBox] = useState<Box | null>(null);
+  const [sizes, setSizes] = useState<Box[]>([]);
   const [meta, setMeta] = useState<Omit<BoxesResponse, "boxes"> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [placed, setPlaced] = useState<PlacedOrder | null>(null);
-  const scroll = useRef<ScrollView>(null);
-  const panelY = useRef(0);
 
   const load = useCallback(async () => {
     if (!slug) return;
     try {
       const [row, list] = await Promise.all([apiFetch(`/boxes/${slug}`) as Promise<Box>, (apiFetch("/boxes") as Promise<BoxesResponse>).catch(() => null)]);
       setBox(row);
+      // The other sizes of this mix come from the list; without it the box stands alone.
+      setSizes(list ? sizesOf(row, list.boxes ?? []) : []);
       if (list) setMeta({ delivery_date: list.delivery_date, cutoff_at: list.cutoff_at, ship_fee: list.ship_fee });
       setError(null);
     } catch (e) {
@@ -80,12 +82,14 @@ export default function BoxDetailScreen() {
 
   if (placed) return <PlacedView box={box} order={placed} onAgain={() => setPlaced(null)} />;
 
+  const mixName = box.mix_name || box.name;
+  const sizeLabel = `${SIZE_LABELS[box.size] ?? box.size} · ${formatKg(box.weight_kg)}`;
   const initialMode = MODES.includes(mode as OrderMode) ? (mode as OrderMode) : "single";
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1, backgroundColor: colors.surface }}>
-      <Stack.Screen options={{ title: SIZE_LABELS[box.size] ?? box.name }} />
-      <ScrollView ref={scroll} contentContainerStyle={{ padding: 16, paddingBottom: 110 + insets.bottom, gap: 24 }} keyboardShouldPersistTaps="handled">
+      <Stack.Screen options={{ title: mixName }} />
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 32 + insets.bottom, gap: 24 }} keyboardShouldPersistTaps="handled">
         <AnimInScale>
           <View style={styles.hero}>
             <SmartImage uri={box.image_url} style={StyleSheet.absoluteFill} loaderSize={32} transition={400} />
@@ -97,7 +101,8 @@ export default function BoxDetailScreen() {
                   <Text style={styles.heroSeason}>{box.season}</Text>
                 </View>
               ) : null}
-              <Text style={styles.heroTitle}>{box.name}</Text>
+              <Text style={styles.heroTitle}>{mixName}</Text>
+              <Text style={styles.heroSize}>{sizeLabel}</Text>
             </View>
           </View>
         </AnimInScale>
@@ -113,6 +118,16 @@ export default function BoxDetailScreen() {
           <Text style={styles.price}>{formatVND(box.price)}</Text>
           {box.description ? <EmojiText style={styles.description}>{box.description}</EmojiText> : null}
         </AnimIn>
+
+        {sizes.length > 1 ? (
+          <AnimIn delay={80}>
+            <View style={styles.sizeCard}>
+              <Text style={styles.sizeLabel}>Chọn size</Text>
+              {/* replace, not push: Back leaves the mix instead of walking through its sizes. */}
+              <SizePicker mixName={mixName} sizes={sizes} current={box.id} onPick={(b) => b.id !== box.id && router.replace(`/hop-rau/${b.slug}`)} />
+            </View>
+          </AnimIn>
+        ) : null}
 
         {meta ? (
           <AnimIn delay={100}>
@@ -130,8 +145,8 @@ export default function BoxDetailScreen() {
           <BoxMenu mealPlan={box.meal_plan ?? []} />
         </AnimIn>
 
-        <View onLayout={(e) => (panelY.current = e.nativeEvent.layout.y)}>
-          <SectionHead icon="shopping_bag" title="Đặt hộp này" />
+        <View>
+          <SectionHead icon="shopping_bag" title="Cách nhận hộp rau" />
           <OrderPanel
             box={box}
             deliveryDate={meta?.delivery_date ?? null}
@@ -144,14 +159,6 @@ export default function BoxDetailScreen() {
           />
         </View>
       </ScrollView>
-
-      <View style={[styles.bar, elevation[3], { paddingBottom: Math.max(insets.bottom, 12) }]}>
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={styles.barPrice}>{formatVND(box.price)}</Text>
-          <Text style={styles.muted} numberOfLines={1}>{meta ? `Giao ${formatDay(meta.delivery_date)}` : `${formatKg(box.weight_kg)} · ${box.days} ngày`}</Text>
-        </View>
-        <Button label="Đặt hộp này" icon="shopping_bag" onPress={() => scroll.current?.scrollTo({ y: Math.max(0, panelY.current - 8), animated: true })} />
-      </View>
     </KeyboardAvoidingView>
   );
 }
@@ -225,9 +232,11 @@ const makeStyles = (c: Colors) =>
     hero: { height: 250, borderRadius: shape.xlIncreased, overflow: "hidden", backgroundColor: c.surfaceContainerHigh },
     heroSeason: { color: "rgba(255,255,255,.9)", fontSize: 13, fontWeight: "600" },
     heroTitle: { ...type.headlineSmall, color: c.onImage, fontSize: 28, lineHeight: 34 },
+    heroSize: { ...type.titleMedium, color: "rgba(255,255,255,.9)", fontSize: 15, marginTop: 2 },
+    sizeCard: { backgroundColor: c.surfaceContainerLow, borderRadius: shape.xl, padding: 16, gap: 10 },
+    sizeLabel: { ...type.labelLarge, color: c.onSurfaceVariant },
     price: { ...type.headlineSmall, color: c.primary, fontSize: 28, lineHeight: 34, marginTop: 14 },
     description: { ...type.bodyLarge, color: c.onSurfaceVariant, fontSize: 15, lineHeight: 24, marginTop: 6 },
-    bar: { position: "absolute", left: 0, right: 0, bottom: 0, flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: c.surfaceContainerLow, borderTopLeftRadius: shape.xl, borderTopRightRadius: shape.xl, paddingTop: 12, paddingHorizontal: 18 },
     barPrice: { ...type.headlineSmall, color: c.primary, fontSize: 20, lineHeight: 26 },
     done: { backgroundColor: c.secondaryContainer, borderRadius: shape.xlIncreased, padding: 24, alignItems: "center", overflow: "hidden" },
     doneIcon: { width: 64, height: 64, borderRadius: 32, backgroundColor: c.primary, alignItems: "center", justifyContent: "center", marginBottom: 12 },

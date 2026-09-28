@@ -11,12 +11,12 @@ export const MODEL_STEPS = [
 ];
 
 export const BENEFITS = [
-  { icon: "inventory_2", t: "Hộp theo mùa", d: "Ba cỡ hộp nhỏ, vừa, lớn. Rau trong hộp đổi theo mùa, phối từ nhiều vườn.", more: "Mỗi hộp ghi rõ từng loại rau bao nhiêu ký và vườn nào trồng. Bạn không phải chọn từng mớ, chỉ cần chọn cỡ hộp hợp với nhà mình." },
+  { icon: "inventory_2", t: "Hộp theo mùa", d: "Mỗi mùa có ba mix rau, mỗi mix có size S, M, L. Hộp nào cũng đủ ăn 7 ngày.", more: "Size S 4 kg cho 2 người, size M 7 kg cho 4 người, size L 10 kg cho 6 người. Mỗi hộp ghi rõ từng loại rau bao nhiêu ký và vườn nào trồng. Bạn không phải chọn từng mớ, chỉ cần chọn mix rồi chọn size hợp với nhà mình." },
   { icon: "event_repeat", t: "Gói định kỳ", d: "Tự lên đơn mỗi tuần, hai tuần hoặc mỗi tháng. Miễn phí giao.", more: "Đổi số hộp, đổi tần suất hay tạm dừng bất cứ lúc nào trong mục Gói định kỳ. Nhà vườn biết trước nhu cầu nên gieo trồng vừa đủ." },
   { icon: "groups", t: "Gom đơn chung cư", d: "Rủ hàng xóm cùng toà đặt chung một chuyến. Đủ người là miễn phí giao.", more: "Mỗi nhóm gắn với một cụm chung cư và một ngày giao. Thanh tiến độ cho biết còn thiếu mấy nhà. Đủ số lúc chốt sổ 18h00, phí giao của cả nhóm về 0." },
   { icon: "favorite", t: "Theo dõi có giờ", d: "4h00 rau đang được cắt, 6h00 lên xe lạnh, 16h00 có mặt tại sảnh.", more: "Không còn dòng “đang giao” khô khan. Mỗi chặng có giờ cụ thể và tên bác nông dân đang thu hoạch phần rau của bạn." },
   { icon: "qr_code_2", t: "QR truy xuất", d: "Quét mã trên hộp để biết rau từ vườn nào, cắt lúc mấy giờ.", more: "Trang truy xuất hiện vườn trồng, giờ thu hoạch, hành trình xe lạnh và từng loại rau trong hộp. Không hiện thông tin người mua." },
-  { icon: "menu_book", t: "Thực đơn theo ngày kèm hộp", d: "Mỗi hộp có sẵn thực đơn bữa trưa, bữa tối cho từng ngày, kèm cách làm.", more: "Thực đơn được soạn theo đúng rau trong hộp, có nguyên liệu và các bước nấu. Mở hộp ra là biết hôm nay nấu gì, không lo rau thừa trong tủ lạnh." },
+  { icon: "menu_book", t: "Thực đơn theo ngày kèm hộp", d: "Mỗi hộp có sẵn thực đơn 7 ngày, bữa trưa và bữa tối, kèm cách làm.", more: "Thực đơn được soạn theo đúng rau trong hộp, có nguyên liệu và các bước nấu. Mở hộp ra là biết hôm nay nấu gì, không lo rau thừa trong tủ lạnh." },
   { icon: "mail", t: "Lời nhắn quan tâm", d: "Mỗi đơn kèm một lời nhắn từ quê, như mẹ gửi rau lên phố.", more: "Lời nhắn hiện ngay sau khi đặt và nằm trong chi tiết đơn, nhắc bạn cách bảo quản, món nên nấu trước và một lời hỏi thăm." },
 ];
 

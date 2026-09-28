@@ -199,7 +199,7 @@ export default function GomDonScreen() {
               <Text style={styles.label}>Hộp rau</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
                 {boxes.map((b) => (
-                  <Chip key={b.id} label={`${SIZE_LABELS[b.size] ?? b.size} · ${formatVND(b.price)}`} icon={form.box_id === b.id ? "check" : "inventory_2"} selected={form.box_id === b.id} onPress={() => setForm({ ...form, box_id: b.id })} />
+                  <Chip key={b.id} label={`${b.mix_name || b.name} · ${b.size} · ${formatVND(b.price)}`} icon={form.box_id === b.id ? "check" : "inventory_2"} selected={form.box_id === b.id} onPress={() => setForm({ ...form, box_id: b.id })} />
                 ))}
               </ScrollView>
               {box ? <Text style={[styles.subtitle, { marginTop: 6 }]}>{box.name}</Text> : !catalog ? <Text style={[styles.subtitle, { marginTop: 6 }]}>Đang tải các hộp rau…</Text> : null}

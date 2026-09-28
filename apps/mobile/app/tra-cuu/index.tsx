@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { View, Text, StyleSheet, TextInput, ScrollView, Modal, Platform } from "react-native";
+import { View, Text, StyleSheet, TextInput, ScrollView, Modal, Platform, Linking } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -160,9 +160,17 @@ function Scanner({ visible, onClose, onScan }: { visible: boolean; onClose: () =
               <Loader size={40} color="#fff" />
             ) : (
               <>
-                <Icon name="videocam_off" size={40} color="#fff" />
-                <Text style={styles.scannerText}>Cần quyền dùng camera để quét mã QR.</Text>
-                <Button label="Cho phép camera" icon="photo_camera" onPress={() => requestPermission()} />
+                <View style={styles.scannerBadge}>
+                  <Icon name="videocam_off" size={32} color="#fff" />
+                </View>
+                <Text style={styles.scannerText}>Cho phép camera để quét mã</Text>
+                {/* Once the system stops asking, only the settings screen can grant it. */}
+                <Button
+                  label={permission.canAskAgain ? "Cho phép camera" : "Mở cài đặt"}
+                  icon={permission.canAskAgain ? "photo_camera" : "settings"}
+                  onPress={() => (permission.canAskAgain ? requestPermission() : Linking.openSettings())}
+                  style={styles.scannerAllow}
+                />
               </>
             )}
           </View>
@@ -173,13 +181,17 @@ function Scanner({ visible, onClose, onScan }: { visible: boolean; onClose: () =
             <Icon name="close" size={22} color="#fff" />
           </PressableScale>
         </View>
-        <View style={styles.viewfinder} pointerEvents="none">
-          <View style={[styles.corner, { top: 0, left: 0, borderTopWidth: 4, borderLeftWidth: 4, borderTopLeftRadius: 18 }]} />
-          <View style={[styles.corner, { top: 0, right: 0, borderTopWidth: 4, borderRightWidth: 4, borderTopRightRadius: 18 }]} />
-          <View style={[styles.corner, { bottom: 0, left: 0, borderBottomWidth: 4, borderLeftWidth: 4, borderBottomLeftRadius: 18 }]} />
-          <View style={[styles.corner, { bottom: 0, right: 0, borderBottomWidth: 4, borderRightWidth: 4, borderBottomRightRadius: 18 }]} />
-        </View>
-        <Text style={styles.scannerHint} pointerEvents="none">Đưa mã QR trên hộp rau vào trong khung</Text>
+        {permission?.granted ? (
+          <>
+            <View style={styles.viewfinder} pointerEvents="none">
+              <View style={[styles.corner, { top: 0, left: 0, borderTopWidth: 4, borderLeftWidth: 4, borderTopLeftRadius: 18 }]} />
+              <View style={[styles.corner, { top: 0, right: 0, borderTopWidth: 4, borderRightWidth: 4, borderTopRightRadius: 18 }]} />
+              <View style={[styles.corner, { bottom: 0, left: 0, borderBottomWidth: 4, borderLeftWidth: 4, borderBottomLeftRadius: 18 }]} />
+              <View style={[styles.corner, { bottom: 0, right: 0, borderBottomWidth: 4, borderRightWidth: 4, borderBottomRightRadius: 18 }]} />
+            </View>
+            <Text style={styles.scannerHint} numberOfLines={1} adjustsFontSizeToFit pointerEvents="none">Đưa mã QR vào trong khung</Text>
+          </>
+        ) : null}
       </View>
     </Modal>
   );
@@ -199,12 +211,14 @@ const makeStyles = (colors: Colors) =>
     errorText: { ...type.bodyMedium, color: colors.onErrorContainer, flex: 1 },
     qrCard: { alignItems: "center", backgroundColor: colors.surfaceContainerLow, borderRadius: shape.xl, padding: 18 },
     scanner: { flex: 1, backgroundColor: "#000" },
-    scannerCenter: { flex: 1, alignItems: "center", justifyContent: "center", gap: 14, padding: 24 },
-    scannerText: { ...type.bodyMedium, color: "#fff", textAlign: "center" },
+    scannerCenter: { flex: 1, alignItems: "center", justifyContent: "center", gap: 16, paddingHorizontal: 32 },
+    scannerBadge: { width: 72, height: 72, borderRadius: 36, backgroundColor: "rgba(255,255,255,.14)", alignItems: "center", justifyContent: "center" },
+    scannerText: { ...type.titleMedium, color: "#fff", textAlign: "center" },
+    scannerAllow: { alignSelf: "center", minWidth: 200 },
     scannerTop: { position: "absolute", top: 52, left: 20, right: 20, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
     scannerTitle: { ...type.titleLarge, color: "#fff", fontSize: 18 },
     scannerClose: { width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(255,255,255,.16)", alignItems: "center", justifyContent: "center" },
     viewfinder: { position: "absolute", left: "50%", top: "50%", width: 240, height: 240, marginLeft: -120, marginTop: -120 },
     corner: { position: "absolute", width: 48, height: 48, borderColor: "#A8F5BE" },
-    scannerHint: { position: "absolute", bottom: 64, left: 0, right: 0, textAlign: "center", color: "rgba(255,255,255,.85)", ...type.bodyMedium },
+    scannerHint: { position: "absolute", bottom: 64, left: 24, right: 24, textAlign: "center", color: "rgba(255,255,255,.85)", ...type.bodyMedium },
   });

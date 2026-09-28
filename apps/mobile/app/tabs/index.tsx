@@ -5,14 +5,14 @@ import type { SessionUser } from "../../constants/api";
 import { apiFetch } from "../../constants/api";
 import { colors, shape, type, elevation, useStyles, type Colors } from "../../constants/theme";
 import { BENEFITS, FARMER_POINTS, MODEL_STEPS, TONES, type LandingTone } from "../../constants/landing";
-import { SIZE_LABELS } from "../../constants/commerce";
-import { formatDay, formatKg, formatVND } from "../../constants/format";
+import { groupMixes } from "../../constants/commerce";
+import { formatDay } from "../../constants/format";
 import type { Feed } from "../../constants/types";
 import { useSession } from "../../hooks/useSession";
 import { useLiveRefresh } from "../../hooks/useLive";
 import { AnimIn, AnimInScale, HeroBlob, PressableScale, Skeleton } from "../../components/motion";
 import { Button, Chip, SectionHead, Screen } from "../../components/ui";
-import { BoxCard } from "../../components/BoxCard";
+import { MixCard } from "../../components/MixCard";
 import { GroupCard } from "../../components/GroupCard";
 import { CutoffBanner } from "../../components/CutoffBanner";
 import { StatusBanner } from "../../components/OrderTimeline";
@@ -101,7 +101,8 @@ function HomeSkeleton() {
 function FeedView({ feed, user }: { feed: Feed; user: SessionUser }) {
   const styles = useStyles(makeStyles);
   const { width } = useWindowDimensions();
-  const cardW = Math.min(290, width * 0.74);
+  const cardW = Math.min(320, width * 0.84);
+  const mixes = groupMixes(feed.boxes);
   const farmW = Math.min(200, width * 0.5);
   const pilot = pilotText(feed);
   const live = feed.live_order;
@@ -157,9 +158,9 @@ function FeedView({ feed, user }: { feed: Feed; user: SessionUser }) {
       <View>
         <SectionHead icon="inventory_2" title="Hộp rau mùa này" action="Xem tất cả" onAction={() => router.push("/tabs/hop-rau")} />
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingRight: 16, paddingBottom: 6 }} decelerationRate="fast" snapToInterval={cardW + 12}>
-          {feed.boxes.map((box, i) => (
-            <AnimIn key={box.id} index={i} delay={140}>
-              <BoxCard box={box} style={{ width: cardW }} onPress={() => router.push(`/hop-rau/${box.slug}`)} />
+          {mixes.map((mix, i) => (
+            <AnimIn key={mix.mix} index={i} delay={140}>
+              <MixCard mix={mix} style={{ width: cardW }} onOpen={(slug) => router.push(`/hop-rau/${slug}`)} />
             </AnimIn>
           ))}
         </ScrollView>
@@ -215,6 +216,7 @@ function LandingView({ feed }: { feed: Feed }) {
   const styles = useStyles(makeStyles);
   const [openTip, setOpenTip] = useState<string | null>(null);
   const pilot = pilotText(feed);
+  const mixes = groupMixes(feed.boxes);
 
   return (
     <>
@@ -305,24 +307,14 @@ function LandingView({ feed }: { feed: Feed }) {
         </View>
       </View>
 
-      {feed.boxes.length > 0 && (
+      {mixes.length > 0 && (
         <View>
-          <Text style={styles.centerEyebrow}>Ba cỡ hộp</Text>
-          <Text style={styles.centerTitle}>Chọn hộp vừa với nhà bạn</Text>
+          <Text style={styles.centerEyebrow}>Hộp mùa này</Text>
+          <Text style={styles.centerTitle}>Chọn mix, chọn size cho nhà bạn</Text>
           <View style={{ gap: 12, marginTop: 16 }}>
-            {feed.boxes.map((box, i) => (
-              <AnimIn key={box.id} index={i}>
-                <PressableScale style={[styles.boxRow, elevation[1]]} onPress={() => router.push(`/hop-rau/${box.slug}`)}>
-                  <SmartImage uri={box.image_url} style={styles.boxPhoto} loaderSize={22} />
-                  <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
-                    <Chip label={SIZE_LABELS[box.size] ?? box.size} tone="primary" small />
-                    <Text style={styles.cardTitle} numberOfLines={2}>{box.name}</Text>
-                    <Text style={styles.muted}>
-                      {formatKg(box.weight_kg)} · {box.servings} người ăn · {box.days} ngày
-                    </Text>
-                    <Text style={styles.boxPrice}>{formatVND(box.price)}</Text>
-                  </View>
-                </PressableScale>
+            {mixes.map((mix, i) => (
+              <AnimIn key={mix.mix} index={i}>
+                <MixCard mix={mix} onOpen={(slug) => router.push(`/hop-rau/${slug}`)} />
               </AnimIn>
             ))}
           </View>
@@ -453,9 +445,6 @@ const makeStyles = (colors: Colors) =>
     stepLine: { flex: 1, width: 3, borderRadius: 2, backgroundColor: colors.primaryContainer, marginVertical: 4 },
     stepCard: { flex: 1, backgroundColor: colors.surfaceContainerLow, borderRadius: shape.xl, padding: 16, gap: 2 },
 
-    boxRow: { flexDirection: "row", alignItems: "center", gap: 14, backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.xl, padding: 12 },
-    boxPhoto: { width: 104, height: 104, borderRadius: shape.lg },
-    boxPrice: { ...type.titleMedium, color: colors.primary, fontSize: 17 },
 
     benefit: { flexDirection: "row", alignItems: "flex-start", gap: 12, borderRadius: shape.xl, padding: 16 },
     pillarIcon: { width: 44, height: 44, borderRadius: shape.md, backgroundColor: colors.tintOverlayStrong, alignItems: "center", justifyContent: "center" },

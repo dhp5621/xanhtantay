@@ -3,17 +3,17 @@ import { View, Text, FlatList, StyleSheet, RefreshControl } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import { apiFetch } from "../../constants/api";
 import { colors, shape, type, useStyles, type Colors } from "../../constants/theme";
-import { SHIP_FEE } from "../../constants/commerce";
+import { SHIP_FEE, groupMixes } from "../../constants/commerce";
 import { formatVND } from "../../constants/format";
 import type { BoxesResponse } from "../../constants/types";
 import { useLiveRefresh } from "../../hooks/useLive";
 import { AnimIn, Skeleton } from "../../components/motion";
 import { EmptyState, PageHeader, Screen } from "../../components/ui";
-import { BoxCard } from "../../components/BoxCard";
+import { MixCard } from "../../components/MixCard";
 import { CutoffBanner } from "../../components/CutoffBanner";
 import { Icon } from "../../components/Icon";
 
-/** The seasonal boxes (S / M / L) open for pre-order. */
+/** The mixes of the season open for pre-order, each in sizes S / M / L. */
 export default function HopRauScreen() {
   const styles = useStyles(makeStyles);
   const [data, setData] = useState<BoxesResponse | null>(null);
@@ -39,14 +39,14 @@ export default function HopRauScreen() {
     }, [load])
   );
 
-  const boxes = (data?.boxes ?? []).filter((b) => b.active !== false);
+  const mixes = groupMixes((data?.boxes ?? []).filter((b) => b.active !== false));
   const fee = data?.ship_fee ?? SHIP_FEE;
 
   return (
     <Screen>
       <FlatList
-        data={boxes}
-        keyExtractor={(b) => b.id}
+        data={mixes}
+        keyExtractor={(m) => m.mix}
         contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
         refreshControl={
           <RefreshControl
@@ -62,7 +62,7 @@ export default function HopRauScreen() {
         }
         ListHeaderComponent={
           <>
-            <PageHeader icon="inventory_2" eyebrow="Thùng rau mẹ gửi" title="Hộp rau" subtitle="Rau theo mùa phối từ nhiều vườn, kèm sẵn thực đơn từng ngày" />
+            <PageHeader icon="inventory_2" eyebrow="Thùng rau mẹ gửi" title="Hộp rau" subtitle="Chọn mix rau, rồi chọn size S, M hoặc L. Hộp nào cũng kèm thực đơn 7 ngày" />
             {error && (
               <View style={styles.errorBox}>
                 <Icon name="error" size={18} color={colors.onErrorContainer} />
@@ -76,15 +76,15 @@ export default function HopRauScreen() {
           data === null && !failed ? (
             <View style={{ gap: 14 }}>
               <Skeleton height={76} radius={shape.xl} />
-              <Skeleton height={290} radius={shape.xl} />
-              <Skeleton height={290} radius={shape.xl} />
+              <Skeleton height={380} radius={shape.xl} />
+              <Skeleton height={380} radius={shape.xl} />
             </View>
           ) : (
             <EmptyState icon="inventory_2" title="Chưa có hộp rau nào mở bán" description="Các hộp rau mùa mới đang được chuẩn bị. Bạn quay lại sau nhé." />
           )
         }
         ListFooterComponent={
-          boxes.length ? (
+          mixes.length ? (
             <View style={styles.note}>
               <Icon name="local_shipping" size={20} color={colors.onSurfaceVariant} />
               <Text style={styles.noteText}>
@@ -95,7 +95,7 @@ export default function HopRauScreen() {
         }
         renderItem={({ item, index }) => (
           <AnimIn index={Math.min(index, 6)} style={{ marginBottom: 14 }}>
-            <BoxCard box={item} mediaHeight={180} onPress={() => router.push(`/hop-rau/${item.slug}`)} />
+            <MixCard mix={item} mediaHeight={180} onOpen={(slug) => router.push(`/hop-rau/${slug}`)} />
           </AnimIn>
         )}
       />

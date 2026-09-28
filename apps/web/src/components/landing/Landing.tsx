@@ -17,7 +17,7 @@ const STEPS = [
 ];
 
 const CUSTOMER_PERKS = [
-  { icon: "inventory_2", t: "Hộp theo mùa, mix từ nhiều vườn", d: "Không phải chọn từng mớ. Mỗi hộp là rau củ ngon nhất mùa này từ các vườn Bắc Kạn, Tuyên Quang.", more: "Ba cỡ: nhỏ 3 kg cho 2 người, vừa 5 kg cho 3–4 người, lớn 8 kg cho nhà đông người. Thực đơn mùa đổi theo vụ thu hoạch." },
+  { icon: "inventory_2", t: "Hộp theo mùa, mix từ nhiều vườn", d: "Không phải chọn từng mớ. Mỗi hộp là rau củ ngon nhất mùa này từ các vườn Bắc Kạn, Tuyên Quang.", more: "Mỗi mùa ba mix, mỗi mix ba size như chọn cỡ áo: S 4 kg cho 2 người, M 7 kg cho 3–4 người, L 10 kg cho nhà đông người. Hộp nào cũng đủ ăn 7 ngày." },
   { icon: "event_repeat", t: "Gói định kỳ", d: "Hộp rau tự về mỗi tuần, miễn phí giao. Tạm dừng hay đổi cỡ hộp bất cứ lúc nào.", more: "Hệ thống tự lên đơn trước mỗi kỳ chốt sổ. Bạn chỉ cần xuống sảnh nhận rau." },
   { icon: "groups", t: "Gom đơn theo toà nhà", d: "Rủ hàng xóm cùng chung cư đặt chung một chuyến. Đủ nhóm là cả nhóm miễn ship.", more: "Tạo nhóm, chia link trong nhóm cư dân. Thanh tiến độ cho biết còn thiếu mấy nhà." },
   { icon: "schedule", t: "Theo dõi có giờ, có người", d: "Không còn “đang giao” khô khan: bạn biết 4h sáng ai đang cắt rau cho mình.", more: "Ba mốc: 4h00 thu hoạch, 6h00 lên xe lạnh, 16h00 có tại sảnh chung cư." },
