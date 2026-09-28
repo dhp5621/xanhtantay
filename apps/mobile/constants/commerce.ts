@@ -1,43 +1,59 @@
-/** Mirrors apps/web/src/lib/commerce.ts — display-only constants (the server enforces the real rules). */
+import type { BoxSize, OrderType, SubscriptionFrequency } from "@xanhtantay/types";
 
-export const MIN_DIRECT_ORDER = 100_000;
-export const FARMER_SHARE = 0.925;
-export const POINTS_PER_1000 = 1;
+/** Display-only rules of the pre-order model (the server enforces the real ones). */
 
-export const pointsFor = (totalVnd: number) => Math.floor(totalVnd / 1000) * POINTS_PER_1000;
+/** The book closes at 18:00 every day; orders placed before it are delivered the next day. */
+export const CUTOFF_LABEL = "18h00";
 
-export interface Level { name: string; icon: string; min: number; stage: number; desc: string }
-export const LEVELS: Level[] = [
-  { name: "Hạt mầm", icon: "spa", min: 0, stage: 0, desc: "Bắt đầu gieo" },
-  { name: "Mầm non", icon: "grass", min: 100, stage: 1, desc: "Đã nhú lá đầu" },
-  { name: "Cây non", icon: "potted_plant", min: 300, stage: 2, desc: "Vươn cao mỗi tuần" },
-  { name: "Cây xanh", icon: "park", min: 700, stage: 3, desc: "Đã cho bóng mát" },
-  { name: "Cây ra hoa", icon: "local_florist", min: 1100, stage: 4, desc: "Ong bướm ghé thăm" },
-  { name: "Cây trĩu quả", icon: "nutrition", min: 1500, stage: 5, desc: "Mùa nào cũng có quả" },
-  { name: "Cổ thụ", icon: "forest", min: 3000, stage: 6, desc: "Chim về làm tổ" },
-  { name: "Vườn nhỏ", icon: "yard", min: 5000, stage: 7, desc: "Thêm cây bên cạnh" },
-  { name: "Trang trại", icon: "agriculture", min: 9000, stage: 8, desc: "Nuôi cả xóm" },
-  { name: "Đồi rau", icon: "landscape", min: 14000, stage: 9, desc: "Xanh cả một quả đồi" },
-  { name: "Người giữ rừng", icon: "nature_people", min: 20000, stage: 10, desc: "Rừng nhỏ của riêng bạn" },
-  { name: "Huyền thoại", icon: "workspace_premium", min: 28000, stage: 11, desc: "Tên bạn trên bảng vàng" },
-];
+/** One-off orders pay this; subscriptions and groups that reach their minimum ship free. */
+export const SHIP_FEE = 15_000;
 
-export function levelFor(points: number) {
-  const idx = Math.max(0, LEVELS.findIndex((l, i) => points >= l.min && (i === LEVELS.length - 1 || points < LEVELS[i + 1].min)));
-  const level = LEVELS[idx];
-  const next = LEVELS[idx + 1] ?? null;
-  const progress = next ? (points - level.min) / (next.min - level.min) : 1;
-  return { level, next, progress: Math.min(1, Math.max(0, progress)), index: idx };
-}
+export const MAX_BOX_QUANTITY = 20;
+export const GROUP_MIN_MEMBERS = { min: 2, max: 50, default: 5 } as const;
 
-export const treesFor = (points: number) => Math.floor(points / 200);
+export type OrderMode = OrderType;
 
-export function formatVnd(amount: number) {
-  return `${Math.round(amount).toLocaleString("vi-VN")}₫`;
-}
-
-export const ORDER_TYPE_LABELS: Record<string, string> = {
+export const ORDER_TYPE_LABELS: Record<OrderType, string> = {
   single: "Đơn lẻ",
   subscription: "Định kỳ",
   group: "Gom đơn",
 };
+
+export const ORDER_TYPE_ICONS: Record<OrderType, string> = {
+  single: "shopping_bag",
+  subscription: "event_repeat",
+  group: "groups",
+};
+
+export const ORDER_MODES: { mode: OrderMode; label: string; icon: string; hint: string }[] = [
+  { mode: "single", label: "Mua một lần", icon: "shopping_bag", hint: "Đặt trước 18h00, chiều mai có rau ở sảnh. Phí giao 15.000₫." },
+  { mode: "subscription", label: "Gói định kỳ", icon: "event_repeat", hint: "Tự lên đơn mỗi kỳ, miễn phí giao. Tạm dừng lúc nào cũng được." },
+  { mode: "group", label: "Gom đơn cùng toà nhà", icon: "groups", hint: "Rủ hàng xóm đặt chung. Đủ người lúc chốt sổ là cả nhóm miễn phí giao." },
+];
+
+export const FREQUENCIES: SubscriptionFrequency[] = ["weekly", "biweekly", "monthly"];
+
+export const FREQUENCY_LABELS: Record<SubscriptionFrequency, string> = {
+  weekly: "Mỗi tuần",
+  biweekly: "Hai tuần một lần",
+  monthly: "Mỗi tháng",
+};
+
+export const FREQUENCY_ICONS: Record<SubscriptionFrequency, string> = {
+  weekly: "date_range",
+  biweekly: "event_repeat",
+  monthly: "calendar_month",
+};
+
+export const SIZE_LABELS: Record<BoxSize, string> = {
+  S: "Hộp nhỏ",
+  M: "Hộp vừa",
+  L: "Hộp lớn",
+};
+
+/** Ship fee shown before ordering. A group only becomes free once it reaches its minimum at cut-off. */
+export function shipFeeFor(mode: OrderMode, opts?: { groupReached?: boolean; fee?: number }) {
+  if (mode === "subscription") return 0;
+  if (mode === "group" && opts?.groupReached) return 0;
+  return opts?.fee ?? SHIP_FEE;
+}

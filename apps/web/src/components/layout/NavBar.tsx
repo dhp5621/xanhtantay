@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { memo } from "react";
 import { Icon } from "@/components/ui/Icon";
-import { CUSTOMER_MOBILE_NAV, FARMER_NAV, isActive } from "./nav-config";
+import { CUSTOMER_MOBILE_NAV, FARMER_MOBILE_NAV, isActive } from "./nav-config";
 
 const HIDDEN_ON = ["/dang-nhap"];
 
@@ -16,8 +16,7 @@ function NavBarImpl() {
   if (HIDDEN_ON.includes(pathname) || pathname.startsWith("/admin") || !session) return null;
 
   const isFarmer = (session?.user as { role?: string } | undefined)?.role === "farmer";
-  // Farmers only ever get farm navigation; buyer options are not part of the farmer app.
-  const items = isFarmer ? FARMER_NAV : CUSTOMER_MOBILE_NAV;
+  const items = isFarmer ? FARMER_MOBILE_NAV : CUSTOMER_MOBILE_NAV;
 
   return (
     <nav className="m3-nav-bar" aria-label="Điều hướng">

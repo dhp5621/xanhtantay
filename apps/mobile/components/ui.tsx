@@ -118,7 +118,7 @@ export function Button({ label, onPress, variant = "filled", disabled, loading, 
   );
 }
 
-/** Stat tile used on the account / loyalty / farmer dashboards. */
+/** Stat tile: icon, big value and label (order impact facts). */
 export function StatTile({ icon, value, label, desc, onPress, tone = "surface", style }: { icon: string; value: string | number; label: string; desc?: string; onPress?: () => void; tone?: Tone; style?: StyleProp<ViewStyle> }) {
   const styles = useStyles(makeStyles);
   const t = tones()[tone];

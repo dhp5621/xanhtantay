@@ -1,114 +1,158 @@
-import { eq } from "drizzle-orm";
-import {
-  db, users, farms, products, farm_diary, recipes,
-  orders, order_items, subscriptions, group_orders, group_order_members,
-} from "./index";
-
 /**
- * Idempotent seed: every row has a fixed id and uses ON CONFLICT DO NOTHING,
- * so `pnpm db:seed` can be re-run safely. Password for all demo accounts: demo123.
+ * Demo data for the pilot: Hà Nội apartment clusters, farms in Bắc Kạn and Tuyên Quang, seasonal boxes.
+ *   pnpm --filter web db:seed
+ * Master data is upserted. Transactional demo data (orders, runs, groups, subscriptions) is REBUILT
+ * relative to today, so re-seeding always gives a fresh, demo-ready state.
  */
-// Wikimedia Commons photos: the filename names the plant, so the picture matches the product.
-const U = (f: string) => `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(f)}?width=640`;
-const daysFromNow = (d: number) => { const x = new Date(); x.setDate(x.getDate() + d); x.setHours(9, 0, 0, 0); return x; };
+import { readFileSync, existsSync } from "node:fs";
+if (!process.env.DATABASE_URL) for (const f of [".env.local", ".env"]) {
+  if (!existsSync(f)) continue;
+  const line = readFileSync(f, "utf8").split("\n").find((l) => l.startsWith("DATABASE_URL="));
+  if (line) { process.env.DATABASE_URL = line.slice("DATABASE_URL=".length).trim().replace(/^["']|["']$/g, ""); break; }
+}
+
+const C = (f: string) => `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(f)}?width=640`;
+const U = (p: string) => `https://images.unsplash.com/${p}?w=1000&q=70&auto=format`;
 
 async function seed() {
-  console.log("Seeding database…");
+  const { db } = await import("./index");
+  const s = await import("./schema");
+  const { MENU_S, MENU_M, MENU_L } = await import("./menu");
+  const { addDays, todayVN, nextDeliveryDate, careMessageFor, vnInstant, SHIP_FEE } = await import("../lib/commerce");
+  const { runCutoff, advanceRun } = await import("../lib/brain");
+  const { sql } = await import("drizzle-orm");
 
-  await db.insert(users).values([
-    { id: "farmer-bac-ba", name: "Bác Ba Nguyễn", phone: "0901234567", email: "bacba@xanhtantay.vn", role: "farmer", password_hash: "$2b$10$example" },
-    { id: "farmer-co-tu", name: "Cô Tư Lê", phone: "0912345678", email: "cotu@xanhtantay.vn", role: "farmer", password_hash: "$2b$10$example" },
-    { id: "farmer-u-tham", name: "U Thắm Trần", phone: "0923456789", email: "utham@xanhtantay.vn", role: "farmer", password_hash: "$2b$10$example" },
-    // Demo customers
-    { id: "customer-demo", name: "Nguyễn Thị Lan", phone: "0934567890", email: "lan@gmail.com", role: "customer", password_hash: "$2b$10$example" },
-    { id: "customer-minh", name: "Trần Văn Minh", phone: "0945678901", email: "minh@gmail.com", role: "customer", password_hash: "$2b$10$example" },
-    { id: "customer-hoa", name: "Lê Thị Hoa", phone: "0956789012", email: "hoa@gmail.com", role: "customer", password_hash: "$2b$10$example" },
+  console.log("Seeding…");
+  // Transactional data is rebuilt from scratch.
+  await db.execute(sql`TRUNCATE harvest_commands, orders, harvest_runs, group_orders, subscriptions RESTART IDENTITY CASCADE`);
+
+  await db.insert(s.clusters).values([
+    { id: "cl-times-city", name: "Times City", address: "458 Minh Khai", district: "Hai Bà Trưng" },
+    { id: "cl-royal-city", name: "Royal City", address: "72A Nguyễn Trãi", district: "Thanh Xuân" },
+    { id: "cl-smart-city", name: "Vinhomes Smart City", address: "Đại lộ Thăng Long, Tây Mỗ", district: "Nam Từ Liêm" },
+    { id: "cl-goldmark", name: "Goldmark City", address: "136 Hồ Tùng Mậu", district: "Bắc Từ Liêm" },
+    { id: "cl-linh-dam", name: "HH Linh Đàm", address: "Khu đô thị Linh Đàm", district: "Hoàng Mai" },
   ]).onConflictDoNothing();
 
-  await db.insert(farms).values([
-    { id: "farm-bac-ba", owner_id: "farmer-bac-ba", name: "Vườn nhà bác Ba", slug: "vuon-bac-ba", location: "Đà Lạt, Lâm Đồng", description: "Vườn rau sạch hơn 20 năm tuổi trên vùng đất đỏ bazan Đà Lạt. Bác Ba trồng rau theo phương pháp hữu cơ truyền thống, không dùng thuốc trừ sâu.", cover_url: "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800" },
-    { id: "farm-co-tu", owner_id: "farmer-co-tu", name: "Trang trại cô Tư", slug: "trang-trai-co-tu", location: "Bảo Lộc, Lâm Đồng", description: "Trang trại trồng rau thuỷ canh sạch và rau địa phương theo mùa. Cô Tư áp dụng kỹ thuật trồng hiện đại kết hợp kinh nghiệm truyền thống.", cover_url: "https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=800" },
-    { id: "farm-u-tham", owner_id: "farmer-u-tham", name: "Vườn quê u Thắm", slug: "vuon-que-u-tham", location: "Củ Chi, TP.HCM", description: "Vườn rau quê gần thành phố, chuyên cung cấp rau củ tươi ngon mỗi ngày. U Thắm trồng theo lịch mùa vụ, luôn có hàng tươi từ vườn đến bàn ăn.", cover_url: "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=800" },
-  ]).onConflictDoNothing();
+  const up = { password_hash: "$2b$10$example" };
+  await db.insert(s.users).values([
+    { id: "farmer-bac-ba", name: "Bác Ba Nguyễn", phone: "0901234567", email: "bacba@xanhtantay.vn", role: "farmer", ...up },
+    { id: "farmer-co-tu", name: "Cô Tư Lê", phone: "0912345678", email: "cotu@xanhtantay.vn", role: "farmer", ...up },
+    { id: "farmer-u-tham", name: "U Thắm Trần", phone: "0923456789", email: "utham@xanhtantay.vn", role: "farmer", ...up },
+    { id: "farmer-bac-tu", name: "Bác Tư Hoàng", phone: "0967890123", email: "bactu@xanhtantay.vn", role: "farmer", ...up },
+    { id: "customer-demo", name: "Nguyễn Thị Lan", phone: "0934567890", email: "lan@gmail.com", role: "customer", cluster_id: "cl-times-city", address: "T5 · căn 1208", ...up },
+    { id: "customer-minh", name: "Trần Văn Minh", phone: "0945678901", email: "minh@gmail.com", role: "customer", cluster_id: "cl-times-city", address: "T8 · căn 0915", ...up },
+    { id: "customer-hoa", name: "Lê Thị Hoa", phone: "0956789012", email: "hoa@gmail.com", role: "customer", cluster_id: "cl-royal-city", address: "R2 · căn 2104", ...up },
+    { id: "customer-quan", name: "Phạm Anh Quân", phone: "0978901234", email: "quan@gmail.com", role: "customer", cluster_id: "cl-smart-city", address: "S2.05 · căn 1611", ...up },
+    { id: "customer-mai", name: "Đỗ Thanh Mai", phone: "0989012345", email: "mai@gmail.com", role: "customer", cluster_id: "cl-times-city", address: "T2 · căn 0707", ...up },
+    { id: "customer-son", name: "Vũ Hồng Sơn", phone: "0990123456", email: "son@gmail.com", role: "customer", cluster_id: "cl-goldmark", address: "Ruby 2 · căn 1803", ...up },
+  ]).onConflictDoUpdate({ target: s.users.id, set: { cluster_id: sql`excluded.cluster_id`, address: sql`excluded.address`, name: sql`excluded.name`, phone: sql`excluded.phone` } });
 
-  await db.insert(products).values([
-    { id: "p-ba-rau-muong", farm_id: "farm-bac-ba", name: "Rau muống xanh", unit: "kg", price_per_unit: 15000, category: "rau_la", stock_qty: 40, image_url: U("Arya-kangkung-ipomoea aquatica-Pilangsari 2019 01.jpg"), in_stock: true },
-    { id: "p-ba-bi-do", farm_id: "farm-bac-ba", name: "Bí đỏ Nhật", unit: "kg", price_per_unit: 35000, category: "cu_qua", stock_qty: 40, image_url: U("Cucurbita maxima kabocha USA orange variety.jpg"), in_stock: true },
-    { id: "p-ba-ca-rot", farm_id: "farm-bac-ba", name: "Cà rốt Đà Lạt", unit: "kg", price_per_unit: 28000, category: "cu_qua", stock_qty: 40, image_url: U("Carrot at monday market.jpg"), in_stock: true },
-    { id: "p-ba-cai-xanh", farm_id: "farm-bac-ba", name: "Cải xanh", unit: "bó", price_per_unit: 8000, category: "rau_la", stock_qty: 25, image_url: U("Curly mustard leaves.jpg"), in_stock: true },
-    { id: "p-ba-su-hao", farm_id: "farm-bac-ba", name: "Su hào", unit: "củ", price_per_unit: 10000, category: "cu_qua", stock_qty: 0, image_url: U("Brassica oleracea var. gongylodes (kohlrabi).jpg"), in_stock: false },
-    { id: "p-tu-xa-lach", farm_id: "farm-co-tu", name: "Xà lách cuộn", unit: "kg", price_per_unit: 45000, category: "rau_la", stock_qty: 40, image_url: U("Lettuce Mini Heads (7331119710).jpg"), in_stock: true },
-    { id: "p-tu-dua-leo", farm_id: "farm-co-tu", name: "Dưa leo baby", unit: "kg", price_per_unit: 32000, category: "cu_qua", stock_qty: 40, image_url: U("Fresh cucumbers.jpg"), in_stock: true },
-    { id: "p-tu-ca-chua", farm_id: "farm-co-tu", name: "Cà chua cherry", unit: "kg", price_per_unit: 55000, category: "cu_qua", stock_qty: 40, image_url: U("Cherry Tomato on Vine.JPG"), in_stock: true },
-    { id: "p-tu-rau-mam", farm_id: "farm-co-tu", name: "Rau mầm hỗn hợp", unit: "hộp", price_per_unit: 25000, category: "rau_mam", stock_qty: 25, image_url: U("Sunflower microgreens 01.jpg"), in_stock: true },
-    { id: "p-tu-hung-que", farm_id: "farm-co-tu", name: "Húng quế", unit: "bó", price_per_unit: 5000, category: "rau_thom", stock_qty: 25, image_url: U("Thai basil.jpg"), in_stock: true },
-    { id: "p-tham-rau-den", farm_id: "farm-u-tham", name: "Rau dền đỏ", unit: "bó", price_per_unit: 7000, category: "rau_la", stock_qty: 25, image_url: U("(Close-up of Amaranthus tricolor in Kyoto, Japan) - DPLA - 48275f491c15ba734454f136cf4c8361.jpg"), in_stock: true },
-    { id: "p-tham-mong-toi", farm_id: "farm-u-tham", name: "Mồng tơi", unit: "kg", price_per_unit: 12000, category: "rau_la", stock_qty: 40, image_url: U("Basella alba leaves 27052014.jpg"), in_stock: true },
-    { id: "p-tham-kho-qua", farm_id: "farm-u-tham", name: "Khổ qua (mướp đắng)", unit: "kg", price_per_unit: 22000, category: "cu_qua", stock_qty: 40, image_url: U("Momordica charantia 22052014.jpg"), in_stock: true },
-    { id: "p-tham-bau", farm_id: "farm-u-tham", name: "Bầu xanh", unit: "kg", price_per_unit: 18000, category: "cu_qua", stock_qty: 40, image_url: U("Bottle gourd of Bangladesh.jpg"), in_stock: true },
-    { id: "p-tham-rau-ngot", farm_id: "farm-u-tham", name: "Rau ngót", unit: "bó", price_per_unit: 6000, category: "rau_la", stock_qty: 25, image_url: U("Sauropus androgynus at Kadavoor.jpg"), in_stock: true },
-  ]).onConflictDoNothing();
+  await db.insert(s.farms).values([
+    { id: "farm-bac-ba", owner_id: "farmer-bac-ba", name: "Vườn nhà bác Ba", slug: "vuon-bac-ba", location: "Ba Bể, Bắc Kạn", province: "Bắc Kạn", cover_url: U("photo-1625246333195-78d9c38ad449"), description: "Nương rau trên triền đồi ven hồ Ba Bể. Bác Ba trồng củ quả theo lối cũ của người Tày: ủ phân chuồng, tưới nước suối, không thuốc trừ sâu." },
+    { id: "farm-co-tu", owner_id: "farmer-co-tu", name: "Nương rau cô Tư", slug: "nuong-rau-co-tu", location: "Chợ Đồn, Bắc Kạn", province: "Bắc Kạn", cover_url: U("photo-1464226184884-fa280b87c399"), description: "Rau lá vùng cao: cải mèo, cải ngọt, ngọn su su. Sương sớm và đêm lạnh làm rau giòn và đậm vị hơn rau đồng bằng." },
+    { id: "farm-u-tham", owner_id: "farmer-u-tham", name: "Vườn quê u Thắm", slug: "vuon-que-u-tham", location: "Sơn Dương, Tuyên Quang", province: "Tuyên Quang", cover_url: U("photo-1416879595882-3373a0480b5b"), description: "Vườn đồi ở Sơn Dương, chuyên bí đỏ, cà chua và bắp cải. U Thắm trồng theo vụ, mùa nào thức nấy." },
+    { id: "farm-bac-tu", owner_id: "farmer-bac-tu", name: "Đồi rau bác Tư", slug: "doi-rau-bac-tu", location: "Na Hang, Tuyên Quang", province: "Tuyên Quang", cover_url: U("photo-1574943320219-553eb213f72d"), description: "Đồi rau bên lòng hồ Na Hang. Bác Tư là người cắt rau lúc 4 giờ sáng mà bạn thấy trong hành trình đơn hàng." },
+  ]).onConflictDoUpdate({ target: s.farms.id, set: { name: sql`excluded.name`, slug: sql`excluded.slug`, location: sql`excluded.location`, province: sql`excluded.province`, description: sql`excluded.description`, cover_url: sql`excluded.cover_url` } });
 
-  await db.insert(farm_diary).values([
-    { id: "d-ba-1", farm_id: "farm-bac-ba", content: "Hôm nay bác vừa thu hoạch đợt cải xanh đầu mùa. Lứa này ngon lắm, lá to, dày, xanh mướt. Thời tiết Đà Lạt tuần này mát mẻ nên rau lớn nhanh và giòn ngọt hơn thường lệ.", media_urls: ["https://images.unsplash.com/photo-1574943320219-553eb213f72d?w=600"], created_at: daysFromNow(-1) },
-    { id: "d-ba-2", farm_id: "farm-bac-ba", content: "Sáng sớm tưới nước cho bí đỏ, mấy trái to lắm rồi. Đợt này bác trồng giống bí Nhật mới, ngọt hơn và bở hơn loại thường. Thứ 6 là có thể thu hoạch được rồi đó các bạn.", media_urls: ["https://images.unsplash.com/photo-1570586437263-ab629fccc818?w=600"], created_at: daysFromNow(-3) },
-    { id: "d-tu-1", farm_id: "farm-co-tu", content: "Cà chua cherry hôm nay chín đỏ rực cả vườn. Cô hái từ 5 giờ sáng để còn giao hàng kịp buổi trưa. Mấy bạn đặt hàng tuần này sẽ nhận được đợt ngon nhất mùa này nha!", media_urls: ["https://images.unsplash.com/photo-1592841200221-a6898f307baa?w=600"], created_at: daysFromNow(-2) },
-    { id: "d-tham-1", farm_id: "farm-u-tham", content: "U mới gieo hạt mồng tơi đợt mới. Khoảng 3 tuần nữa là có hàng. Bạn nào muốn đặt trước liên hệ u nhé, đảm bảo tươi ngon từ vườn lên bàn ăn trong ngày.", media_urls: ["https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=600"], created_at: daysFromNow(-4) },
-  ]).onConflictDoNothing();
+  await db.insert(s.produce).values([
+    { id: "pr-ca-rot", name: "Cà rốt", category: "cu_qua", image_url: C("Carrot at monday market.jpg") },
+    { id: "pr-bap-cai", name: "Bắp cải", category: "rau_la", image_url: C("Fresh green cabbage heads.jpg") },
+    { id: "pr-su-hao", name: "Su hào", category: "cu_qua", image_url: C("Brassica oleracea var. gongylodes (kohlrabi).jpg") },
+    { id: "pr-cai-meo", name: "Cải mèo", category: "rau_la", image_url: C("Curly mustard leaves.jpg") },
+    { id: "pr-cai-ngot", name: "Cải ngọt", category: "rau_la", image_url: C("Sawihijau3 Pj DSC 4883.jpg") },
+    { id: "pr-bi-do", name: "Bí đỏ", category: "cu_qua", image_url: C("Cucurbita maxima kabocha USA orange variety.jpg") },
+    { id: "pr-su-su", name: "Su su", category: "cu_qua", image_url: C("Chayote 1.jpg") },
+    { id: "pr-khoai-tay", name: "Khoai tây", category: "cu_qua", image_url: C("Patates.jpg") },
+    { id: "pr-ca-chua", name: "Cà chua", category: "cu_qua", image_url: C("Fresh red tomatoes.jpg") },
+  ]).onConflictDoUpdate({ target: s.produce.id, set: { name: sql`excluded.name`, image_url: sql`excluded.image_url`, category: sql`excluded.category` } });
 
-  await db.insert(recipes).values([
-    { id: "r-canh-bi-do", title: "Canh bí đỏ thịt băm", ingredients: ["bí đỏ", "thịt băm", "hành lá", "muối", "đường", "nước mắm"], steps: ["Bí đỏ gọt vỏ, cắt hạt lựu vừa ăn.", "Thịt băm ướp với nước mắm, hành, tiêu 10 phút.", "Phi thơm hành, xào thịt chín vàng.", "Đổ nước, bỏ bí vào nấu sôi.", "Nêm vừa ăn, tắt bếp, rắc hành lá."] },
-    { id: "r-rau-muong-xao", title: "Rau muống xào tỏi", ingredients: ["rau muống", "tỏi", "dầu ăn", "nước mắm", "muối"], steps: ["Rau muống nhặt sạch, cắt khúc vừa ăn.", "Phi tỏi thơm với dầu nóng.", "Cho rau vào xào lửa to, đảo đều tay.", "Nêm nước mắm, muối vừa ăn.", "Xào đến khi rau vừa chín tới, không mềm quá."] },
-    { id: "r-canh-cai-tom", title: "Canh cải xanh nấu tôm", ingredients: ["cải xanh", "tôm tươi", "gừng", "nước mắm", "muối"], steps: ["Tôm rửa sạch, lột vỏ, giữ đuôi.", "Cải xanh tách lá, rửa sạch.", "Đun sôi nước, cho tôm vào trước.", "Tôm chín hồng, bỏ cải vào, nấu thêm 2 phút.", "Nêm gia vị vừa ăn, múc ra tô."] },
-    { id: "r-dua-leo-tron", title: "Dưa leo trộn tôm khô", ingredients: ["dưa leo baby", "tôm khô", "tỏi", "ớt", "chanh", "đường", "nước mắm"], steps: ["Dưa leo rửa sạch, chẻ đôi hoặc thái lát.", "Tôm khô ngâm nước ấm 10 phút.", "Pha nước trộn: chanh, đường, nước mắm, tỏi, ớt.", "Trộn đều dưa leo và tôm khô với nước trộn.", "Để ngấm 10 phút trước khi ăn."] },
-    { id: "r-kho-qua-nhoi", title: "Khổ qua nhồi thịt", ingredients: ["khổ qua", "thịt băm", "miến", "nấm mèo", "trứng", "nước mắm", "tiêu"], steps: ["Khổ qua cắt khoanh, bỏ ruột.", "Miến và nấm mèo ngâm nở, thái nhỏ.", "Trộn thịt, miến, nấm, trứng, gia vị.", "Nhồi hỗn hợp thịt vào khúc khổ qua.", "Hấp hoặc kho nhỏ lửa 20–25 phút."] },
-  ]).onConflictDoNothing();
+  const cap = (farm: string, list: [string, number][]) => list.map(([p, kg]) => ({ id: `cap-${farm}-${p}`, farm_id: `farm-${farm}`, produce_id: `pr-${p}`, daily_kg: kg }));
+  await db.insert(s.farm_capacity).values([
+    ...cap("bac-ba", [["ca-rot", 40], ["bap-cai", 60], ["su-hao", 30], ["khoai-tay", 40]]),
+    ...cap("co-tu", [["cai-meo", 25], ["cai-ngot", 30], ["su-su", 40], ["ca-chua", 20]]),
+    ...cap("u-tham", [["bi-do", 60], ["ca-chua", 30], ["bap-cai", 40], ["ca-rot", 25]]),
+    ...cap("bac-tu", [["su-su", 30], ["cai-meo", 20], ["khoai-tay", 50], ["bi-do", 40], ["su-hao", 20]]),
+  ]).onConflictDoUpdate({ target: s.farm_capacity.id, set: { daily_kg: sql`excluded.daily_kg` } });
 
-  // ── Demo customer activity (chị Lan) ─────────────────────────────
-  await db.insert(orders).values([
-    { id: "o-demo-1", user_id: "customer-demo", farm_id: "farm-bac-ba", status: "delivered", type: "single", total: 15000 * 2 + 8000 * 3, note: "Giao buổi sáng giúp em", created_at: daysFromNow(-9) },
-    { id: "o-demo-2", user_id: "customer-demo", farm_id: "farm-co-tu", status: "loaded", type: "single", total: 55000 + 25000 * 2, created_at: daysFromNow(-1) },
-    { id: "o-demo-3", user_id: "customer-demo", farm_id: "farm-u-tham", status: "harvesting", type: "subscription", total: 12000 * 2 + 7000 * 3, note: "Đơn tự động từ gói đăng ký", created_at: daysFromNow(0) },
-    { id: "o-minh-1", user_id: "customer-minh", farm_id: "farm-bac-ba", status: "harvesting", type: "single", total: 35000 * 2, created_at: daysFromNow(0) },
-  ]).onConflictDoNothing();
+  await db.insert(s.boxes).values([
+    { id: "box-s", slug: "hop-nho", name: "Thùng rau mẹ gửi · Nhỏ", size: "S", weight_kg: "3", price: 119000, season: "Thu 2026", servings: 2, days: 3, image_url: C("Vegetable box 4.jpg"), meal_plan: MENU_S, description: "3 kg rau củ mùa thu cho nhà hai người, đủ nấu 3 ngày. Rau lá ăn trước, củ để sau." },
+    { id: "box-m", slug: "hop-vua", name: "Thùng rau mẹ gửi · Vừa", size: "M", weight_kg: "5", price: 179000, season: "Thu 2026", servings: 4, days: 4, image_url: C("June 19th Organic Vegetable Box.jpg"), meal_plan: MENU_M, description: "5 kg cho gia đình 3–4 người, đủ 4 ngày. Có cả rau lá vùng cao và củ quả để hầm." },
+    { id: "box-l", slug: "hop-lon", name: "Thùng rau mẹ gửi · Lớn", size: "L", weight_kg: "8", price: 269000, season: "Thu 2026", servings: 6, days: 5, image_url: C("Organic Vegetable Boxes - 3085908608.jpg"), meal_plan: MENU_L, description: "8 kg cho nhà đông người hoặc hai nhà chung nhau, đủ 5 ngày với 9 loại rau củ." },
+  ]).onConflictDoUpdate({ target: s.boxes.id, set: { name: sql`excluded.name`, slug: sql`excluded.slug`, price: sql`excluded.price`, weight_kg: sql`excluded.weight_kg`, season: sql`excluded.season`, servings: sql`excluded.servings`, days: sql`excluded.days`, image_url: sql`excluded.image_url`, meal_plan: sql`excluded.meal_plan`, description: sql`excluded.description`, active: sql`true` } });
 
-  await db.insert(order_items).values([
-    { id: "oi-1", order_id: "o-demo-1", product_id: "p-ba-rau-muong", quantity: "2", unit_price: 15000 },
-    { id: "oi-2", order_id: "o-demo-1", product_id: "p-ba-cai-xanh", quantity: "3", unit_price: 8000 },
-    { id: "oi-3", order_id: "o-demo-2", product_id: "p-tu-ca-chua", quantity: "1", unit_price: 55000 },
-    { id: "oi-4", order_id: "o-demo-2", product_id: "p-tu-rau-mam", quantity: "2", unit_price: 25000 },
-    { id: "oi-5", order_id: "o-demo-3", product_id: "p-tham-mong-toi", quantity: "2", unit_price: 12000 },
-    { id: "oi-6", order_id: "o-demo-3", product_id: "p-tham-rau-den", quantity: "3", unit_price: 7000 },
-    { id: "oi-7", order_id: "o-minh-1", product_id: "p-ba-bi-do", quantity: "2", unit_price: 35000 },
-  ]).onConflictDoNothing();
+  await db.execute(sql`DELETE FROM box_items WHERE box_id IN ('box-s','box-m','box-l')`);
+  const bi = (box: string, list: [string, number][]) => list.map(([p, kg]) => ({ id: `bi-${box}-${p}`, box_id: `box-${box}`, produce_id: `pr-${p}`, quantity_kg: String(kg) }));
+  await db.insert(s.box_items).values([
+    ...bi("s", [["bap-cai", 1], ["ca-rot", 0.5], ["su-su", 0.5], ["cai-ngot", 0.5], ["ca-chua", 0.5]]),
+    ...bi("m", [["bap-cai", 1], ["ca-rot", 1], ["su-hao", 0.5], ["cai-meo", 0.5], ["bi-do", 1], ["ca-chua", 0.5], ["khoai-tay", 0.5]]),
+    ...bi("l", [["bap-cai", 1.5], ["ca-rot", 1], ["su-hao", 1], ["cai-meo", 0.5], ["cai-ngot", 0.5], ["bi-do", 1.5], ["su-su", 0.5], ["khoai-tay", 1], ["ca-chua", 0.5]]),
+  ]);
 
-  await db.insert(subscriptions).values([
-    { id: "sub-demo-1", user_id: "customer-demo", farm_id: "farm-u-tham", frequency: "weekly", next_delivery: daysFromNow(6), active: true, items: [{ product_id: "p-tham-mong-toi", quantity: 2 }, { product_id: "p-tham-rau-den", quantity: 3 }] },
-  ]).onConflictDoNothing();
+  // ── Demo activity, relative to today ───────────────────────────────────────
+  const today = todayVN();
+  const price = { "box-s": 119000, "box-m": 179000, "box-l": 269000 } as Record<string, number>;
+  const who = { "customer-demo": ["cl-times-city", "T5 · căn 1208"], "customer-minh": ["cl-times-city", "T8 · căn 0915"], "customer-hoa": ["cl-royal-city", "R2 · căn 2104"], "customer-quan": ["cl-smart-city", "S2.05 · căn 1611"], "customer-mai": ["cl-times-city", "T2 · căn 0707"], "customer-son": ["cl-goldmark", "Ruby 2 · căn 1803"] } as Record<string, [string, string]>;
+  const order = (id: string, user: string, box: string, qty: number, date: string, type: "single" | "subscription" | "group" = "single", extra: Partial<typeof s.orders.$inferInsert> = {}) => {
+    const subtotal = price[box] * qty, ship = type === "single" ? SHIP_FEE : 0;
+    return { id, user_id: user, box_id: box, quantity: qty, type, status: "placed" as const, subtotal, ship_fee: ship, total: subtotal + ship, cluster_id: who[user][0], address: who[user][1], delivery_date: date, care_message: careMessageFor(id), ...extra };
+  };
 
-  await db.insert(group_orders).values([
-    { id: "g-sunrise", farm_id: "farm-bac-ba", title: "Rau sạch chung cư Sunrise", min_members: 5, current_members: 3, deadline: daysFromNow(2), status: "open", shipping_address: "Sảnh A, chung cư Sunrise, Q.7" },
-    { id: "g-phu-nhuan", farm_id: "farm-co-tu", title: "Hội mẹ bỉm Phú Nhuận", min_members: 4, current_members: 4, deadline: daysFromNow(1), status: "open", shipping_address: "123 Phan Xích Long, Phú Nhuận" },
-    { id: "g-thu-duc", farm_id: "farm-u-tham", title: "Rau quê xóm trọ Thủ Đức", min_members: 6, current_members: 1, deadline: daysFromNow(5), status: "open", shipping_address: "Hẻm 45 Võ Văn Ngân, Thủ Đức" },
-  ]).onConflictDoNothing();
+  // Subscriptions
+  await db.insert(s.subscriptions).values([
+    { id: "sub-demo-1", user_id: "customer-demo", box_id: "box-m", quantity: 1, frequency: "weekly", next_delivery: addDays(today, -3), cluster_id: "cl-times-city", address: "T5 · căn 1208" },
+    { id: "sub-hoa-1", user_id: "customer-hoa", box_id: "box-s", quantity: 1, frequency: "weekly", next_delivery: addDays(today, 1), cluster_id: "cl-royal-city", address: "R2 · căn 2104" },
+    { id: "sub-son-1", user_id: "customer-son", box_id: "box-l", quantity: 1, frequency: "biweekly", next_delivery: addDays(today, 4), cluster_id: "cl-goldmark", address: "Ruby 2 · căn 1803" },
+  ]);
 
-  await db.insert(group_order_members).values([
-    { id: "gm-1", group_order_id: "g-sunrise", user_id: "customer-demo", items: [{ product_id: "p-ba-rau-muong", quantity: 1 }] },
-    { id: "gm-2", group_order_id: "g-sunrise", user_id: "customer-minh", items: [] },
-    { id: "gm-3", group_order_id: "g-sunrise", user_id: "customer-hoa", items: [] },
-    { id: "gm-4", group_order_id: "g-phu-nhuan", user_id: "customer-hoa", items: [] },
-    { id: "gm-5", group_order_id: "g-phu-nhuan", user_id: "customer-minh", items: [] },
-    { id: "gm-6", group_order_id: "g-phu-nhuan", user_id: "farmer-co-tu", items: [] },
-    { id: "gm-7", group_order_id: "g-phu-nhuan", user_id: "farmer-u-tham", items: [] },
-    { id: "gm-8", group_order_id: "g-thu-duc", user_id: "customer-hoa", items: [] },
-  ]).onConflictDoNothing();
+  // Run A: delivered three days ago
+  const dA = addDays(today, -3);
+  await db.insert(s.orders).values([
+    order("o-a1", "customer-minh", "box-s", 1, dA, "single", { created_at: vnInstant(addDays(dA, -1), "10:20") }),
+    order("o-a2", "customer-quan", "box-l", 1, dA, "single", { created_at: vnInstant(addDays(dA, -1), "15:05") }),
+  ]);
+  const a = await runCutoff(dA); // also materialises Lan's subscription order for that day
+  await db.execute(sql`UPDATE harvest_runs SET cutoff_at = ${vnInstant(addDays(dA, -1), "18:00").toISOString()} WHERE id = ${a.run_id}`);
+  await db.execute(sql`UPDATE harvest_commands SET status = 'confirmed', confirmed_at = ${vnInstant(addDays(dA, -1), "18:40").toISOString()}, created_at = ${vnInstant(addDays(dA, -1), "18:00").toISOString()} WHERE run_id = ${a.run_id}`);
+  for (let i = 0; i < 3; i++) await advanceRun(a.run_id);
+  await db.execute(sql`UPDATE harvest_runs SET harvested_at = ${vnInstant(dA, "4:00").toISOString()}, loaded_at = ${vnInstant(dA, "6:00").toISOString()}, delivered_at = ${vnInstant(dA, "16:00").toISOString()} WHERE id = ${a.run_id}`);
+  await db.execute(sql`UPDATE orders SET harvested_at = ${vnInstant(dA, "4:00").toISOString()}, loaded_at = ${vnInstant(dA, "6:00").toISOString()}, delivered_at = ${vnInstant(dA, "16:00").toISOString()} WHERE run_id = ${a.run_id}`);
 
-  // Keep member counts truthful even if a previous seed run drifted.
-  for (const [gid, n] of [["g-sunrise", 3], ["g-phu-nhuan", 4], ["g-thu-duc", 1]] as const) {
-    await db.update(group_orders).set({ current_members: n }).where(eq(group_orders.id, gid));
-  }
+  // Run B: today's delivery, already cut off yesterday, on the truck now
+  const dB = today;
+  await db.insert(s.orders).values([
+    order("o-b1", "customer-demo", "box-s", 1, dB, "single", { created_at: vnInstant(addDays(dB, -1), "9:12"), note: "Gửi lễ tân giúp em" }),
+    order("o-b2", "customer-mai", "box-m", 1, dB, "single", { created_at: vnInstant(addDays(dB, -1), "11:40") }),
+    order("o-b3", "customer-son", "box-m", 2, dB, "single", { created_at: vnInstant(addDays(dB, -1), "16:30") }),
+  ]);
+  const b = await runCutoff(dB);
+  await db.execute(sql`UPDATE harvest_runs SET cutoff_at = ${vnInstant(addDays(dB, -1), "18:00").toISOString()} WHERE id = ${b.run_id}`);
+  await db.execute(sql`UPDATE harvest_commands SET status = 'confirmed', confirmed_at = ${vnInstant(addDays(dB, -1), "19:05").toISOString()}, created_at = ${vnInstant(addDays(dB, -1), "18:00").toISOString()} WHERE run_id = ${b.run_id}`);
+  await advanceRun(b.run_id); await advanceRun(b.run_id);
+  await db.execute(sql`UPDATE harvest_runs SET harvested_at = ${vnInstant(dB, "4:00").toISOString()}, loaded_at = ${vnInstant(dB, "6:00").toISOString()} WHERE id = ${b.run_id}`);
+  await db.execute(sql`UPDATE orders SET harvested_at = ${vnInstant(dB, "4:00").toISOString()}, loaded_at = ${vnInstant(dB, "6:00").toISOString()} WHERE run_id = ${b.run_id}`);
 
-  console.log("Seed completed! Demo login: lan@gmail.com / demo123 (customer), bacba@xanhtantay.vn / demo123 (farmer)");
+  // Open book: pre-orders for the next delivery, waiting for the 18:00 cut-off (admin can close it live)
+  const dC = nextDeliveryDate();
+  await db.insert(s.group_orders).values([
+    { id: "g-times", cluster_id: "cl-times-city", box_id: "box-m", title: "Hội rau sạch Times City T5–T8", min_members: 4, current_members: 3, delivery_date: dC, created_by: "customer-demo" },
+    { id: "g-royal", cluster_id: "cl-royal-city", box_id: "box-s", title: "Mẹ bỉm Royal City", min_members: 3, current_members: 1, delivery_date: addDays(dC, 1), created_by: "customer-hoa" },
+    { id: "g-smart", cluster_id: "cl-smart-city", box_id: "box-l", title: "Smart City S2 gom hộp lớn", min_members: 3, current_members: 1, delivery_date: addDays(dC, 2), created_by: "customer-quan" },
+  ]);
+  await db.insert(s.orders).values([
+    order("o-c1", "customer-demo", "box-m", 1, dC, "group", { group_order_id: "g-times", ship_fee: SHIP_FEE, total: price["box-m"] + SHIP_FEE }),
+    order("o-c2", "customer-minh", "box-m", 1, dC, "group", { group_order_id: "g-times", ship_fee: SHIP_FEE, total: price["box-m"] + SHIP_FEE }),
+    order("o-c3", "customer-mai", "box-m", 2, dC, "group", { group_order_id: "g-times", ship_fee: SHIP_FEE, total: price["box-m"] * 2 + SHIP_FEE }),
+    order("o-c4", "customer-quan", "box-l", 1, dC, "single"),
+    order("o-c5", "customer-son", "box-s", 2, dC, "single"),
+    order("o-c6", "customer-hoa", "box-s", 1, addDays(dC, 1), "group", { group_order_id: "g-royal", ship_fee: SHIP_FEE, total: price["box-s"] + SHIP_FEE }),
+    order("o-c7", "customer-quan", "box-l", 1, addDays(dC, 2), "group", { group_order_id: "g-smart", ship_fee: SHIP_FEE, total: price["box-l"] + SHIP_FEE }),
+  ]);
+
+  const res = (await db.execute(sql`SELECT count(*)::int AS n FROM orders`)) as unknown as { rows?: { n: number }[] } | { n: number }[];
+  const orderCount = Array.isArray(res) ? res[0]?.n : res.rows?.[0]?.n;
+  console.log(`Seed completed: ${orderCount ?? "?"} orders. Open book for ${dC}; run for today (${dB}) is on the truck.`);
+  console.log("Demo login: lan@gmail.com / demo123 (customer), bacba@xanhtantay.vn / demo123 (farmer)");
   process.exit(0);
 }
 

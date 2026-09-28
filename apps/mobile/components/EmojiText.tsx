@@ -25,7 +25,7 @@ function wrap(s: string, key: string): ReactNode {
 }
 
 /**
- * User-written text (diary posts, notes, product names, recipes) may contain emoji newer than the
+ * User-written text (order notes, group names, care messages) may contain emoji newer than the
  * device's system font. Only the emoji runs are set in the bundled Noto Color Emoji — digits, letters
  * and punctuation keep the normal font, so "3/5 người" or "20 năm" never pick up emoji glyphs.
  */

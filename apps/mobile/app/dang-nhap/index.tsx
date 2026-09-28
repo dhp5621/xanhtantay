@@ -2,14 +2,14 @@ import { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSession } from "../../hooks/useSession";
-import { colors, shape, type, emojiFont, useStyles } from "../../constants/theme";
+import { colors, shape, type, useStyles } from "../../constants/theme";
 import { AnimIn, AnimInScale, HeroBlob, PressableScale } from "../../components/motion";
 import { Screen } from "../../components/ui";
 import { Icon } from "../../components/Icon";
 import type { Colors } from "../../constants/theme";
 import { Loader } from "../../components/Loader";
 
-/** Demo accounts advertised on the web login page (apps/web/src/lib/auth.ts). Password for both: demo123. */
+/** One-tap demo accounts (docs/API.md). Password for both: demo123. */
 const DEMO = {
   customer: { email: "lan@gmail.com", name: "Nguyễn Thị Lan" },
   farmer: { email: "bacba@xanhtantay.vn", name: "Bác Ba Nguyễn" },
@@ -50,7 +50,7 @@ export default function DangNhapScreen() {
             <HeroBlob size={140} right={120} top={90} delay={1500} color="rgba(255,255,255,.18)" />
             <Icon name="eco" size={52} filled color={colors.primary} />
             <Text style={styles.title}>Xanh Tận Tay</Text>
-            <Text style={styles.tagline}>Rau tươi gom thẳng từ vườn, có tên người trồng</Text>
+            <Text style={styles.tagline}>Thùng rau mẹ gửi: đặt trước 18h00, chiều mai rau tới sảnh</Text>
           </AnimInScale>
 
           <AnimIn delay={80}>
@@ -130,7 +130,6 @@ export default function DangNhapScreen() {
 const makeStyles = (colors: Colors) => StyleSheet.create({
   container: { padding: 24, paddingTop: 12, flexGrow: 1, justifyContent: "center" },
   hero: { backgroundColor: colors.primaryContainer, borderRadius: shape.xlIncreased, padding: 28, alignItems: "center", overflow: "hidden", marginBottom: 20 },
-  logo: { fontSize: 44 },
   title: {  ...type.headlineSmall, color: colors.onPrimaryContainer, fontSize: 26, marginTop: 4 },
   tagline: { ...type.bodyMedium, color: colors.onPrimaryContainer, opacity: 0.85, textAlign: "center", marginTop: 4 },
   roleToggle: { flexDirection: "row", backgroundColor: colors.surfaceContainerHighest, borderRadius: shape.full, padding: 3, marginBottom: 16 },

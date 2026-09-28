@@ -1,48 +1,98 @@
-/** Business rules shared by the cart, order API and account pages. */
+/** Business rules shared by the order API, the brain and the UI. All clock logic is Vietnam time (UTC+7, no DST). */
 
-/** Orders below this ship "pooled": combined with neighbours' orders on the next shared trip. */
-export const MIN_DIRECT_ORDER = 100_000;
-/** Farmer keeps this share of the order value (platform commission 5–10%, we show the midpoint). */
-export const FARMER_SHARE = 0.925;
-/** Loyalty: 1 point per 1,000₫ of delivered orders. */
-export const POINTS_PER_1000 = 1;
+export const CUTOFF_HOUR = 18;          // daily cut-off: 18:00
+export const HARVEST_TIME = "4:00";     // farmers cut at 4 am
+export const PICKUP_TIME = "6:00";      // cold truck picks up
+export const ARRIVAL_TIME = "16:00";    // boxes reach the lobby
+export const SHIP_FEE = 15_000;         // single orders; subscriptions and full groups ship free
+export const FARMER_SHARE = 0.925;      // platform keeps 5–10 %, shown as the midpoint
+export const PILOT_CITY = "Hà Nội";
+export const SOURCE_PROVINCES = ["Bắc Kạn", "Tuyên Quang"];
 
-export const pointsFor = (totalVnd: number) => Math.floor(totalVnd / 1000) * POINTS_PER_1000;
+const VN_OFFSET_MS = 7 * 60 * 60 * 1000;
+const pad = (n: number) => String(n).padStart(2, "0");
 
-export interface Level { name: string; icon: string; min: number; stage: number; desc: string }
-export const LEVELS: Level[] = [
-  { name: "Hạt mầm", icon: "spa", min: 0, stage: 0, desc: "Bắt đầu gieo" },
-  { name: "Mầm non", icon: "grass", min: 100, stage: 1, desc: "Đã nhú lá đầu" },
-  { name: "Cây non", icon: "potted_plant", min: 300, stage: 2, desc: "Vươn cao mỗi tuần" },
-  { name: "Cây xanh", icon: "park", min: 700, stage: 3, desc: "Đã cho bóng mát" },
-  { name: "Cây ra hoa", icon: "local_florist", min: 1100, stage: 4, desc: "Ong bướm ghé thăm" },
-  { name: "Cây trĩu quả", icon: "nutrition", min: 1500, stage: 5, desc: "Mùa nào cũng có quả" },
-  { name: "Cổ thụ", icon: "forest", min: 3000, stage: 6, desc: "Chim về làm tổ" },
-  { name: "Vườn nhỏ", icon: "yard", min: 5000, stage: 7, desc: "Thêm cây bên cạnh" },
-  { name: "Trang trại", icon: "agriculture", min: 9000, stage: 8, desc: "Nuôi cả xóm" },
-  { name: "Đồi rau", icon: "landscape", min: 14000, stage: 9, desc: "Xanh cả một quả đồi" },
-  { name: "Người giữ rừng", icon: "nature_people", min: 20000, stage: 10, desc: "Rừng nhỏ của riêng bạn" },
-  { name: "Huyền thoại", icon: "workspace_premium", min: 28000, stage: 11, desc: "Tên bạn trên bảng vàng" },
-];
-
-export function levelFor(points: number) {
-  const idx = Math.max(0, LEVELS.findIndex((l, i) => points >= l.min && (i === LEVELS.length - 1 || points < LEVELS[i + 1].min)));
-  const level = LEVELS[idx];
-  const next = LEVELS[idx + 1] ?? null;
-  const progress = next ? (points - level.min) / (next.min - level.min) : 1;
-  return { level, next, progress: Math.min(1, Math.max(0, progress)), index: idx };
+/** A Date whose UTC fields read as Vietnam wall-clock time. */
+export const vnClock = (at: Date = new Date()) => new Date(at.getTime() + VN_OFFSET_MS);
+export const toYMD = (d: Date) => `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
+export const todayVN = (at: Date = new Date()) => toYMD(vnClock(at));
+export function addDays(ymd: string, n: number) {
+  const d = new Date(`${ymd}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return toYMD(d);
 }
 
-/** Roughly 1 tree "grown" per 200 points; shown as a count of trees in the customer's garden. */
-export const treesFor = (points: number) => Math.floor(points / 200);
+/** Order before 18:00 → delivered tomorrow; after 18:00 → the day after. */
+export function nextDeliveryDate(at: Date = new Date()) {
+  const vn = vnClock(at);
+  return addDays(toYMD(vn), vn.getUTCHours() < CUTOFF_HOUR ? 1 : 2);
+}
 
-/** Friendly impact facts for a checkout: money to the farm, produce weight, servings. */
-export function impactFor(lines: { quantity: number; unit: string; price_per_unit: number }[], farm: { name: string; location: string }) {
-  const total = lines.reduce((s, l) => s + l.quantity * l.price_per_unit, 0);
-  const toFarmer = Math.round(total * FARMER_SHARE);
-  const kg = lines.filter((l) => l.unit === "kg").reduce((s, l) => s + l.quantity, 0);
-  const pieces = lines.filter((l) => l.unit !== "kg").reduce((s, l) => s + l.quantity, 0);
-  const servings = Math.max(2, Math.round(kg * 4 + pieces * 1.5)); // ~250 g veg per serving
-  const region = farm.location.split(",").pop()?.trim() ?? farm.location;
-  return { total, toFarmer, kg, pieces, servings, region, farmName: farm.name, points: pointsFor(total) };
+/** The instant (real UTC Date) at which orders for `deliveryDate` close: 18:00 VN the day before. */
+export function cutoffInstant(deliveryDate: string) {
+  const d = new Date(`${addDays(deliveryDate, -1)}T${pad(CUTOFF_HOUR)}:00:00Z`);
+  return new Date(d.getTime() - VN_OFFSET_MS);
+}
+export const isPastCutoff = (deliveryDate: string, at: Date = new Date()) => at.getTime() >= cutoffInstant(deliveryDate).getTime();
+
+/** A VN wall-clock time on a given date as a real instant, e.g. vnInstant("2026-09-29", "4:00"). */
+export function vnInstant(ymd: string, hm: string) {
+  const [h, m] = hm.split(":").map(Number);
+  return new Date(new Date(`${ymd}T${pad(h)}:${pad(m ?? 0)}:00Z`).getTime() - VN_OFFSET_MS);
+}
+
+export const formatYMD = (ymd: string, opts: Intl.DateTimeFormatOptions = { weekday: "long", day: "numeric", month: "numeric" }) =>
+  new Date(`${ymd}T00:00:00Z`).toLocaleDateString("vi-VN", { ...opts, timeZone: "UTC" });
+
+export const FREQUENCY_DAYS: Record<string, number> = { weekly: 7, biweekly: 14, monthly: 28 };
+export const FREQUENCY_LABELS: Record<string, string> = { weekly: "Mỗi tuần", biweekly: "Hai tuần một lần", monthly: "Mỗi tháng" };
+export const SIZE_LABELS: Record<string, string> = { S: "Hộp nhỏ", M: "Hộp vừa", L: "Hộp lớn" };
+
+export function shipFeeFor(type: "single" | "subscription" | "group") {
+  return type === "subscription" ? 0 : SHIP_FEE;
+}
+
+/** "Bác Ba Nguyễn" → { call: "Bác Ba", pronoun: "bác" } */
+export function addressFarmer(fullName: string) {
+  const parts = fullName.trim().split(/\s+/);
+  const title = parts[0] ?? "Bác";
+  const known = ["bác", "cô", "chú", "u", "anh", "chị", "ông", "bà", "dì", "cậu"];
+  const isTitle = known.includes(title.toLowerCase());
+  return isTitle ? { call: `${title} ${parts[1] ?? ""}`.trim(), pronoun: title.toLowerCase() } : { call: `Bác ${parts[parts.length - 1]}`, pronoun: "bác" };
+}
+
+/** "15 kg cà rốt và 20 kg bắp cải" */
+export function joinItems(items: { name: string; kg: number }[]) {
+  const parts = items.map((i) => `${formatKg(i.kg)} ${i.name.toLowerCase()}`);
+  if (parts.length <= 1) return parts.join("");
+  return `${parts.slice(0, -1).join(", ")} và ${parts[parts.length - 1]}`;
+}
+export const formatKg = (kg: number) => `${Number(kg.toFixed(1)).toLocaleString("vi-VN")} kg`;
+
+/** The one message a farmer sees. */
+export function commandMessage(farmerName: string, deliveryDate: string, items: { name: string; kg: number }[]) {
+  const { call, pronoun } = addressFarmer(farmerName);
+  return `${call} ơi, ${HARVEST_TIME.replace(":00", "h")} sáng ${formatYMD(deliveryDate, { day: "numeric", month: "numeric" })} ${pronoun} cắt đúng ${joinItems(items)} nhé. Xe tải lạnh sẽ qua lấy lúc ${PICKUP_TIME.replace(":00", "h")}.`;
+}
+
+/** "Lời nhắn quan tâm": a note from home that comes with every box. */
+export const CARE_MESSAGES = [
+  "Trời trở gió rồi, nhớ nấu bát canh nóng mà ăn nghe con.",
+  "Rau mẹ chọn toàn thứ non, về nhớ ăn trong tuần cho ngọt.",
+  "Đi làm về mệt thì luộc rổ rau, đập quả trứng là xong bữa, đừng bỏ bữa nhé.",
+  "Ở phố ăn uống thất thường, có hộp rau quê này cho ấm bụng.",
+  "Cà rốt, bí đỏ hầm mềm cho sáng mắt, thức khuya ít thôi con ạ.",
+  "Rau cắt lúc sương còn đọng, về tới nơi vẫn còn mùi đất đồi.",
+  "Nhà mình mùa này rau tốt lắm, gửi xuống cho con ăn lấy thảo.",
+  "Ăn rau nhiều vào cho mát người, nhớ uống đủ nước nữa.",
+];
+export const careMessageFor = (seed: string) => {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+  return CARE_MESSAGES[h % CARE_MESSAGES.length];
+};
+
+/** Friendly facts shown right after ordering. */
+export function impactFor(subtotal: number, weightKg: number, servings: number, days: number) {
+  return { toFarmers: Math.round(subtotal * FARMER_SHARE), weightKg, meals: days * 2, servings };
 }

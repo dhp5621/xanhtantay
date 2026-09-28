@@ -19,9 +19,9 @@ export default function NotFoundScreen() {
       <Stack.Screen options={{ title: "Không tìm thấy", headerShown: true }} />
       <View style={styles.container}>
         <AnimInScale style={styles.card}>
-          <Icon name="nutrition" size={44} />
+          <Icon name="search_off" size={44} />
           <Text style={styles.title}>Trang này không có</Text>
-          <Text style={styles.body}>Luống rau bạn tìm không ở đây. Quay về trang chủ nhé.</Text>
+          <Text style={styles.body}>Hộp rau bạn tìm không ở đây. Quay về trang chủ nhé.</Text>
           <Link href="/tabs" style={styles.link}>
             Về trang chủ
           </Link>

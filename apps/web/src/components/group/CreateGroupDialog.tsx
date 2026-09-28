@@ -6,106 +6,69 @@ import { useSession } from "next-auth/react";
 import { Icon } from "@/components/ui/Icon";
 import { Portal } from "@/components/ui/Portal";
 import { useSnackbar } from "@/components/ui/Snackbar";
+import { formatVND } from "@/lib/format";
+import { addDays, formatYMD } from "@/lib/commerce";
 
-interface FarmOpt { id: string; name: string }
+interface Opt { id: string; name: string }
 
-export function CreateGroupDialog({ farms }: { farms: FarmOpt[] }) {
+export function CreateGroupDialog({ boxes, clusters, myClusterId, earliest }: { boxes: (Opt & { price: number; size: string })[]; clusters: (Opt & { district: string })[]; myClusterId: string | null; earliest: string }) {
   const [open, setOpen] = useState(false);
   const [closing, setClosing] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [busy, setBusy] = useState(false);
   const router = useRouter();
   const { data: session } = useSession();
   const { show } = useSnackbar();
-
-  const defaultDeadline = () => {
-    const d = new Date(); d.setDate(d.getDate() + 3);
-    return d.toISOString().slice(0, 10);
-  };
-
-  const [form, setForm] = useState({ farm_id: farms[0]?.id ?? "", title: "", min_members: 5, deadline: defaultDeadline(), shipping_address: "" });
-
+  const [form, setForm] = useState({ box_id: boxes[1]?.id ?? boxes[0]?.id ?? "", cluster_id: myClusterId ?? clusters[0]?.id ?? "", title: "", min_members: 3, delivery_date: earliest, quantity: 1 });
   const close = () => { setClosing(true); setTimeout(() => { setClosing(false); setOpen(false); }, 250); };
-  const openDialog = () => {
-    if (!session) { router.push("/dang-nhap?next=/gom-don"); return; }
-    setOpen(true);
-  };
+  const dates = Array.from({ length: 7 }, (_, i) => addDays(earliest, i));
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setBusy(true);
     try {
-      const res = await fetch("/api/groups", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, min_members: Number(form.min_members) }),
-      });
+      const cluster = clusters.find((c) => c.id === form.cluster_id);
+      const res = await fetch("/api/groups", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, title: form.title.trim() || `Gom hộp rau ${cluster?.name ?? ""}` }) });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error ?? "Không tạo được nhóm");
-      show("Đã tạo nhóm gom đơn. Chia sẻ link để mời hàng xóm!", { kind: "success" });
+      show("Đã tạo nhóm. Chia sẻ link cho hàng xóm nhé!", { kind: "success" });
       close();
       router.push(`/gom-don/${data.id}`);
       router.refresh();
-    } catch (err) {
-      show(err instanceof Error ? err.message : "Có lỗi xảy ra", { kind: "error" });
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { show(err instanceof Error ? err.message : "Có lỗi", { kind: "error" }); }
+    finally { setBusy(false); }
   };
 
   return (
     <>
-      <button className="m3-btn m3-btn-filled" onClick={openDialog}>
-        <Icon name="add" /><span>Tạo nhóm mới</span>
-      </button>
-
+      <button className="m3-btn m3-btn-filled" onClick={() => (session ? setOpen(true) : router.push("/dang-nhap?role=customer&next=/gom-don"))}><Icon name="add" /><span>Tạo nhóm mới</span></button>
       {open && (
-        <>
-<Portal>
+        <Portal>
           <div className={`m3-scrim ${closing ? "closing" : ""}`} onClick={close} aria-hidden />
-          <form className={`m3-dialog ${closing ? "closing" : ""}`} onSubmit={submit} role="dialog" aria-modal="true" aria-labelledby="cg-title">
-            <div className="m3-dialog-icon"><Icon name="groups" size={24} filled /></div>
-            <div className="m3-dialog-header">
-              <h2 className="m3-dialog-title" id="cg-title">Tạo nhóm gom đơn</h2>
-              <p className="m3-dialog-desc">Đủ người là cả nhóm được freeship</p>
+          <form className={`m3-dialog ${closing ? "closing" : ""}`} onSubmit={submit} role="dialog" aria-modal="true">
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
+              <span className="m3-list-leading"><Icon name="groups" filled /></span>
+              <div><h2 className="headline-sm">Tạo nhóm gom đơn</h2><p className="body-sm text-on-surface-variant">Cùng toà nhà, cùng một chuyến xe, đủ nhóm là miễn ship</p></div>
             </div>
-
-            <div className="m3-dialog-body">
-              <div className="m3-field">
-                <label className="m3-field-label" htmlFor="cg-farm">Vườn rau</label>
-                <select id="cg-farm" className="m3-select" value={form.farm_id} onChange={(e) => setForm({ ...form, farm_id: e.target.value })} required>
-                  {farms.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
-                </select>
-              </div>
-              <div className="m3-field">
-                <label className="m3-field-label" htmlFor="cg-title-input">Tên nhóm</label>
-                <input id="cg-title-input" className="m3-input" placeholder="Ví dụ: Rau sạch chung cư Sunrise" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required maxLength={80} />
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                <div className="m3-field">
-                  <label className="m3-field-label" htmlFor="cg-min">Số người tối thiểu</label>
-                  <input id="cg-min" type="number" min={2} max={50} className="m3-input" value={form.min_members} onChange={(e) => setForm({ ...form, min_members: Number(e.target.value) })} required />
-                </div>
-                <div className="m3-field">
-                  <label className="m3-field-label" htmlFor="cg-deadline">Hạn chốt</label>
-                  <input id="cg-deadline" type="date" className="m3-input" value={form.deadline} min={new Date().toISOString().slice(0, 10)} onChange={(e) => setForm({ ...form, deadline: e.target.value })} required />
-                </div>
-              </div>
-              <div className="m3-field">
-                <label className="m3-field-label" htmlFor="cg-addr">Địa chỉ nhận chung</label>
-                <input id="cg-addr" className="m3-input" placeholder="Sảnh chung cư, số nhà, phường…" value={form.shipping_address} onChange={(e) => setForm({ ...form, shipping_address: e.target.value })} required maxLength={160} />
+            <div className="flex flex-col gap-3">
+              <div className="m3-field"><label className="m3-field-label" htmlFor="cg-cluster">Chung cư</label>
+                <select id="cg-cluster" className="m3-select" value={form.cluster_id} onChange={(e) => setForm({ ...form, cluster_id: e.target.value })} required>{clusters.map((c) => <option key={c.id} value={c.id}>{c.name} · {c.district}</option>)}</select></div>
+              <div className="m3-field"><label className="m3-field-label" htmlFor="cg-box">Hộp rau</label>
+                <select id="cg-box" className="m3-select" value={form.box_id} onChange={(e) => setForm({ ...form, box_id: e.target.value })} required>{boxes.map((b) => <option key={b.id} value={b.id}>{b.name} · {formatVND(b.price)}</option>)}</select></div>
+              <div className="m3-field"><label className="m3-field-label" htmlFor="cg-title">Tên nhóm</label>
+                <input id="cg-title" className="m3-input" placeholder="Ví dụ: Hội rau sạch T5–T8" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} maxLength={80} /></div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+                <div className="m3-field"><label className="m3-field-label" htmlFor="cg-min">Số nhà tối thiểu</label><input id="cg-min" type="number" min={2} max={50} className="m3-input" value={form.min_members} onChange={(e) => setForm({ ...form, min_members: Number(e.target.value) })} required /></div>
+                <div className="m3-field"><label className="m3-field-label" htmlFor="cg-date">Ngày giao</label>
+                  <select id="cg-date" className="m3-select" value={form.delivery_date} onChange={(e) => setForm({ ...form, delivery_date: e.target.value })}>{dates.map((d) => <option key={d} value={d}>{formatYMD(d, { weekday: "short", day: "numeric", month: "numeric" })}</option>)}</select></div>
+                <div className="m3-field"><label className="m3-field-label" htmlFor="cg-qty">Bạn đặt</label><input id="cg-qty" type="number" min={1} max={20} className="m3-input" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: Number(e.target.value) })} required /></div>
               </div>
             </div>
-
-            <div className="m3-dialog-actions">
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 22 }}>
               <button type="button" className="m3-btn m3-btn-text" onClick={close}>Huỷ</button>
-              <button type="submit" className="m3-btn m3-btn-filled" disabled={loading || !farms.length}>
-                {loading ? <span className="m3-loader sm on-primary" /> : <Icon name="rocket_launch" />}
-                <span>Tạo nhóm</span>
-              </button>
+              <button type="submit" className="m3-btn m3-btn-filled" disabled={busy}>{busy ? <span className="m3-loader sm on-primary" /> : <Icon name="rocket_launch" />}<span>Tạo nhóm</span></button>
             </div>
           </form>
-</Portal>
-        </>
+        </Portal>
       )}
     </>
   );

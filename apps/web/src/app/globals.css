@@ -728,6 +728,9 @@ button.m3-chip:active { transform: scale(0.95); border-radius: var(--shape-md); 
   white-space: nowrap;
 }
 .status-pill .msr { font-size: 16px; }
+.status-placed { color: var(--md-on-secondary-container); background: var(--md-secondary-container); }
+.status-cancelled { color: var(--md-on-error-container); background: var(--md-error-container); }
+.status-allocated { color: var(--md-on-tertiary-container); background: var(--md-tertiary-container); }
 .status-harvesting { color: var(--md-status-harvesting-fg); background: var(--md-status-harvesting-bg); }
 .status-loaded { color: var(--md-status-loaded-fg); background: var(--md-status-loaded-bg); }
 .status-delivered { color: var(--md-status-delivered-fg); background: var(--md-status-delivered-bg); }
@@ -1967,3 +1970,44 @@ input[type="number"].tabular::-webkit-inner-spin-button { -webkit-appearance: no
   .m3-meal-howto { grid-column: 2; justify-self: start; }
   .m3-meal-recipe { padding-left: 0; }
 }
+
+/* ─── Vertical emotional timeline ────────────────────────────── */
+.m3-timeline { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.m3-timeline-item { position: relative; display: flex; gap: 14px; padding-bottom: 18px; }
+.m3-timeline-item:last-child { padding-bottom: 0; }
+.m3-timeline-item::before { content: ""; position: absolute; left: 17px; top: 36px; bottom: 0; width: 3px; border-radius: 2px; background: var(--md-surface-container-highest); }
+.m3-timeline-item.done::before { background: var(--md-primary); }
+.m3-timeline-item:last-child::before { display: none; }
+.m3-timeline-dot { width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; display: grid; place-items: center; background: var(--md-surface-container-highest); color: var(--md-on-surface-variant); position: relative; z-index: 1; transition: background-color var(--dur-medium-2) var(--ease-standard), border-radius var(--dur-medium-4) var(--spring-default-spatial); }
+.m3-timeline-item.done .m3-timeline-dot { background: var(--md-primary); color: var(--md-on-primary); }
+.m3-timeline-item.current .m3-timeline-dot { background: var(--md-primary); color: var(--md-on-primary); border-radius: var(--shape-md); box-shadow: 0 0 0 6px color-mix(in srgb, var(--md-primary) 18%, transparent); }
+
+/* ─── Cut-off banner ─────────────────────────────────────────── */
+.m3-cutoff { display: flex; align-items: center; gap: 14px; padding: 14px 18px; border-radius: var(--shape-xl); background: var(--md-tertiary-container); color: var(--md-on-tertiary-container); }
+.m3-cutoff.compact { padding: 10px 14px; border-radius: var(--shape-lg); }
+.m3-cutoff.urgent { background: var(--md-status-harvesting-bg); color: var(--md-status-harvesting-fg); }
+.m3-cutoff-icon { width: 44px; height: 44px; border-radius: var(--shape-md); display: grid; place-items: center; background: color-mix(in srgb, currentColor 14%, transparent); flex-shrink: 0; }
+
+/* ─── Farmer: one big harvest command ────────────────────────── */
+.m3-command { border-radius: var(--shape-xxl); padding: clamp(24px, 5vw, 44px); background: var(--md-primary-container); color: var(--md-on-primary-container); }
+.m3-command.confirmed { background: var(--md-surface-container); color: var(--md-on-surface); }
+.m3-command-text { font-size: clamp(24px, 5.2vw, 40px); line-height: 1.3; font-weight: 700; letter-spacing: -0.01em; }
+.m3-command-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 20px; border-radius: var(--shape-lg-inc); background: color-mix(in srgb, currentColor 9%, transparent); font-size: clamp(20px, 4vw, 28px); font-weight: 700; }
+.m3-command-btn { height: 88px !important; font-size: clamp(20px, 4.4vw, 28px) !important; border-radius: var(--shape-xl) !important; width: 100%; }
+.m3-command-btn .msr { font-size: 36px !important; }
+
+/* ─── Care note ("lời nhắn quan tâm") ────────────────────────── */
+.m3-care { position: relative; padding: 18px 20px 18px 56px; border-radius: var(--shape-xl); background: var(--md-secondary-container); color: var(--md-on-secondary-container); font-size: 17px; line-height: 1.55; font-style: italic; }
+.m3-care::before { content: "format_quote"; font-family: "Material Symbols Rounded"; font-style: normal; position: absolute; left: 16px; top: 14px; font-size: 30px; opacity: 0.6; font-variation-settings: "FILL" 1; }
+.m3-care small { display: block; margin-top: 6px; font-style: normal; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; opacity: 0.75; }
+
+/* ─── Brain dashboard bars ───────────────────────────────────── */
+.m3-bar-row { display: grid; grid-template-columns: minmax(90px, 140px) 1fr auto; gap: 12px; align-items: center; }
+.m3-bar { height: 14px; border-radius: 7px; background: var(--md-surface-container-highest); position: relative; overflow: hidden; }
+.m3-bar > span { position: absolute; inset: 0 auto 0 0; border-radius: 7px; background: var(--md-primary); transition: width var(--dur-long-4) var(--ease-emphasized-decel); }
+.m3-bar > span.warn { background: var(--md-status-harvesting-fg); }
+.m3-bar > span.over { background: var(--md-error); }
+
+/* ─── Box detail: content + sticky order panel ───────────────── */
+.m3-box-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px; align-items: start; }
+@media (min-width: 1024px) { .m3-box-layout { grid-template-columns: minmax(0, 1fr) 380px; } .m3-box-side { position: sticky; top: 84px; } }

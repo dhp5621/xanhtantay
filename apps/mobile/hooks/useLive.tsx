@@ -9,7 +9,7 @@ const LiveContext = createContext<{ version: string | null }>({ version: null })
 /**
  * Polls the server's cheap /api/version change signal while the app is in the foreground.
  * Screens subscribe with useLiveRefresh(load) and re-fetch the moment anything changed on
- * the server, so orders, stock, diary posts and groups update without pulling to refresh.
+ * the server, so order tracking, harvest commands and groups update without pulling to refresh.
  */
 export function LiveProvider({ children }: { children: ReactNode }) {
   const [version, setVersion] = useState<string | null>(null);

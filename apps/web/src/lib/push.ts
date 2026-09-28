@@ -76,3 +76,20 @@ export async function broadcastPush(target: PushTarget, msg: PushMessage): Promi
   }
   return result;
 }
+
+/** Send one message to the devices of specific users (harvest commands, order status). Best-effort. */
+export async function pushToUsers(userIds: string[], msg: PushMessage): Promise<{ sent: number; failed: number }> {
+  const out = { sent: 0, failed: 0 };
+  if (!userIds.length) return out;
+  try {
+    const devices = await db.select().from(push_devices).where(inArray(push_devices.user_id, userIds));
+    if (!devices.length) return out;
+    const dead: string[] = [];
+    const m = { sent: 0, failed: 0 }, w = { sent: 0, failed: 0 };
+    dead.push(...(await sendExpo(devices.filter((d) => d.platform !== "web"), msg, m)));
+    if (webPushReady()) dead.push(...(await sendWeb(devices.filter((d) => d.platform === "web" && d.subscription), msg, w)));
+    if (dead.length) await db.delete(push_devices).where(inArray(push_devices.id, dead));
+    out.sent = m.sent + w.sent; out.failed = m.failed + w.failed;
+  } catch { /* never block the business flow on a notification */ }
+  return out;
+}

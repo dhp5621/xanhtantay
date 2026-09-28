@@ -1,19 +1,28 @@
-import {
-  pgTable,
-  text,
-  timestamp,
-  boolean,
-  integer,
-  numeric,
-  jsonb,
-  pgEnum,
-} from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, integer, numeric, jsonb, pgEnum, date, uniqueIndex } from "drizzle-orm/pg-core";
+
+/**
+ * Xanh Tận Tay — PULL model (pivot 28/9):
+ * customers pre-order seasonal BOXES → daily 18:00 cut-off → the brain aggregates demand and
+ * splits it into harvest commands per farm by registered capacity → farmers confirm and cut exactly that.
+ */
 
 export const userRoleEnum = pgEnum("user_role", ["customer", "farmer"]);
-export const orderStatusEnum = pgEnum("order_status", ["harvesting", "loaded", "delivered"]);
+/** placed: waiting for the 18:00 cut-off · harvesting: 04:00 · loaded: 06:00 · delivered: 16:00 at the lobby */
+export const orderStatusEnum = pgEnum("order_status", ["placed", "harvesting", "loaded", "delivered", "cancelled"]);
 export const orderTypeEnum = pgEnum("order_type", ["single", "subscription", "group"]);
-export const subscriptionFrequencyEnum = pgEnum("subscription_frequency", ["weekly", "monthly"]);
+export const subscriptionFrequencyEnum = pgEnum("subscription_frequency", ["weekly", "biweekly", "monthly"]);
 export const groupOrderStatusEnum = pgEnum("group_order_status", ["open", "locked", "delivered", "cancelled"]);
+export const runStatusEnum = pgEnum("run_status", ["allocated", "harvesting", "loaded", "delivered"]);
+export const commandStatusEnum = pgEnum("command_status", ["sent", "confirmed"]);
+
+/** Apartment clusters in Hà Nội: the unit of group buying and lobby delivery. */
+export const clusters = pgTable("clusters", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  name: text("name").notNull(),
+  address: text("address").notNull(),
+  district: text("district").notNull(),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
 
 export const users = pgTable("users", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
@@ -23,141 +32,158 @@ export const users = pgTable("users", {
   role: userRoleEnum("role").notNull().default("customer"),
   avatar_url: text("avatar_url"),
   password_hash: text("password_hash"),
-  /** Kitchen assistant preferences: goal, diet tags, servings, notes. */
-  recipe_prefs: jsonb("recipe_prefs").$type<RecipePrefs>(),
+  /** Customer's building and flat, prefilled at checkout. */
+  cluster_id: text("cluster_id").references(() => clusters.id, { onDelete: "set null" }),
+  address: text("address"),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
-
-export type RecipeGoal = "normal" | "diet" | "gym";
-export interface RecipePrefs { goal: RecipeGoal; tags: string[]; servings: number; notes?: string; customDiet?: string }
 
 export const farms = pgTable("farms", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   owner_id: text("owner_id").notNull().references(() => users.id),
   name: text("name").notNull(),
+  /** "Ba Bể, Bắc Kạn" */
   location: text("location").notNull(),
+  province: text("province").notNull(),
   description: text("description"),
   cover_url: text("cover_url"),
   slug: text("slug").unique().notNull(),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const products = pgTable("products", {
+/** Raw vegetables that go into boxes. Customers never buy these one by one. */
+export const produce = pgTable("produce", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
-  farm_id: text("farm_id").notNull().references(() => farms.id),
   name: text("name").notNull(),
-  unit: text("unit").notNull(),
-  price_per_unit: integer("price_per_unit").notNull(),
+  unit: text("unit").notNull().default("kg"),
   category: text("category").notNull(),
   image_url: text("image_url"),
-  in_stock: boolean("in_stock").notNull().default(true),
-  /** Units available for sale; decremented on every order, 0 ⇒ sold out. */
-  stock_qty: integer("stock_qty").notNull().default(20),
+  created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const farm_diary = pgTable("farm_diary", {
+/** What each farm registered it can harvest per day. The brain never commands more than this. */
+export const farm_capacity = pgTable("farm_capacity", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  farm_id: text("farm_id").notNull().references(() => farms.id, { onDelete: "cascade" }),
+  produce_id: text("produce_id").notNull().references(() => produce.id, { onDelete: "cascade" }),
+  daily_kg: integer("daily_kg").notNull(),
+}, (t) => [uniqueIndex("farm_capacity_farm_produce").on(t.farm_id, t.produce_id)]);
+
+export interface BoxRecipe { minutes?: number; ingredients: string[]; steps: string[] }
+export interface BoxMeal { time: "Trưa" | "Tối"; title: string; uses: string[]; note?: string; recipe: BoxRecipe }
+export interface BoxMealDay { day: number; meals: BoxMeal[] }
+
+/** Seasonal box, mixed from several farms, sold in sizes. Comes with its own day-by-day menu. */
+export const boxes = pgTable("boxes", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  slug: text("slug").unique().notNull(),
+  name: text("name").notNull(),
+  /** "S" | "M" | "L" */
+  size: text("size").notNull(),
+  weight_kg: numeric("weight_kg").notNull(),
+  price: integer("price").notNull(),
+  /** "Thu 2026" */
+  season: text("season").notNull(),
+  servings: integer("servings").notNull(),
+  days: integer("days").notNull(),
+  description: text("description"),
+  image_url: text("image_url"),
+  meal_plan: jsonb("meal_plan").$type<BoxMealDay[]>().notNull().default([]),
+  active: boolean("active").notNull().default(true),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const box_items = pgTable("box_items", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  box_id: text("box_id").notNull().references(() => boxes.id, { onDelete: "cascade" }),
+  produce_id: text("produce_id").notNull().references(() => produce.id),
+  quantity_kg: numeric("quantity_kg").notNull(),
+});
+
+export const subscriptions = pgTable("subscriptions", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  user_id: text("user_id").notNull().references(() => users.id),
+  box_id: text("box_id").notNull().references(() => boxes.id),
+  quantity: integer("quantity").notNull().default(1),
+  frequency: subscriptionFrequencyEnum("frequency").notNull().default("weekly"),
+  next_delivery: date("next_delivery").notNull(),
+  cluster_id: text("cluster_id").references(() => clusters.id, { onDelete: "set null" }),
+  address: text("address"),
+  active: boolean("active").notNull().default(true),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
+/** Neighbours of one cluster ordering the same box for the same day: enough members ⇒ free delivery. */
+export const group_orders = pgTable("group_orders", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  cluster_id: text("cluster_id").notNull().references(() => clusters.id),
+  box_id: text("box_id").notNull().references(() => boxes.id),
+  title: text("title").notNull(),
+  min_members: integer("min_members").notNull(),
+  current_members: integer("current_members").notNull().default(0),
+  delivery_date: date("delivery_date").notNull(),
+  status: groupOrderStatusEnum("status").notNull().default("open"),
+  created_by: text("created_by").references(() => users.id, { onDelete: "set null" }),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const harvest_runs = pgTable("harvest_runs", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  delivery_date: date("delivery_date").notNull().unique(),
+  status: runStatusEnum("status").notNull().default("allocated"),
+  /** Aggregated demand at cut-off. */
+  demand: jsonb("demand").$type<{ produce_id: string; name: string; kg: number; allocated_kg: number }[]>().notNull().default([]),
+  total_kg: numeric("total_kg").notNull().default("0"),
+  total_orders: integer("total_orders").notNull().default(0),
+  total_boxes: integer("total_boxes").notNull().default(0),
+  /** Demand the registered capacity could not cover (should be 0). */
+  shortage_kg: numeric("shortage_kg").notNull().default("0"),
+  summary: text("summary"),
+  cutoff_at: timestamp("cutoff_at").defaultNow().notNull(),
+  harvested_at: timestamp("harvested_at"),
+  loaded_at: timestamp("loaded_at"),
+  delivered_at: timestamp("delivered_at"),
+});
+
+export interface CommandItem { produce_id: string; name: string; kg: number }
+
+/** One message per farm per run: "cut exactly this much at 4 am". */
+export const harvest_commands = pgTable("harvest_commands", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  run_id: text("run_id").notNull().references(() => harvest_runs.id, { onDelete: "cascade" }),
   farm_id: text("farm_id").notNull().references(() => farms.id),
-  content: text("content").notNull(),
-  media_urls: text("media_urls").array().notNull().default([]),
+  items: jsonb("items").$type<CommandItem[]>().notNull().default([]),
+  total_kg: numeric("total_kg").notNull().default("0"),
+  message: text("message").notNull(),
+  status: commandStatusEnum("status").notNull().default("sent"),
+  confirmed_at: timestamp("confirmed_at"),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const orders = pgTable("orders", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   user_id: text("user_id").notNull().references(() => users.id),
-  farm_id: text("farm_id").notNull().references(() => farms.id),
-  status: orderStatusEnum("status").notNull().default("harvesting"),
+  box_id: text("box_id").notNull().references(() => boxes.id),
+  quantity: integer("quantity").notNull().default(1),
   type: orderTypeEnum("type").notNull().default("single"),
+  status: orderStatusEnum("status").notNull().default("placed"),
+  /** Box price × quantity. */
+  subtotal: integer("subtotal").notNull(),
+  ship_fee: integer("ship_fee").notNull().default(0),
   total: integer("total").notNull(),
   note: text("note"),
-  /** "direct": ships on its own; "pooled": below the minimum, combined with neighbours' orders. */
-  delivery_mode: text("delivery_mode").notNull().default("direct"),
-  /** Orders placed together from one multi-farm checkout share a batch id. */
-  batch_id: text("batch_id"),
+  /** "Lời nhắn quan tâm" shown to the customer with this order. */
+  care_message: text("care_message"),
+  cluster_id: text("cluster_id").references(() => clusters.id, { onDelete: "set null" }),
+  address: text("address"),
+  delivery_date: date("delivery_date").notNull(),
+  group_order_id: text("group_order_id").references(() => group_orders.id, { onDelete: "set null" }),
+  subscription_id: text("subscription_id").references(() => subscriptions.id, { onDelete: "set null" }),
+  run_id: text("run_id").references(() => harvest_runs.id, { onDelete: "set null" }),
+  harvested_at: timestamp("harvested_at"),
+  loaded_at: timestamp("loaded_at"),
+  delivered_at: timestamp("delivered_at"),
   created_at: timestamp("created_at").defaultNow().notNull(),
-});
-
-export const order_items = pgTable("order_items", {
-  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
-  order_id: text("order_id").notNull().references(() => orders.id),
-  product_id: text("product_id").notNull().references(() => products.id),
-  quantity: numeric("quantity").notNull(),
-  unit_price: integer("unit_price").notNull(),
-});
-
-export const subscriptions = pgTable("subscriptions", {
-  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
-  user_id: text("user_id").notNull().references(() => users.id),
-  farm_id: text("farm_id").notNull().references(() => farms.id),
-  frequency: subscriptionFrequencyEnum("frequency").notNull().default("weekly"),
-  next_delivery: timestamp("next_delivery").notNull(),
-  items: jsonb("items").$type<{ product_id: string; quantity: number }[]>().notNull().default([]),
-  active: boolean("active").notNull().default(true),
-});
-
-export const group_orders = pgTable("group_orders", {
-  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
-  farm_id: text("farm_id").notNull().references(() => farms.id),
-  title: text("title").notNull(),
-  min_members: integer("min_members").notNull(),
-  current_members: integer("current_members").notNull().default(0),
-  deadline: timestamp("deadline").notNull(),
-  status: groupOrderStatusEnum("status").notNull().default("open"),
-  shipping_address: text("shipping_address").notNull(),
-  created_at: timestamp("created_at").defaultNow().notNull(),
-});
-
-export const group_order_members = pgTable("group_order_members", {
-  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
-  group_order_id: text("group_order_id").notNull().references(() => group_orders.id),
-  user_id: text("user_id").notNull().references(() => users.id),
-  items: jsonb("items").$type<{ product_id: string; quantity: number }[]>().notNull().default([]),
-});
-
-/** AI-generated recipes, personal to each customer and based on what they actually bought. */
-export const user_recipes = pgTable("user_recipes", {
-  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
-  user_id: text("user_id").notNull().references(() => users.id),
-  order_id: text("order_id").references(() => orders.id),
-  title: text("title").notNull(),
-  description: text("description"),
-  ingredients: text("ingredients").array().notNull().default([]),
-  steps: text("steps").array().notNull().default([]),
-  /** Names of purchased products this recipe was built around. */
-  based_on: text("based_on").array().notNull().default([]),
-  source: text("source").notNull().default("ai"), // "ai" | "curated"
-  minutes: integer("minutes"),
-  kcal: integer("kcal"),
-  protein_g: integer("protein_g"),
-  /** Goal / diet tags the recipe was generated for, e.g. ["gym", "it_dau_mo"]. */
-  tags: text("tags").array().notNull().default([]),
-  created_at: timestamp("created_at").defaultNow().notNull(),
-});
-
-/** AI meal plan built from one delivered order: how many days the produce lasts and what to cook each day. */
-export const meal_plans = pgTable("meal_plans", {
-  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
-  user_id: text("user_id").notNull().references(() => users.id),
-  order_id: text("order_id").notNull().references(() => orders.id),
-  days: integer("days").notNull(),
-  summary: text("summary"),
-  plan: jsonb("plan").$type<MealPlanDay[]>().notNull().default([]),
-  /** Preferences the plan was generated with, to detect when they changed since. */
-  prefs: jsonb("prefs").$type<RecipePrefs>(),
-  source: text("source").notNull().default("ai"),
-  created_at: timestamp("created_at").defaultNow().notNull(),
-});
-export interface MealPlanMeal { time: string; title: string; uses: string[]; note?: string; recipe?: { minutes?: number; ingredients: string[]; steps: string[] } }
-export interface MealPlanDay { day: number; meals: MealPlanMeal[]; leftover?: string }
-
-/** Curated fallback recipes (used only when the AI service is not configured). */
-export const recipes = pgTable("recipes", {
-  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
-  title: text("title").notNull(),
-  ingredients: text("ingredients").array().notNull().default([]),
-  steps: text("steps").array().notNull().default([]),
-  image_url: text("image_url"),
 });
 
 /**

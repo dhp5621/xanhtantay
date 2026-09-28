@@ -1,69 +1,27 @@
-// Copy mirrors apps/web/src/components/landing/Landing.tsx and the signed-in home page (same icon names).
-export const PILLAR_TONES = ["primary", "tertiary", "secondary", "primary"] as const;
+// Visitor landing copy for the pre-order model (icon names are Material Symbols, as everywhere else).
+export const TONES = ["primary", "tertiary", "secondary"] as const;
+export type LandingTone = (typeof TONES)[number];
 
-export const PILLARS = [
-  {
-    icon: "verified",
-    eyebrow: "Minh bạch nguồn gốc",
-    title: "Thấy vườn trước khi thấy rau",
-    items: [
-      { icon: "auto_stories", t: "Nhật ký nông trại", d: "Ảnh, video ngắn mỗi ngày từ vườn: gieo hạt, tưới nước, thu hoạch.", more: "Mỗi bài có giờ đăng chính xác. Bạn thấy luống rau mình sắp ăn lớn lên từng ngày, và biết ai đang chăm nó. Video giới hạn 30 giây để xem nhanh, tải nhẹ." },
-      { icon: "videocam", t: "Livestream tại vườn", d: "Xem bác nông dân thu hoạch trực tiếp và chốt đơn ngay trên phiên live.", more: "Theo dõi vườn để nhận thông báo khi lên sóng. Trong phiên live, món đang hái hiện ngay dưới màn hình để bạn thêm vào giỏ mà không rời khỏi video. (Sắp ra mắt)" },
-    ],
-  },
-  {
-    icon: "shopping_cart_checkout",
-    eyebrow: "Đặt hàng thông minh",
-    title: "Mua theo cách hợp với nhà bạn",
-    items: [
-      { icon: "event_repeat", t: "Hộp rau gia đình định kỳ", d: "Một mức giá cố định mỗi tuần hoặc mỗi tháng, tự lên đơn, đổi món linh hoạt trước ngày giao 24h.", more: "Chọn món một lần từ trang vườn rồi bấm “Giao định kỳ”. Hệ thống tự lên đơn mỗi kỳ và trừ tồn kho của vườn. Tạm dừng, bật lại hay đổi món bất cứ lúc nào trong mục Gói đăng ký." },
-      { icon: "groups", t: "Gom đơn chung", d: "Rủ hàng xóm cùng toà nhà mua chung một chuyến xe để chia phí gom. Đủ nhóm là miễn phí ship.", more: "Tạo nhóm, đặt số người tối thiểu và hạn chốt, chia link mời. Thanh tiến độ hiện ngay cần thêm mấy người. Đủ người trước hạn là cả nhóm được miễn phí vận chuyển về một điểm nhận chung." },
-    ],
-  },
-  {
-    icon: "favorite",
-    eyebrow: "Theo dõi có cảm xúc",
-    title: "Không còn “đang giao” khô khan",
-    items: [
-      { icon: "agriculture", t: "Rau đang được nhà vườn thu hoạch", d: "", more: "Bước 1. Nhà vườn nhận đơn và hái đúng phần của bạn vào sáng hôm giao. Rau chưa bao giờ nằm kho." },
-      { icon: "local_shipping", t: "Hàng đã lên xe lạnh về phố", d: "", more: "Bước 2. Nhà vườn bấm một nút khi xe lạnh rời vườn. Bạn thấy trạng thái đổi ngay trong mục Đơn hàng." },
-      { icon: "home", t: "Đồ quê đã đến tận cửa nhà bạn", d: "", more: "Bước 3. Giao tận cửa, thanh toán khi nhận. Từ đây app gợi ý luôn hôm nay nấu gì với những món vừa về." },
-    ],
-  },
-  {
-    icon: "skillet",
-    eyebrow: "Tiện ích bếp núc",
-    title: "Mua gì, gợi ý nấu nấy",
-    items: [
-      { icon: "auto_awesome", t: "Gợi ý mâm cơm bằng AI", d: "Mua bí đỏ và thịt băm, trợ lý gợi ý ngay canh bí đỏ thịt băm với công thức từng bước.", more: "AI nấu riêng cho từng khách từ đúng những món trong đơn đã đặt. Không ưng thì bấm “đổi món khác”, không bao giờ lặp lại. Mọi gợi ý lưu vào lịch sử để bạn xem lại bất cứ lúc nào." },
-    ],
-  },
+/** The four clock times the whole product runs on. */
+export const MODEL_STEPS = [
+  { icon: "schedule", time: "18h00", t: "Đặt trước 18h", d: "Bạn chọn hộp rau trước giờ chốt sổ mỗi ngày. Đặt hôm nay, chiều mai nhận." },
+  { icon: "hub", time: "18h05", t: "Bộ não gom nhu cầu", d: "Hệ thống cộng tất cả đơn của các toà nhà, chia đúng theo sức trồng của từng vườn." },
+  { icon: "agriculture", time: "4h00", t: "Bác nông dân cắt đúng lượng", d: "Mỗi bác nhận một lệnh thu hoạch duy nhất, cắt vừa đủ số ký đã có người đặt." },
+  { icon: "apartment", time: "16h00", t: "Tới sảnh chung cư", d: "Xe lạnh rời vườn lúc 6h, hộp rau có mặt ở sảnh toà nhà bạn lúc 16h." },
+];
+
+export const BENEFITS = [
+  { icon: "inventory_2", t: "Hộp theo mùa", d: "Ba cỡ hộp nhỏ, vừa, lớn. Rau trong hộp đổi theo mùa, phối từ nhiều vườn.", more: "Mỗi hộp ghi rõ từng loại rau bao nhiêu ký và vườn nào trồng. Bạn không phải chọn từng mớ, chỉ cần chọn cỡ hộp hợp với nhà mình." },
+  { icon: "event_repeat", t: "Gói định kỳ", d: "Tự lên đơn mỗi tuần, hai tuần hoặc mỗi tháng. Miễn phí giao.", more: "Đổi số hộp, đổi tần suất hay tạm dừng bất cứ lúc nào trong mục Gói định kỳ. Nhà vườn biết trước nhu cầu nên gieo trồng vừa đủ." },
+  { icon: "groups", t: "Gom đơn chung cư", d: "Rủ hàng xóm cùng toà đặt chung một chuyến. Đủ người là miễn phí giao.", more: "Mỗi nhóm gắn với một cụm chung cư và một ngày giao. Thanh tiến độ cho biết còn thiếu mấy nhà. Đủ số lúc chốt sổ 18h00, phí giao của cả nhóm về 0." },
+  { icon: "favorite", t: "Theo dõi có giờ", d: "4h00 rau đang được cắt, 6h00 lên xe lạnh, 16h00 có mặt tại sảnh.", more: "Không còn dòng “đang giao” khô khan. Mỗi chặng có giờ cụ thể và tên bác nông dân đang thu hoạch phần rau của bạn." },
+  { icon: "qr_code_2", t: "QR truy xuất", d: "Quét mã trên hộp để biết rau từ vườn nào, cắt lúc mấy giờ.", more: "Trang truy xuất hiện vườn trồng, giờ thu hoạch, hành trình xe lạnh và từng loại rau trong hộp. Không hiện thông tin người mua." },
+  { icon: "menu_book", t: "Thực đơn theo ngày kèm hộp", d: "Mỗi hộp có sẵn thực đơn bữa trưa, bữa tối cho từng ngày, kèm cách làm.", more: "Thực đơn được soạn theo đúng rau trong hộp, có nguyên liệu và các bước nấu. Mở hộp ra là biết hôm nay nấu gì, không lo rau thừa trong tủ lạnh." },
+  { icon: "mail", t: "Lời nhắn quan tâm", d: "Mỗi đơn kèm một lời nhắn từ quê, như mẹ gửi rau lên phố.", more: "Lời nhắn hiện ngay sau khi đặt và nằm trong chi tiết đơn, nhắc bạn cách bảo quản, món nên nấu trước và một lời hỏi thăm." },
 ];
 
 export const FARMER_POINTS = [
-  { icon: "storefront", t: "Bán thẳng cho người ăn", d: "Thay 3–5 khâu trung gian bằng một nền tảng. Bạn tự đặt giá bán; Xanh Tận Tay chỉ thu 5–10% trên mỗi đơn giao thành công.", more: "Ví dụ: bó cải bạn bán 8.000₫, khách trả 8.000₫ cộng phí vận chuyển gom. Nền tảng giữ lại tối đa 800₫, phần còn lại về bạn khi đơn giao xong. Đơn huỷ hoặc không giao được thì không mất phí." },
-  { icon: "photo_camera", t: "Đăng bán theo đợt thu hoạch", d: "Có gì bán nấy, hái theo đơn đã chốt. Không tồn kho, không hao hụt.", more: "Mỗi sản phẩm có số lượng còn bán. Khách đặt là tự trừ, về 0 là tự ẩn “hết hàng”. Nhập lại số lượng khi có lứa mới, bấm một nút là mở bán lại." },
-  { icon: "mic", t: "Đơn giản như nói chuyện", d: "Đăng nhật ký bằng ảnh, sắp tới bằng giọng nói. Không cần rành công nghệ.", more: "Chụp ảnh thẳng từ camera, chọn một câu gợi ý sẵn, bấm đăng. Ảnh và video tự nén trên điện thoại nên mạng yếu vẫn đăng được. Nhập bằng giọng nói đang được phát triển." },
-  { icon: "event_repeat", t: "Đầu ra ổn định", d: "Khách đăng ký “hộp rau gia đình” tuần / tháng nghĩa là đơn đều, dễ lên kế hoạch gieo trồng.", more: "Mục Khách đăng ký cho bạn thấy ai nhận rau kỳ tới, món gì, bao nhiêu. Nhìn vào đó để biết tuần sau cần hái gì, tháng sau nên gieo gì." },
-];
-
-export const DAY_STEPS = [
-  { icon: "wb_twilight", time: "05:30", t: "Ra vườn, chụp một tấm ảnh", d: "Sương còn đọng trên lá. 30 giây trên điện thoại, khách thấy ngay." },
-  { icon: "photo_camera", time: "06:00", t: "Đăng nhật ký", d: "Kể hôm nay hái gì, cây nào đang lớn. Khách tin hơn mỗi ngày." },
-  { icon: "notifications_active", time: "07:00", t: "Đơn về", d: "Đơn lẻ, đơn gói, đơn gom của cả toà nhà, gom lại thành một danh sách hái." },
-  { icon: "agriculture", time: "08:00", t: "Hái theo đơn đã chốt", d: "Không thừa, không thiếu, không tồn kho. Tồn kho tự trừ theo đơn." },
-  { icon: "local_shipping", time: "11:00", t: "Bấm “đã lên xe”", d: "Xe lạnh về phố. Khách nhận thông báo “hàng đã lên xe lạnh về phố”." },
-  { icon: "payments", time: "17:00", t: "Bấm “đã giao”, tiền về", d: "Khách trả khi nhận. Cuối ngày xem tổng doanh thu trên trang tổng quan." },
-];
-
-export const FEES = [
-  { icon: "percent", who: "Nhà vườn", t: "5–10% mỗi đơn thành công", d: "Không phí đăng bán, không phí tháng. Đơn không giao được thì không thu." },
-  { icon: "package_2", who: "Người mua", t: "Phí đóng gói & vận chuyển gom", d: "Tính theo chuyến xe gom. Gom đơn đủ nhóm là được miễn." },
-  { icon: "event_repeat", who: "Người mua", t: "Hộp rau gia đình giá cố định", d: "Gói tuần / tháng một mức giá, giao đúng hẹn, đổi món trước 24h." },
-];
-
-export const HOME_FEATURES = [
-  { icon: "visibility", title: "Thấy tận gốc", text: "Nhật ký canh tác mỗi ngày từ chính bác nông dân." },
-  { icon: "local_shipping", title: "Tươi trong ngày", text: "Thu hoạch sáng, xe lạnh về phố, giao chiều." },
-  { icon: "groups", title: "Gom đơn freeship", text: "Rủ hàng xóm cùng mua, đủ nhóm là miễn ship." },
+  { icon: "sms", t: "Chỉ một tin nhắn mỗi ngày", d: "18h00 hệ thống gửi đúng một lệnh thu hoạch cho sáng hôm sau, viết thành một câu dễ đọc." },
+  { icon: "touch_app", t: "Một nút xác nhận", d: "Đọc xong bấm “Đã hiểu & Xác nhận”. Không cần đăng bài, không cần quản lý kho." },
+  { icon: "eco", t: "Cắt đúng lượng, rau thừa 0%", d: "Lệnh được tính theo sức trồng bác đã đăng ký, nên cắt bao nhiêu là có người ăn bấy nhiêu." },
 ];

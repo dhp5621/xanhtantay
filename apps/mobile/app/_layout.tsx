@@ -6,7 +6,6 @@ import { Redirect, Stack, usePathname } from "expo-router";
 import * as Font from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import { SessionProvider, useSession } from "../hooks/useSession";
-import { CartProvider } from "../hooks/useCart";
 import { LiveProvider } from "../hooks/useLive";
 import { ThemeProvider, useTheme } from "../hooks/useTheme";
 import { usePushNotifications } from "../hooks/usePushNotifications";
@@ -46,13 +45,11 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.surface }}>
       <ThemeProvider>
         <SessionProvider>
-          <CartProvider>
-            <LiveProvider>
-              <DialogProvider>
-                <Navigator />
-              </DialogProvider>
-            </LiveProvider>
-          </CartProvider>
+          <LiveProvider>
+            <DialogProvider>
+              <Navigator />
+            </DialogProvider>
+          </LiveProvider>
         </SessionProvider>
       </ThemeProvider>
     </GestureHandlerRootView>
@@ -60,7 +57,7 @@ export default function RootLayout() {
 }
 
 // Signed-out visitors may only open these (the web shows visitors just the landing page + login;
-// the public package trace stays reachable since a QR sticker links straight to it).
+// the public box trace stays reachable since the QR code on a box links straight to it).
 const PUBLIC_PATHS = new Set(["/", "/tabs", "/tabs/index", "/tabs/tai-khoan", "/dang-nhap", "/tra-cuu"]);
 
 function Navigator() {
@@ -91,14 +88,13 @@ function Navigator() {
         <Stack.Screen name="index" />
         <Stack.Screen name="tabs" options={{ animation: "fade" }} />
         <Stack.Screen name="dang-nhap/index" options={{ animation: "fade_from_bottom" }} />
+        <Stack.Screen name="hop-rau/[slug]" options={{ headerShown: true, title: "Hộp rau" }} />
+        <Stack.Screen name="don-hang/[id]" options={{ headerShown: true, title: "Chi tiết đơn hàng" }} />
+        <Stack.Screen name="farms/index" options={{ headerShown: true, title: "Vườn rau" }} />
         <Stack.Screen name="farms/[id]" options={{ headerShown: true, title: "Vườn rau" }} />
-        <Stack.Screen name="nhat-ky/[id]" options={{ headerShown: true, title: "Nhật ký vườn" }} />
-        <Stack.Screen name="cart/index" options={{ headerShown: true, title: "Giỏ rau", presentation: "modal", animation: "slide_from_bottom" }} />
-        <Stack.Screen name="vuon-cua-toi/index" options={{ headerShown: true, title: "Vườn của tôi" }} />
-        <Stack.Screen name="dinh-ky/index" options={{ headerShown: true, title: "Gói đăng ký" }} />
-        <Stack.Screen name="ke-hoach/[id]" options={{ headerShown: true, title: "Kế hoạch ăn" }} />
-        <Stack.Screen name="tra-cuu/index" options={{ headerShown: true, title: "Tra cứu gói rau" }} />
-        <Stack.Screen name="tem/[id]" options={{ headerShown: true, title: "Tem QR" }} />
+        <Stack.Screen name="dinh-ky/index" options={{ headerShown: true, title: "Gói định kỳ" }} />
+        <Stack.Screen name="tra-cuu/index" options={{ headerShown: true, title: "Truy xuất hộp rau" }} />
+        <Stack.Screen name="tra-cuu/[id]" options={{ headerShown: true, title: "Truy xuất hộp rau" }} />
       </Stack>
     </>
   );

@@ -93,17 +93,6 @@ export async function apiFetch(path: string, options?: RequestInit) {
   return res.json();
 }
 
-/** Multipart upload (no JSON content-type so the native layer sets the boundary itself). */
-export async function apiUpload(path: string, form: FormData) {
-  await ensureCookieRestored();
-  const res = await fetch(`${API_URL}/api${path}`, { method: "POST", credentials: "include", body: form });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new ApiError(err.error ?? `Lỗi ${res.status}`, res.status);
-  }
-  return res.json();
-}
-
 /** Mirrors the NextAuth Credentials sign-in flow (CSRF token, then callback) used by the web login form. */
 export async function login(email: string, password: string) {
   await ensureCookieRestored();

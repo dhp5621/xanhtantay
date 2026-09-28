@@ -1,6 +1,5 @@
 import { Header } from "./Header";
 import { NavBar } from "./NavBar";
-import { CartSheet } from "@/components/cart/CartSheet";
 import { NavigationProgress } from "./NavigationProgress";
 import { Suspense } from "react";
 
@@ -12,7 +11,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <Suspense fallback={null}><NavigationProgress /></Suspense>
       {children}
       <NavBar />
-      <CartSheet />
     </>
   );
 }

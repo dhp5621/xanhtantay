@@ -1,52 +1,65 @@
-import { useCallback, useState } from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, KeyboardAvoidingView, Platform } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import * as ImagePicker from "expo-image-picker";
 import { router, useFocusEffect } from "expo-router";
+import type { Cluster } from "@xanhtantay/types";
 import { apiFetch, ApiError } from "../../constants/api";
 import { colors, shape, type, useStyles } from "../../constants/theme";
-import { pickMedia, makeAvatarDataUrl } from "../../constants/media";
-import * as ImagePicker from "expo-image-picker";
+import { makeAvatarDataUrl } from "../../constants/media";
+import { formatKg } from "../../constants/format";
+import type { FarmProfile, Me } from "../../constants/types";
 import { useSession } from "../../hooks/useSession";
 import { useTheme } from "../../hooks/useTheme";
-import { AnimIn, AnimInScale, PressableScale, Skeleton } from "../../components/motion";
-import { Avatar, Button, ListItem, Screen, StatTile } from "../../components/ui";
-import { Icon } from "../../components/Icon";
 import { useLiveRefresh } from "../../hooks/useLive";
+import { AnimIn, AnimInScale, PressableScale, Skeleton } from "../../components/motion";
+import { Avatar, Button, Chip, ListItem, Screen } from "../../components/ui";
+import { ClusterPicker } from "../../components/ClusterPicker";
+import { Icon } from "../../components/Icon";
 import type { Colors } from "../../constants/theme";
 import { useDialog } from "../../components/Dialog";
 import { Loader } from "../../components/Loader";
 
-interface Me {
-  id: string;
-  name: string;
-  email: string | null;
-  phone: string | null;
-  role: "customer" | "farmer";
-  avatar_url: string | null;
-  stats: Record<string, number>;
-  farm: { id: string; name: string; slug: string; location: string } | null;
-}
+const CUSTOMER_MENU = [
+  { href: "/tabs/don-hang", icon: "package_2", label: "Đơn hàng", desc: "Theo dõi hộp rau theo từng giờ" },
+  { href: "/dinh-ky", icon: "event_repeat", label: "Gói định kỳ", desc: "Tự lên đơn mỗi kỳ, miễn phí giao" },
+  { href: "/tabs/gom-don", icon: "groups", label: "Gom đơn", desc: "Đặt chung với hàng xóm cùng toà" },
+  { href: "/tra-cuu", icon: "qr_code_2", label: "Quét mã QR", desc: "Xem vườn trồng và giờ thu hoạch của một hộp rau" },
+  { href: "/farms", icon: "potted_plant", label: "Vườn rau", desc: "Những nhà vườn trồng rau cho bạn" },
+];
 
-/** Mirrors apps/web/src/app/(customer)/tai-khoan/page.tsx + AvatarUploader. */
+/** Account: avatar, contact details, the building that receives the boxes, theme and sign-out. */
 export default function TaiKhoanScreen() {
   const { alert } = useDialog();
   const styles = useStyles(makeStyles);
   const { user, loading, logout, refresh } = useSession();
   const [me, setMe] = useState<Me | null>(null);
+  const [farm, setFarm] = useState<FarmProfile | null>(null);
+  const [clusters, setClusters] = useState<Cluster[]>([]);
+  const [form, setForm] = useState<{ name: string; phone: string; cluster_id: string | null; address: string } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const isFarmer = user?.role === "farmer";
 
   const load = useCallback(async () => {
     if (!user) {
       setMe(null);
+      setFarm(null);
+      setForm(null);
       return;
     }
     try {
-      setMe(await apiFetch("/users/me"));
+      const profile: Me = await apiFetch("/users/me");
+      setMe(profile);
+      // Keep what the user is typing; only seed the form the first time.
+      setForm((f) => f ?? { name: profile.name ?? "", phone: profile.phone ?? "", cluster_id: profile.cluster_id ?? null, address: profile.address ?? "" });
     } catch {
       // stale session → the account page just shows the login CTA
     }
+    if (user.role === "farmer") setFarm(await apiFetch("/farms/mine").catch(() => null));
+    else setClusters((await apiFetch("/clusters").catch(() => null)) ?? []);
   }, [user]);
 
   useLiveRefresh(load);
@@ -55,6 +68,10 @@ export default function TaiKhoanScreen() {
       load();
     }, [load])
   );
+  // A different account on the same phone starts from its own details.
+  useEffect(() => {
+    setForm(null);
+  }, [user?.id]);
 
   const saveAvatar = async (avatar_url: string | null) => {
     setBusy(true);
@@ -93,15 +110,35 @@ export default function TaiKhoanScreen() {
     ], { icon: "photo_camera" });
   };
 
+  const dirty = !!form && !!me && (form.name.trim() !== (me.name ?? "") || form.phone.trim() !== (me.phone ?? "") || form.cluster_id !== (me.cluster_id ?? null) || form.address.trim() !== (me.address ?? ""));
+
+  const saveProfile = async () => {
+    if (!form) return;
+    if (!form.name.trim()) {
+      alert("Thiếu tên", "Bạn điền tên để bác giao hàng gọi cho đúng nhé.");
+      return;
+    }
+    setSaving(true);
+    try {
+      const body = { name: form.name.trim(), phone: form.phone.trim(), cluster_id: form.cluster_id, address: form.address.trim() };
+      await apiFetch("/users/me", { method: "PATCH", body: JSON.stringify(body) });
+      setMe((m) => (m ? { ...m, ...body, phone: body.phone || null, address: body.address || null, cluster: clusters.find((c) => c.id === body.cluster_id) ?? null } : m));
+      setForm({ ...body });
+      refresh().catch(() => {});
+      alert("Đã lưu thông tin", "Các đơn mới sẽ mặc định giao tới địa chỉ này.", undefined, { icon: "check_circle" });
+    } catch (e) {
+      alert("Không lưu được", e instanceof ApiError ? e.message : "Có lỗi xảy ra");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (loading) {
     return (
       <Screen style={{ padding: 20, gap: 12 }}>
         <Skeleton height={140} radius={shape.xlIncreased} />
-        <View style={{ flexDirection: "row", gap: 8 }}>
-          <Skeleton height={96} radius={shape.lgIncreased} width="32%" />
-          <Skeleton height={96} radius={shape.lgIncreased} width="32%" />
-          <Skeleton height={96} radius={shape.lgIncreased} width="32%" />
-        </View>
+        <Skeleton height={220} radius={shape.xl} />
+        <Skeleton height={72} radius={shape.lg} />
       </Screen>
     );
   }
@@ -115,7 +152,7 @@ export default function TaiKhoanScreen() {
               <Avatar name="?" size={72} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.heroName}>Chào bạn</Text>
-                <Text style={styles.heroSub}>Đăng nhập để xem đơn hàng, gói định kỳ và tích điểm trồng cây.</Text>
+                <Text style={styles.heroSub}>Đăng nhập để đặt hộp rau, theo dõi đơn hàng và gom đơn cùng toà nhà.</Text>
               </View>
             </View>
           </AnimInScale>
@@ -123,7 +160,7 @@ export default function TaiKhoanScreen() {
             <Button label="Đăng nhập" icon="login" onPress={() => router.push("/dang-nhap")} />
           </AnimIn>
           <AnimIn delay={140}>
-            <ListItem icon="qr_code_2" title="Tra cứu gói rau" desc="Quét tem QR hoặc nhập mã để xem hành trình" onPress={() => router.push("/tra-cuu")} />
+            <ListItem icon="qr_code_2" title="Quét mã QR" desc="Quét mã trên hộp rau để xem vườn trồng và hành trình" onPress={() => router.push("/tra-cuu")} />
           </AnimIn>
           <AnimIn delay={200}>
             <ThemePicker />
@@ -133,109 +170,124 @@ export default function TaiKhoanScreen() {
     );
   }
 
-  const isFarmer = user.role === "farmer";
   const name = me?.name ?? user.name ?? "";
-  const subtitle = isFarmer ? (me?.farm ? `${me.farm.name} · ${me.farm.location}` : "Chưa gắn với vườn nào") : (me?.email ?? user.email ?? "");
-
-  const stats = isFarmer
-    ? [
-        { icon: "pending_actions", label: "Đơn chờ hái", value: me?.stats.pendingOrders ?? 0, href: "/tabs/farmer-don-hang" },
-        { icon: "nutrition", label: "Sản phẩm", value: me?.stats.products ?? 0, href: "/tabs/farmer-san-pham" },
-        { icon: "event_repeat", label: "Khách đăng ký", value: me?.stats.subscribers ?? 0, href: "/tabs/farmer-dang-ky" },
-      ]
-    : [
-        { icon: "package_2", label: "Đơn hàng", value: me?.stats.orders ?? 0, href: "/tabs/don-hang" },
-        { icon: "event_repeat", label: "Gói đang chạy", value: me?.stats.activeSubscriptions ?? 0, href: "/dinh-ky" },
-        { icon: "groups", label: "Nhóm gom đơn", value: me?.stats.groups ?? 0, href: "/tabs/gom-don" },
-      ];
-
-  const menu = isFarmer
-    ? [
-        { href: "/tabs/farmer", icon: "dashboard", label: "Tổng quan vườn", desc: "Số liệu và đơn gần đây" },
-        { href: "/tabs/farmer-don-hang", icon: "package_2", label: "Đơn hàng", desc: "Thu hoạch, lên xe, đã giao" },
-        { href: "/tabs/farmer-san-pham", icon: "inventory_2", label: "Sản phẩm & tồn kho", desc: "Bật tắt món còn hàng, đổi giá" },
-        { href: "/tabs/farmer-nhat-ky", icon: "photo_camera", label: "Đăng nhật ký vườn", desc: "Ảnh, video từ vườn hôm nay" },
-        { href: "/tabs/farmer-dang-ky", icon: "event_repeat", label: "Khách đăng ký", desc: "Gói giao định kỳ từ vườn bạn" },
-        ...(me?.farm ? [{ href: `/farms/${me.farm.id}`, icon: "storefront", label: "Xem trang vườn của tôi", desc: "Như khách hàng nhìn thấy" }] : []),
-      ]
-    : [
-        { href: "/cart", icon: "shopping_basket", label: "Giỏ hàng của tôi", desc: "Các món đã chọn chờ đặt hàng" },
-        { href: "/vuon-cua-toi", icon: "park", label: "Vườn của tôi", desc: "Điểm, hạng và cây bạn đã trồng" },
-        { href: "/tabs/don-hang", icon: "package_2", label: "Đơn hàng của tôi", desc: "Theo dõi hành trình rau" },
-        { href: "/dinh-ky", icon: "event_repeat", label: "Gói đăng ký", desc: "Giao định kỳ tuần / tháng" },
-        { href: "/tabs/gom-don", icon: "groups", label: "Gom đơn chung", desc: "Mua chung, chia ship" },
-        { href: "/tra-cuu", icon: "search", label: "Tra cứu gói rau", desc: "Xem hành trình một gói rau" },
-      ];
+  const subtitle = isFarmer ? (farm ? `${farm.name} · ${farm.province}` : "Chưa gắn với vườn nào") : (me?.email ?? user.email ?? "");
 
   return (
     <Screen>
-      <ScrollView
-        contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 40 }}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={async () => {
-              setRefreshing(true);
-              await Promise.all([load(), refresh()]);
-              setRefreshing(false);
-            }}
-            colors={[colors.primary]}
-            tintColor={colors.primary}
-          />
-        }
-      >
-        <AnimInScale>
-          <LinearGradient colors={isFarmer ? [colors.tertiaryContainer, colors.primaryContainer] : [colors.primaryContainer, colors.tertiaryContainer]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.hero}>
-            <View style={{ position: "relative" }}>
-              <Avatar name={name} src={me?.avatar_url ?? user.image} size={80} tone={isFarmer ? "tertiary" : "primary"} />
-              <PressableScale haptic scaleTo={0.9} style={styles.avatarBtn} onPress={changeAvatar} disabled={busy}>
-                {busy ? <Loader size={18} color={colors.onPrimary} /> : <Icon name="photo_camera" size={15} filled color={colors.onPrimary} />}
-              </PressableScale>
-            </View>
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <Text style={styles.heroName}>{name}</Text>
-              <Text style={styles.heroSub} numberOfLines={1}>{subtitle}</Text>
-              <View style={styles.roleChip}>
-                <Text style={styles.roleChipText}><Icon name={isFarmer ? "agriculture" : "shopping_basket"} size={14} filled color={colors.onSurface} /> {isFarmer ? "Nhà vườn" : "Khách hàng"}</Text>
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
+        <ScrollView
+          contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 40 }}
+          keyboardShouldPersistTaps="handled"
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={async () => {
+                setRefreshing(true);
+                await Promise.all([load(), refresh()]);
+                setRefreshing(false);
+              }}
+              colors={[colors.primary]}
+              tintColor={colors.primary}
+            />
+          }
+        >
+          <AnimInScale>
+            <LinearGradient colors={isFarmer ? [colors.tertiaryContainer, colors.primaryContainer] : [colors.primaryContainer, colors.tertiaryContainer]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.hero}>
+              <View style={{ position: "relative" }}>
+                <Avatar name={name} src={me?.avatar_url ?? user.image} size={80} tone={isFarmer ? "tertiary" : "primary"} />
+                <PressableScale haptic scaleTo={0.9} style={styles.avatarBtn} onPress={changeAvatar} disabled={busy}>
+                  {busy ? <Loader size={18} color={colors.onPrimary} /> : <Icon name="photo_camera" size={15} filled color={colors.onPrimary} />}
+                </PressableScale>
               </View>
-            </View>
-          </LinearGradient>
-        </AnimInScale>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={styles.heroName}>{name}</Text>
+                <Text style={styles.heroSub} numberOfLines={1}>{subtitle}</Text>
+                <View style={styles.roleChip}>
+                  <Icon name={isFarmer ? "agriculture" : "inventory_2"} size={14} filled color={colors.onSurface} />
+                  <Text style={styles.roleChipText}>{isFarmer ? "Nhà vườn" : "Khách hàng"}</Text>
+                </View>
+              </View>
+            </LinearGradient>
+          </AnimInScale>
 
-        <View style={{ flexDirection: "row", gap: 8 }}>
-          {stats.map((s, i) => (
-            <AnimIn key={s.label} index={i} delay={80} style={{ flex: 1 }}>
-              <StatTile icon={s.icon} value={s.value} label={s.label} onPress={() => router.push(s.href as never)} />
+          {isFarmer ? (
+            <AnimIn delay={80}>
+              <Text style={styles.sectionLabel}>VƯỜN CỦA TÔI</Text>
+              {farm ? (
+                <View style={styles.card}>
+                  <Text style={styles.cardTitle}>{farm.name}</Text>
+                  <View style={styles.infoRow}>
+                    <Icon name="location_on" size={18} color={colors.onSurfaceVariant} />
+                    <Text style={styles.infoText}>
+                      {farm.location}
+                      {farm.province && !farm.location?.includes(farm.province) ? `, ${farm.province}` : ""}
+                    </Text>
+                  </View>
+                  {farm.description ? <Text style={[styles.muted, { marginTop: 8 }]}>{farm.description}</Text> : null}
+                  {farm.grows?.length ? (
+                    <>
+                      <Text style={[styles.sectionLabel, { marginTop: 14 }]}>SỨC TRỒNG ĐÃ ĐĂNG KÝ MỖI NGÀY</Text>
+                      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                        {farm.grows.map((g) => (
+                          <Chip key={g.produce_id} icon="eco" label={`${g.name} · ${formatKg(g.daily_kg)}`} tone="primary" small />
+                        ))}
+                      </View>
+                    </>
+                  ) : null}
+                </View>
+              ) : (
+                <View style={[styles.card, { backgroundColor: colors.errorContainer }]}>
+                  <Text style={[styles.muted, { color: colors.onErrorContainer }]}>Tài khoản này chưa gắn với vườn nào. Bác liên hệ quản trị để được tạo vườn nhé.</Text>
+                </View>
+              )}
             </AnimIn>
-          ))}
-        </View>
+          ) : (
+            <>
+              <AnimIn delay={80}>
+                <Text style={styles.sectionLabel}>THÔNG TIN NHẬN RAU</Text>
+                <View style={styles.card}>
+                  <Text style={styles.label}>Họ tên</Text>
+                  <TextInput style={styles.input} value={form?.name ?? ""} onChangeText={(v) => setForm((f) => (f ? { ...f, name: v } : f))} placeholder="Tên của bạn" placeholderTextColor={colors.onSurfaceVariant} maxLength={80} autoComplete="name" />
+                  <Text style={styles.label}>Số điện thoại</Text>
+                  <TextInput style={styles.input} value={form?.phone ?? ""} onChangeText={(v) => setForm((f) => (f ? { ...f, phone: v } : f))} placeholder="Để bác giao hàng gọi khi rau tới sảnh" placeholderTextColor={colors.onSurfaceVariant} keyboardType="phone-pad" maxLength={20} autoComplete="tel" />
+                  <Text style={styles.label}>Cụm chung cư</Text>
+                  <ClusterPicker clusters={clusters} value={form?.cluster_id ?? null} onChange={(id) => setForm((f) => (f ? { ...f, cluster_id: id } : f))} />
+                  <Text style={styles.label}>Toà, tầng, số căn hộ</Text>
+                  <TextInput style={styles.input} value={form?.address ?? ""} onChangeText={(v) => setForm((f) => (f ? { ...f, address: v } : f))} placeholder="Ví dụ: Toà S2, căn 1508" placeholderTextColor={colors.onSurfaceVariant} maxLength={160} />
+                  <Button label="Lưu thông tin" icon="check" onPress={saveProfile} loading={saving} disabled={!dirty} style={{ alignSelf: "stretch", marginTop: 16 }} />
+                </View>
+              </AnimIn>
 
-        <View>
-          {menu.map((m, i) => (
-            <AnimIn key={m.href} index={i} delay={160}>
-              <ListItem icon={m.icon} title={m.label} desc={m.desc} onPress={() => router.push(m.href as never)} />
-            </AnimIn>
-          ))}
-        </View>
+              <View>
+                {CUSTOMER_MENU.map((m, i) => (
+                  <AnimIn key={m.href} index={i} delay={160}>
+                    <ListItem icon={m.icon} title={m.label} desc={m.desc} onPress={() => router.push(m.href as never)} />
+                  </AnimIn>
+                ))}
+              </View>
+            </>
+          )}
 
-        <AnimIn delay={280}>
-          <ThemePicker />
-        </AnimIn>
+          <AnimIn delay={280}>
+            <ThemePicker />
+          </AnimIn>
 
-        <AnimIn delay={320}>
-          <TouchableOpacity
-            style={styles.logoutBtn}
-            disabled={signingOut}
-            onPress={async () => {
-              setSigningOut(true);
-              await logout();
-              setSigningOut(false);
-            }}
-          >
-            {signingOut ? <Loader size={22} color={colors.error} /> : <Text style={styles.logoutBtnText}>Đăng xuất</Text>}
-          </TouchableOpacity>
-        </AnimIn>
-      </ScrollView>
+          <AnimIn delay={320}>
+            <TouchableOpacity
+              style={styles.logoutBtn}
+              disabled={signingOut}
+              onPress={async () => {
+                setSigningOut(true);
+                await logout();
+                setSigningOut(false);
+              }}
+            >
+              {signingOut ? <Loader size={22} color={colors.error} /> : <Text style={styles.logoutBtnText}>Đăng xuất</Text>}
+            </TouchableOpacity>
+          </AnimIn>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </Screen>
   );
 }
@@ -273,8 +325,15 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
   hero: { flexDirection: "row", alignItems: "center", gap: 18, borderRadius: shape.xlIncreased, padding: 24 },
   heroName: { ...type.headlineSmall, color: colors.onPrimaryContainer, fontSize: 22 },
   heroSub: { ...type.bodyMedium, color: colors.onPrimaryContainer, opacity: 0.8, fontSize: 13 },
-  roleChip: { alignSelf: "flex-start", marginTop: 8, backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.full, paddingVertical: 4, paddingHorizontal: 10 },
-  roleChipText: { ...type.labelLarge, color: colors.onSurface, fontSize: 12 },
+  roleChip: { flexDirection: "row", alignItems: "center", gap: 5, alignSelf: "flex-start", marginTop: 8, backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.full, paddingVertical: 4, paddingHorizontal: 10 },
+  roleChipText: { ...type.labelLarge, color: colors.onSurface, fontSize: 12, lineHeight: 16 },
+  muted: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 13 },
+  card: { backgroundColor: colors.surfaceContainerLow, borderRadius: shape.xl, padding: 18 },
+  cardTitle: { ...type.titleLarge, color: colors.onSurface, fontSize: 19, lineHeight: 25 },
+  infoRow: { flexDirection: "row", alignItems: "flex-start", gap: 8, marginTop: 6 },
+  infoText: { ...type.bodyMedium, color: colors.onSurface, fontSize: 14, flex: 1 },
+  label: { ...type.labelLarge, color: colors.onSurfaceVariant, fontSize: 12, marginTop: 12, marginBottom: 6 },
+  input: { backgroundColor: colors.surfaceContainer, borderRadius: shape.md, padding: 13, color: colors.onSurface, fontSize: 15, borderWidth: 1, borderColor: colors.outlineVariant },
   avatarBtn: { position: "absolute", right: -4, bottom: -4, width: 30, height: 30, borderRadius: 15, backgroundColor: colors.primary, borderWidth: 2, borderColor: colors.surfaceContainerLowest, alignItems: "center", justifyContent: "center" },
   sectionLabel: { ...type.labelLarge, color: colors.onSurfaceVariant, fontSize: 11, letterSpacing: 0.6, marginBottom: 8 },
   segmented: { flexDirection: "row", borderRadius: shape.full, borderWidth: 1, borderColor: colors.outlineVariant, overflow: "hidden" },

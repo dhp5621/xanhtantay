@@ -2,42 +2,29 @@ import { useEffect, useState } from "react";
 import { View, Text, StyleSheet, TextInput, ScrollView, Modal, Platform } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import * as Haptics from "expo-haptics";
-import { useLocalSearchParams } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { router, useLocalSearchParams } from "expo-router";
 import { apiFetch, ApiError } from "../../constants/api";
-import { colors, shape, type, elevation, emojiFont, useStyles, type Colors } from "../../constants/theme";
-import { formatDateTime } from "../../constants/format";
-import { AnimIn, AnimInScale, PressableScale } from "../../components/motion";
+import { colors, shape, type, elevation, useStyles, type Colors } from "../../constants/theme";
+import type { OrderTrace } from "../../constants/types";
+import { useSession } from "../../hooks/useSession";
+import { AnimIn, PressableScale } from "../../components/motion";
 import { Button, PageHeader } from "../../components/ui";
+import { TraceView } from "../../components/TraceView";
 import { QrImage } from "../../components/QrImage";
-import { SmartImage } from "../../components/SmartImage";
 import { Icon } from "../../components/Icon";
 import { Loader } from "../../components/Loader";
 
-const STATUS_LABEL: Record<string, string> = {
-  harvesting: "Rau đang được nhà vườn thu hoạch",
-  loaded: "Hàng đã lên xe lạnh về phố",
-  delivered: "Đồ quê đã đến tận cửa nhà bạn",
-};
-const STEPS = ["harvesting", "loaded", "delivered"];
-const STEP_ICONS = ["agriculture", "local_shipping", "home"];
-const STEP_LABELS = ["Thu hoạch", "Lên xe", "Đã giao"];
-
-interface TraceResult {
-  id: string;
-  status: string;
-  created_at: string;
-  farm: { name: string; location: string; cover_url?: string | null };
-  items: { id: string; product_name?: string | null; product_unit?: string | null; quantity: number }[];
-}
-
-/** Mirrors apps/web/src/app/tra-cuu/[id] — the public package trace a QR sticker opens, plus an in-app scanner. */
+/** The public trace the QR code on a box opens, plus an in-app scanner and manual code entry. */
 export default function TraCuuScreen() {
   const styles = useStyles(makeStyles);
+  const insets = useSafeAreaInsets();
+  const { user } = useSession();
   const params = useLocalSearchParams<{ id?: string }>();
   const [code, setCode] = useState(params.id ?? "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<TraceResult | null>(null);
+  const [result, setResult] = useState<OrderTrace | null>(null);
   const [scanning, setScanning] = useState(false);
 
   const lookup = async (raw = code) => {
@@ -49,9 +36,9 @@ export default function TraCuuScreen() {
     setError(null);
     setResult(null);
     try {
-      setResult(await apiFetch(`/orders/${id}`));
+      setResult(await apiFetch(`/orders/${encodeURIComponent(id)}`));
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Không tra cứu được");
+      setError(e instanceof ApiError ? (e.status === 404 ? "Không tìm thấy hộp rau với mã này. Bạn kiểm tra lại mã nhé." : e.message) : "Không truy xuất được, bạn thử lại nhé.");
     } finally {
       setLoading(false);
     }
@@ -62,11 +49,9 @@ export default function TraCuuScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id]);
 
-  const stepIdx = result ? STEPS.indexOf(result.status) : -1;
-
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: 16, paddingBottom: 32 }} keyboardShouldPersistTaps="handled">
-      <PageHeader icon="qr_code_2" eyebrow="Quét là biết" title="Tra cứu gói rau" subtitle="Quét tem QR trên gói, hoặc nhập mã đơn hàng in trên tem." />
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 16, paddingBottom: 32 + insets.bottom }} keyboardShouldPersistTaps="handled">
+      <PageHeader icon="qr_code_2" eyebrow="Quét là biết" title="Truy xuất hộp rau" subtitle="Quét mã QR trên hộp, hoặc nhập mã đơn để xem rau từ vườn nào, cắt lúc mấy giờ." />
 
       <AnimIn>
         <PressableScale haptic style={[styles.scanCard, elevation[1]]} onPress={() => setScanning(true)}>
@@ -74,8 +59,8 @@ export default function TraCuuScreen() {
             <Icon name="qr_code_2" size={30} color={colors.onPrimary} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.scanTitle}>Quét mã QR trên tem</Text>
-            <Text style={styles.muted}>Mở camera, đưa tem vào khung là xong</Text>
+            <Text style={styles.scanTitle}>Quét mã QR trên hộp</Text>
+            <Text style={styles.muted}>Mở camera, đưa mã vào khung là xong</Text>
           </View>
           <Icon name="chevron_right" size={24} color={colors.onSurfaceVariant} />
         </PressableScale>
@@ -87,7 +72,7 @@ export default function TraCuuScreen() {
           <Icon name="search" size={22} color={colors.onSurfaceVariant} />
           <TextInput
             style={styles.input}
-            placeholder="Mã đơn hàng hoặc link tem…"
+            placeholder="Mã đơn hàng hoặc đường link trên mã QR…"
             placeholderTextColor={colors.onSurfaceVariant}
             value={code}
             onChangeText={setCode}
@@ -102,7 +87,7 @@ export default function TraCuuScreen() {
             </PressableScale>
           ) : null}
         </View>
-        <Button label="Tra cứu" icon="search" onPress={() => lookup()} loading={loading} disabled={loading || !code.trim()} style={{ marginTop: 10 }} />
+        <Button label="Truy xuất" icon="search" onPress={() => lookup()} loading={loading} disabled={loading || !code.trim()} style={{ marginTop: 10 }} />
       </AnimIn>
 
       {error && (
@@ -115,44 +100,18 @@ export default function TraCuuScreen() {
       )}
 
       {result && (
-        <AnimInScale>
-          <View style={[styles.resultCard, elevation[1]]}>
-            {result.farm.cover_url ? <SmartImage uri={result.farm.cover_url} style={styles.cover} /> : null}
-            <Text style={styles.farmName}>{result.farm.name}</Text>
-            <Text style={styles.muted}>
-              <Icon name="location_on" size={12} filled color={colors.onSurfaceVariant} /> {result.farm.location}
-            </Text>
-
-            <View style={styles.statusBadge}>
-              <Icon name={STEP_ICONS[Math.max(0, stepIdx)]} size={20} filled color={colors.onPrimaryContainer} />
-              <Text style={styles.statusBadgeText}>{STATUS_LABEL[result.status] ?? result.status}</Text>
-            </View>
-
-            <View style={styles.stepsRow}>
-              {STEPS.map((s, i) => (
-                <View key={s} style={{ flex: 1, alignItems: "center" }}>
-                  <View style={[styles.stepDot, i <= stepIdx && styles.stepDotDone]}>
-                    <Icon name={STEP_ICONS[i]} size={18} filled color={i <= stepIdx ? colors.onPrimaryContainer : colors.onSurfaceVariant} />
-                  </View>
-                  <Text style={[styles.stepLabel, i <= stepIdx && { color: colors.primary, fontWeight: "700" }]}>{STEP_LABELS[i]}</Text>
-                </View>
-              ))}
-            </View>
-
-            <Text style={styles.blockLabel}>TRONG GÓI NÀY</Text>
-            {result.items?.map((it) => (
-              <Text key={it.id} style={styles.itemLine}>
-                • {it.quantity} {it.product_unit} {it.product_name}
-              </Text>
-            ))}
-            <Text style={[styles.muted, { marginTop: 10 }]}>Đặt lúc {formatDateTime(result.created_at)} · Mã #{result.id.slice(0, 8).toUpperCase()}</Text>
-
-            <View style={{ alignItems: "center", marginTop: 16 }}>
-              <QrImage orderId={result.id} size={150} />
-              <Text style={[styles.muted, { marginTop: 8 }]}>Quét mã để xem vườn, nhật ký và hành trình gói rau.</Text>
-            </View>
-          </View>
-        </AnimInScale>
+        <View style={{ marginTop: 24 }}>
+          {/* Visitors cannot open farm profiles, so farms are only links for signed-in customers. */}
+          <TraceView trace={result} linkFarms={user?.role === "customer"}>
+            <AnimIn>
+              <View style={styles.qrCard}>
+                <QrImage orderId={result.id} size={150} />
+                <Text style={[styles.muted, { marginTop: 10, textAlign: "center" }]}>Mã QR của hộp rau này. Trang truy xuất không hiện thông tin người mua.</Text>
+                {result.mine ? <Button label="Mở đơn hàng của tôi" icon="package_2" variant="tonal" small onPress={() => router.push(`/don-hang/${result.id}`)} style={{ marginTop: 12 }} /> : null}
+              </View>
+            </AnimIn>
+          </TraceView>
+        </View>
       )}
 
       <Scanner
@@ -209,7 +168,7 @@ function Scanner({ visible, onClose, onScan }: { visible: boolean; onClose: () =
           </View>
         )}
         <View style={styles.scannerTop} pointerEvents="box-none">
-          <Text style={styles.scannerTitle}>Quét tem QR</Text>
+          <Text style={styles.scannerTitle}>Quét mã QR</Text>
           <PressableScale haptic style={styles.scannerClose} onPress={onClose}>
             <Icon name="close" size={22} color="#fff" />
           </PressableScale>
@@ -220,7 +179,7 @@ function Scanner({ visible, onClose, onScan }: { visible: boolean; onClose: () =
           <View style={[styles.corner, { bottom: 0, left: 0, borderBottomWidth: 4, borderLeftWidth: 4, borderBottomLeftRadius: 18 }]} />
           <View style={[styles.corner, { bottom: 0, right: 0, borderBottomWidth: 4, borderRightWidth: 4, borderBottomRightRadius: 18 }]} />
         </View>
-        <Text style={styles.scannerHint} pointerEvents="none">Đưa mã QR trên tem vào trong khung</Text>
+        <Text style={styles.scannerHint} pointerEvents="none">Đưa mã QR trên hộp rau vào trong khung</Text>
       </View>
     </Modal>
   );
@@ -238,17 +197,7 @@ const makeStyles = (colors: Colors) =>
     input: { flex: 1, fontSize: 15, color: colors.onSurface },
     errorBox: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: colors.errorContainer, borderRadius: shape.md, padding: 12, marginTop: 14 },
     errorText: { ...type.bodyMedium, color: colors.onErrorContainer, flex: 1 },
-    resultCard: { backgroundColor: colors.surfaceContainerLow, borderRadius: shape.xl, padding: 18, marginTop: 20 },
-    cover: { width: "100%", height: 150, borderRadius: shape.lg, marginBottom: 12 },
-    farmName: { ...type.titleLarge, color: colors.onSurface },
-    statusBadge: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: colors.primaryContainer, borderRadius: shape.md, padding: 12, marginTop: 14 },
-    statusBadgeText: { ...type.labelLarge, color: colors.onPrimaryContainer, flex: 1 },
-    stepsRow: { flexDirection: "row", marginTop: 14 },
-    stepDot: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.surfaceContainerHighest, alignItems: "center", justifyContent: "center" },
-    stepDotDone: { backgroundColor: colors.primaryContainer },
-    stepLabel: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 11, marginTop: 4 },
-    blockLabel: { ...type.labelLarge, color: colors.onSurfaceVariant, marginTop: 16, marginBottom: 4, fontSize: 11, letterSpacing: 0.6 },
-    itemLine: { ...type.bodyMedium, color: colors.onSurface, marginTop: 2, fontSize: 14 },
+    qrCard: { alignItems: "center", backgroundColor: colors.surfaceContainerLow, borderRadius: shape.xl, padding: 18 },
     scanner: { flex: 1, backgroundColor: "#000" },
     scannerCenter: { flex: 1, alignItems: "center", justifyContent: "center", gap: 14, padding: 24 },
     scannerText: { ...type.bodyMedium, color: "#fff", textAlign: "center" },

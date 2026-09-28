@@ -39,14 +39,14 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Xanh Tận Tay cần dùng camera để quét tem QR trên gói rau."
+          "cameraPermission": "Xanh Tận Tay cần dùng camera để quét mã QR trên hộp rau."
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "Xanh Tận Tay cần truy cập thư viện ảnh để đăng ảnh vườn và ảnh đại diện.",
-          "cameraPermission": "Xanh Tận Tay cần dùng camera để chụp ảnh vườn và ảnh đại diện."
+          "photosPermission": "Xanh Tận Tay cần truy cập thư viện ảnh để chọn ảnh đại diện.",
+          "cameraPermission": "Xanh Tận Tay cần dùng camera để chụp ảnh đại diện."
         }
       ],
       "react-native-edge-to-edge",

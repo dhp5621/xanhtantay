@@ -1,47 +1,52 @@
 import { useCallback, useState } from "react";
-import { View, Text, FlatList, StyleSheet, RefreshControl, Modal, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, FlatList, StyleSheet, RefreshControl, Modal, TextInput, ScrollView, KeyboardAvoidingView, Platform, Pressable } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useFocusEffect } from "expo-router";
-import type { Farm, GroupOrder } from "@xanhtantay/types";
+import type { Cluster, GroupOrder } from "@xanhtantay/types";
 import { apiFetch, ApiError } from "../../../constants/api";
-import { colors, shape, type, elevation, emojiFont, useStyles } from "../../../constants/theme";
-import { daysUntil } from "../../../constants/format";
-import { useSession } from "../../../hooks/useSession";
-import { AnimIn, AnimatedProgress, PressableScale, Skeleton } from "../../../components/motion";
-import { Button, Chip, EmptyState } from "../../../components/ui";
-import { Icon } from "../../../components/Icon";
+import { colors, shape, type, elevation, useStyles, type Colors } from "../../../constants/theme";
+import { GROUP_MIN_MEMBERS, SIZE_LABELS } from "../../../constants/commerce";
+import { formatDay, formatVND } from "../../../constants/format";
+import type { BoxesResponse, Me } from "../../../constants/types";
 import { useLiveRefresh } from "../../../hooks/useLive";
-import type { Colors } from "../../../constants/theme";
+import { AnimIn, PressableScale, Skeleton } from "../../../components/motion";
+import { Button, Chip, EmptyState } from "../../../components/ui";
+import { GroupCard } from "../../../components/GroupCard";
+import { ClusterPicker } from "../../../components/ClusterPicker";
+import { QuantityStepper } from "../../../components/QuantityStepper";
 import { useDialog } from "../../../components/Dialog";
-import { EmojiText } from "../../../components/EmojiText";
+import { Icon } from "../../../components/Icon";
 
-const isoDay = (offset: number) => {
-  const d = new Date();
-  d.setDate(d.getDate() + offset);
-  return d.toISOString().slice(0, 10);
-};
+type Scope = "mine" | "all";
 
-/** Mirrors apps/web/src/app/(customer)/gom-don/page.tsx + CreateGroupDialog. */
+/** "Gom đơn chung": group orders per apartment cluster; enough homes at cut-off means free delivery for all. */
 export default function GomDonScreen() {
   const { alert } = useDialog();
   const styles = useStyles(makeStyles);
-  const { user } = useSession();
+  const insets = useSafeAreaInsets();
+  const [scope, setScope] = useState<Scope>("mine");
   const [groups, setGroups] = useState<GroupOrder[] | null>(null);
-  const [farms, setFarms] = useState<Farm[]>([]);
+  const [me, setMe] = useState<Me | null>(null);
+  const [clusters, setClusters] = useState<Cluster[]>([]);
+  const [catalog, setCatalog] = useState<BoxesResponse | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [form, setForm] = useState({ farm_id: "", title: "", min_members: 5, deadline: isoDay(3), shipping_address: "" });
+  const [form, setForm] = useState<{ box_id: string; cluster_id: string | null; title: string; min_members: number; quantity: number; address: string }>({ box_id: "", cluster_id: null, title: "", min_members: GROUP_MIN_MEMBERS.default, quantity: 1, address: "" });
 
   const load = useCallback(async () => {
     try {
-      const [g, f] = await Promise.all([apiFetch("/groups"), apiFetch("/farms")]);
-      setGroups(g);
-      setFarms(f);
-      setForm((x) => (x.farm_id ? x : { ...x, farm_id: f[0]?.id ?? "" }));
+      const profile: Me | null = await apiFetch("/users/me").catch(() => null);
+      setMe(profile);
+      const mine = scope === "mine" && profile?.cluster_id ? `?cluster_id=${encodeURIComponent(profile.cluster_id)}` : "";
+      const rows: GroupOrder[] = await apiFetch(`/groups${mine}`);
+      // Without a saved building "mine" has nothing to filter by, so it shows nothing rather than everything.
+      setGroups(scope === "mine" && !profile?.cluster_id ? [] : rows ?? []);
+      setForm((x) => ({ ...x, cluster_id: x.cluster_id ?? profile?.cluster_id ?? null, address: x.address || profile?.address || "" }));
     } catch {
       setGroups((g) => g ?? []);
     }
-  }, []);
+  }, [scope]);
 
   useLiveRefresh(load);
   useFocusEffect(
@@ -50,24 +55,44 @@ export default function GomDonScreen() {
     }, [load])
   );
 
-  const openDialog = () => {
-    if (!user) {
-      router.push("/dang-nhap?next=/tabs/gom-don");
-      return;
-    }
+  const openDialog = async () => {
     setOpen(true);
+    try {
+      const [c, b]: [Cluster[], BoxesResponse] = await Promise.all([apiFetch("/clusters"), apiFetch("/boxes")]);
+      setClusters(c ?? []);
+      setCatalog(b);
+      setForm((x) => (x.box_id ? x : { ...x, box_id: b.boxes.find((k) => k.active !== false)?.id ?? "" }));
+    } catch {
+      // the sheet shows its own empty states
+    }
   };
 
+  const boxes = (catalog?.boxes ?? []).filter((b) => b.active !== false);
+  const box = boxes.find((b) => b.id === form.box_id) ?? null;
+  const cluster = clusters.find((c) => c.id === form.cluster_id) ?? null;
+  const defaultTitle = box ? `Gom ${box.name}${cluster ? ` · ${cluster.name}` : ""}` : "";
+
   const submit = async () => {
-    if (!form.farm_id || !form.title.trim() || !form.shipping_address.trim()) {
-      alert("Thiếu thông tin", "Điền tên nhóm, chọn vườn và địa chỉ nhận chung nhé.");
+    if (!form.box_id || !form.cluster_id) {
+      alert("Thiếu thông tin", "Bạn chọn hộp rau và cụm chung cư nhận hàng nhé.");
       return;
     }
     setBusy(true);
     try {
-      const data = await apiFetch("/groups", { method: "POST", body: JSON.stringify({ ...form, title: form.title.trim(), shipping_address: form.shipping_address.trim(), min_members: Number(form.min_members) }) });
+      const data: GroupOrder = await apiFetch("/groups", {
+        method: "POST",
+        body: JSON.stringify({
+          box_id: form.box_id,
+          cluster_id: form.cluster_id,
+          title: form.title.trim() || defaultTitle,
+          min_members: form.min_members,
+          delivery_date: catalog?.delivery_date,
+          quantity: form.quantity,
+          address: form.address.trim() || undefined,
+        }),
+      });
       setOpen(false);
-      setForm((x) => ({ ...x, title: "", shipping_address: "" }));
+      setForm((x) => ({ ...x, title: "" }));
       router.push(`/tabs/gom-don/${data.id}`);
     } catch (e) {
       alert("Không tạo được nhóm", e instanceof ApiError ? e.message : "Có lỗi xảy ra");
@@ -75,6 +100,8 @@ export default function GomDonScreen() {
       setBusy(false);
     }
   };
+
+  const noCluster = scope === "mine" && !!me && !me.cluster_id;
 
   return (
     <View style={styles.container}>
@@ -96,101 +123,117 @@ export default function GomDonScreen() {
         contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
         ListHeaderComponent={
           <View style={{ marginBottom: 14 }}>
-            <Text style={styles.eyebrow}>Mua chung, chia ship</Text>
+            <Text style={styles.eyebrow}>Cùng toà nhà, chung một chuyến xe</Text>
             <Text style={styles.title}>Gom đơn chung</Text>
-            <Text style={styles.subtitle}>Rủ hàng xóm cùng mua để chia ship. Freeship khi nhóm đủ người.</Text>
+            <Text style={styles.subtitle}>Rủ hàng xóm cùng đặt hộp rau. Đủ số nhà lúc chốt sổ 18h00 là cả nhóm miễn phí giao.</Text>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 14 }}>
+              <Chip
+                icon={scope === "mine" ? "check" : "apartment"}
+                label={me?.cluster?.name ? `Toà nhà của tôi · ${me.cluster.name}` : "Toà nhà của tôi"}
+                selected={scope === "mine"}
+                onPress={() => {
+                  setGroups(null);
+                  setScope("mine");
+                }}
+              />
+              <Chip
+                icon={scope === "all" ? "check" : "public"}
+                label="Tất cả"
+                selected={scope === "all"}
+                onPress={() => {
+                  setGroups(null);
+                  setScope("all");
+                }}
+              />
+            </View>
           </View>
         }
         ListEmptyComponent={
           groups === null ? (
             <View style={{ gap: 12 }}>
-              <Skeleton height={130} radius={shape.xl} />
-              <Skeleton height={130} radius={shape.xl} />
+              <Skeleton height={140} radius={shape.xl} />
+              <Skeleton height={140} radius={shape.xl} />
             </View>
+          ) : noCluster ? (
+            <EmptyState icon="apartment" title="Bạn chưa chọn toà nhà" description="Lưu cụm chung cư trong mục Tài khoản để thấy các nhóm của hàng xóm." action={<Button label="Chọn cụm chung cư" icon="apartment" onPress={() => router.push("/tabs/tai-khoan")} />} />
           ) : (
-            <EmptyState icon="groups" title="Chưa có nhóm gom đơn nào" description="Hãy là người đầu tiên tạo nhóm cho khu của bạn." action={<Button label="Tạo nhóm mới" icon="add" onPress={openDialog} />} />
+            <EmptyState
+              icon="groups"
+              title={scope === "mine" ? "Toà nhà bạn chưa có nhóm nào" : "Chưa có nhóm gom đơn nào"}
+              description="Hãy là người mở nhóm đầu tiên, hàng xóm vào cùng là cả nhà miễn phí giao."
+              action={<Button label="Tạo nhóm mới" icon="add" onPress={openDialog} />}
+            />
           )
         }
-        renderItem={({ item: g, index }) => {
-          const pct = Math.min(100, Math.round((g.current_members / g.min_members) * 100));
-          const freeship = g.current_members >= g.min_members;
-          const left = daysUntil(g.deadline);
-          return (
-            <AnimIn index={Math.min(index, 6)} style={{ marginBottom: 12 }}>
-              <PressableScale style={[styles.card, elevation[1]]} onPress={() => router.push(`/tabs/gom-don/${g.id}`)}>
-                <View style={styles.cardHeader}>
-                  <EmojiText style={styles.cardTitle} numberOfLines={1}>{g.title}</EmojiText>
-                  {freeship ? <Chip icon="local_shipping" label="Freeship" tone="primary" small /> : <Chip label={`Thiếu ${g.min_members - g.current_members}`} small />}
-                </View>
-                <AnimatedProgress value={pct} wavy={!freeship} color={freeship ? colors.primary : colors.secondary} height={6} track={colors.surfaceContainerHighest} />
-                <View style={styles.cardFooter}>
-                  <Text style={styles.cardMeta} numberOfLines={1}>{g.current_members}/{g.min_members} người · {g.shipping_address}</Text>
-                  <Text style={[styles.cardDeadline, left <= 1 && { color: colors.error }]}>{left > 0 ? `Còn ${left} ngày` : "Chốt hôm nay"}</Text>
-                </View>
-              </PressableScale>
-            </AnimIn>
-          );
-        }}
+        renderItem={({ item: g, index }) => (
+          <AnimIn index={Math.min(index, 6)} style={{ marginBottom: 12 }}>
+            <GroupCard group={g} mine={scope === "all" && !!me?.cluster_id && g.cluster_id === me.cluster_id} onPress={() => router.push(`/tabs/gom-don/${g.id}`)} />
+          </AnimIn>
+        )}
       />
 
       {(groups?.length ?? 0) > 0 && (
         <AnimIn style={styles.fabWrap}>
           <PressableScale haptic style={[styles.fab, elevation[3]]} onPress={openDialog}>
-            <Text style={styles.fabText}>＋ Tạo nhóm mới</Text>
+            <Icon name="add" size={20} color={colors.onPrimary} />
+            <Text style={styles.fabText}>Tạo nhóm mới</Text>
           </PressableScale>
         </AnimIn>
       )}
 
-      <Modal visible={open} transparent animationType="slide" onRequestClose={() => setOpen(false)}>
+      <Modal visible={open} transparent animationType="slide" statusBarTranslucent onRequestClose={() => setOpen(false)}>
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.scrim}>
-          <View style={styles.sheet}>
-            <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: 12 }}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setOpen(false)} />
+          <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 16) + 14 }]}>
+            <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
                 <View style={styles.dialogIcon}>
-                  <Icon name="groups" size={22} />
+                  <Icon name="groups" size={22} color={colors.onPrimaryContainer} />
                 </View>
-                <View>
+                <View style={{ flex: 1 }}>
                   <Text style={styles.sheetTitle}>Tạo nhóm gom đơn</Text>
-                  <Text style={styles.subtitle}>Đủ người là cả nhóm được freeship</Text>
+                  <Text style={styles.subtitle}>Đủ số nhà là cả nhóm miễn phí giao</Text>
                 </View>
               </View>
 
-              <Text style={styles.label}>Vườn rau</Text>
+              <Text style={styles.label}>Hộp rau</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-                {farms.map((f) => <Chip key={f.id} label={f.name} selected={form.farm_id === f.id} onPress={() => setForm({ ...form, farm_id: f.id })} />)}
+                {boxes.map((b) => (
+                  <Chip key={b.id} label={`${SIZE_LABELS[b.size] ?? b.size} · ${formatVND(b.price)}`} icon={form.box_id === b.id ? "check" : "inventory_2"} selected={form.box_id === b.id} onPress={() => setForm({ ...form, box_id: b.id })} />
+                ))}
               </ScrollView>
+              {box ? <Text style={[styles.subtitle, { marginTop: 6 }]}>{box.name}</Text> : !catalog ? <Text style={[styles.subtitle, { marginTop: 6 }]}>Đang tải các hộp rau…</Text> : null}
+
+              <Text style={styles.label}>Cụm chung cư</Text>
+              <ClusterPicker clusters={clusters} value={form.cluster_id} onChange={(id) => setForm({ ...form, cluster_id: id })} />
 
               <Text style={styles.label}>Tên nhóm</Text>
-              <TextInput style={styles.input} placeholder="Ví dụ: Rau sạch chung cư Sunrise" placeholderTextColor={colors.onSurfaceVariant} value={form.title} onChangeText={(v) => setForm({ ...form, title: v })} maxLength={80} />
+              <TextInput style={styles.input} placeholder={defaultTitle || "Ví dụ: Rau sạch toà S2"} placeholderTextColor={colors.onSurfaceVariant} value={form.title} onChangeText={(v) => setForm({ ...form, title: v })} maxLength={80} />
 
-              <View style={{ flexDirection: "row", gap: 12 }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.label}>Số người tối thiểu</Text>
-                  <View style={styles.stepper}>
-                    <TouchableOpacity style={styles.stepBtn} onPress={() => setForm({ ...form, min_members: Math.max(2, form.min_members - 1) })}>
-                      <Text style={styles.stepBtnText}>–</Text>
-                    </TouchableOpacity>
-                    <Text style={styles.stepValue}>{form.min_members}</Text>
-                    <TouchableOpacity style={[styles.stepBtn, { backgroundColor: colors.primary }]} onPress={() => setForm({ ...form, min_members: Math.min(50, form.min_members + 1) })}>
-                      <Text style={[styles.stepBtnText, { color: colors.onPrimary }]}>+</Text>
-                    </TouchableOpacity>
-                  </View>
+              <View style={{ flexDirection: "row", gap: 16, flexWrap: "wrap" }}>
+                <View>
+                  <Text style={styles.label}>Số nhà tối thiểu</Text>
+                  <QuantityStepper value={form.min_members} onChange={(n) => setForm((x) => ({ ...x, min_members: n }))} min={GROUP_MIN_MEMBERS.min} max={GROUP_MIN_MEMBERS.max} unit="nhà" />
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.label}>Hạn chốt</Text>
-                  <TextInput style={styles.input} value={form.deadline} onChangeText={(v) => setForm({ ...form, deadline: v })} placeholder="YYYY-MM-DD" placeholderTextColor={colors.onSurfaceVariant} autoCapitalize="none" />
+                <View>
+                  <Text style={styles.label}>Phần của bạn</Text>
+                  <QuantityStepper value={form.quantity} onChange={(n) => setForm((x) => ({ ...x, quantity: n }))} />
                 </View>
               </View>
-              <View style={{ flexDirection: "row", gap: 6, flexWrap: "wrap" }}>
-                {[1, 3, 7, 14].map((d) => <Chip key={d} label={`+${d} ngày`} small selected={form.deadline === isoDay(d)} onPress={() => setForm({ ...form, deadline: isoDay(d) })} />)}
-              </View>
 
-              <Text style={styles.label}>Địa chỉ nhận chung</Text>
-              <TextInput style={styles.input} placeholder="Sảnh chung cư, số nhà, phường…" placeholderTextColor={colors.onSurfaceVariant} value={form.shipping_address} onChangeText={(v) => setForm({ ...form, shipping_address: v })} maxLength={160} />
+              <Text style={styles.label}>Toà, tầng, số căn hộ của bạn</Text>
+              <TextInput style={styles.input} placeholder="Ví dụ: Toà S2, căn 1508" placeholderTextColor={colors.onSurfaceVariant} value={form.address} onChangeText={(v) => setForm({ ...form, address: v })} maxLength={160} />
 
-              <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 8, alignItems: "center" }}>
+              {catalog ? (
+                <View style={styles.dateRow}>
+                  <Icon name="event" size={16} color={colors.primary} />
+                  <Text style={styles.dateText}>Giao {formatDay(catalog.delivery_date)}, 16h00 tại sảnh</Text>
+                </View>
+              ) : null}
+
+              <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 18, alignItems: "center" }}>
                 <Button label="Huỷ" variant="text" onPress={() => setOpen(false)} />
-                <Button label="Tạo nhóm" icon="rocket_launch" onPress={submit} loading={busy} disabled={!farms.length} />
+                <Button label="Tạo nhóm" icon="rocket_launch" onPress={submit} loading={busy} disabled={!boxes.length} />
               </View>
             </ScrollView>
           </View>
@@ -200,28 +243,21 @@ export default function GomDonScreen() {
   );
 }
 
-const makeStyles = (colors: Colors) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.surface },
-  eyebrow: { ...type.labelLarge, color: colors.primary, fontSize: 12, textTransform: "uppercase", letterSpacing: 0.6 },
-  title: {  ...type.headlineSmall, color: colors.onSurface },
-  subtitle: { ...type.bodyMedium, color: colors.onSurfaceVariant, marginTop: 2, fontSize: 13 },
-  card: { backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.xl, padding: 18 },
-  cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12, gap: 8 },
-  cardTitle: {  ...type.titleMedium, color: colors.onSurface, flex: 1, fontSize: 16 },
-  cardFooter: { flexDirection: "row", justifyContent: "space-between", marginTop: 10, gap: 8 },
-  cardMeta: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12, flex: 1 },
-  cardDeadline: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12, fontWeight: "700" },
-  fabWrap: { position: "absolute", right: 16, bottom: 20 },
-  fab: { backgroundColor: colors.primary, borderRadius: shape.full, paddingVertical: 14, paddingHorizontal: 20 },
-  fabText: { ...type.labelLarge, color: colors.onPrimary, fontSize: 15 },
-  scrim: { flex: 1, backgroundColor: colors.scrim, justifyContent: "flex-end" },
-  sheet: { backgroundColor: colors.surfaceContainerLowest, borderTopLeftRadius: shape.xlIncreased, borderTopRightRadius: shape.xlIncreased, padding: 22, paddingBottom: 34, maxHeight: "90%" },
-  dialogIcon: { width: 48, height: 48, borderRadius: shape.md, backgroundColor: colors.primaryContainer, alignItems: "center", justifyContent: "center" },
-  sheetTitle: { ...type.headlineSmall, color: colors.onSurface, fontSize: 20 },
-  label: { ...type.labelLarge, color: colors.onSurfaceVariant, fontSize: 12, marginTop: 4 },
-  input: { backgroundColor: colors.surfaceContainer, borderRadius: shape.md, padding: 13, color: colors.onSurface, fontSize: 15, borderWidth: 1, borderColor: colors.outlineVariant },
-  stepper: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: colors.primaryContainer, borderRadius: shape.full, padding: 4 },
-  stepBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.surfaceContainerLowest, alignItems: "center", justifyContent: "center" },
-  stepBtnText: { fontSize: 20, fontWeight: "700", color: colors.onSurface, lineHeight: 22 },
-  stepValue: { flex: 1, textAlign: "center", ...type.labelLarge, color: colors.onPrimaryContainer, fontSize: 16 },
-});
+const makeStyles = (colors: Colors) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.surface },
+    eyebrow: { ...type.labelLarge, color: colors.primary, fontSize: 12, textTransform: "uppercase", letterSpacing: 0.6 },
+    title: { ...type.headlineSmall, color: colors.onSurface },
+    subtitle: { ...type.bodyMedium, color: colors.onSurfaceVariant, marginTop: 2, fontSize: 13 },
+    fabWrap: { position: "absolute", right: 16, bottom: 20 },
+    fab: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: colors.primary, borderRadius: shape.full, paddingVertical: 14, paddingHorizontal: 20 },
+    fabText: { ...type.labelLarge, color: colors.onPrimary, fontSize: 15 },
+    scrim: { flex: 1, backgroundColor: colors.scrim, justifyContent: "flex-end" },
+    sheet: { backgroundColor: colors.surfaceContainerLowest, borderTopLeftRadius: shape.xlIncreased, borderTopRightRadius: shape.xlIncreased, padding: 22, maxHeight: "90%" },
+    dialogIcon: { width: 48, height: 48, borderRadius: shape.md, backgroundColor: colors.primaryContainer, alignItems: "center", justifyContent: "center" },
+    sheetTitle: { ...type.headlineSmall, color: colors.onSurface, fontSize: 20 },
+    label: { ...type.labelLarge, color: colors.onSurfaceVariant, fontSize: 12, marginTop: 16, marginBottom: 6 },
+    input: { backgroundColor: colors.surfaceContainer, borderRadius: shape.md, padding: 13, color: colors.onSurface, fontSize: 15, borderWidth: 1, borderColor: colors.outlineVariant },
+    dateRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 16 },
+    dateText: { ...type.labelLarge, color: colors.primary, fontSize: 13, flex: 1 },
+  });

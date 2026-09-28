@@ -1,5 +1,4 @@
 import { createContext, useContext, useMemo } from "react";
-import { Platform } from "react-native";
 
 // Mirrors apps/web/src/app/globals.css — Material 3 Expressive tokens, light and dark schemes.
 const lightColors = {
@@ -149,14 +148,6 @@ export const shape = {
   xxl: 48,
   full: 9999,
 } as const;
-
-/**
- * Kept for compatibility — emoji rendering now goes through components/EmojiText, which sets the
- * bundled Noto Color Emoji on emoji runs only (the font also has digit glyphs, so applying it as a
- * base font made numbers render in the emoji face).
- */
-export const emojiFont = {} as const;
-export const isAndroid = Platform.OS === "android";
 
 // M3 type scale (subset actually used by mobile screens).
 export const type = {

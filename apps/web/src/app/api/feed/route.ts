@@ -1,37 +1,34 @@
 import { NextResponse } from "next/server";
-import { count, desc, eq } from "drizzle-orm";
+import { count, eq, sum } from "drizzle-orm";
 import { db } from "@/db";
-import { farms, farm_diary, group_orders, products } from "@/db/schema";
+import { clusters, farms, orders, users } from "@/db/schema";
+import { getSessionUser } from "@/lib/session";
+import { getBoxes, getFarms, getGroups, getOrdersForUser } from "@/lib/queries";
+import { cutoffInstant, nextDeliveryDate, PILOT_CITY, SOURCE_PROVINCES } from "@/lib/commerce";
 
-/**
- * Home feed for the mobile app — the same data the web home page (apps/web/src/app/(customer)/page.tsx)
- * queries directly: featured farms, the latest diary posts joined with their farm, open group orders,
- * plus the visitor stats shown on the landing page.
- */
+/** Home screen data for web and mobile: boxes on sale, groups near you, farms, your live order, pilot stats. */
 export async function GET() {
-  const [allFarms, diaryFeed, openGroups, [f], [p], [g]] = await Promise.all([
-    db.select().from(farms).limit(6),
-    db
-      .select({ entry: farm_diary, farm: { id: farms.id, name: farms.name, slug: farms.slug } })
-      .from(farm_diary)
-      .leftJoin(farms, eq(farm_diary.farm_id, farms.id))
-      .orderBy(desc(farm_diary.created_at))
-      .limit(6),
-    db
-      .select({ group: group_orders, farm: { name: farms.name } })
-      .from(group_orders)
-      .leftJoin(farms, eq(group_orders.farm_id, farms.id))
-      .where(eq(group_orders.status, "open"))
-      .limit(3),
+  const user = await getSessionUser();
+  const [me] = user ? await db.select({ cluster_id: users.cluster_id }).from(users).where(eq(users.id, user.id)) : [];
+  const delivery_date = nextDeliveryDate();
+  const [boxList, farmList, groups, [f], [c], [kg], mine] = await Promise.all([
+    getBoxes(),
+    getFarms(),
+    getGroups({ onlyOpen: true }),
     db.select({ c: count() }).from(farms),
-    db.select({ c: count() }).from(products),
-    db.select({ c: count() }).from(group_orders).where(eq(group_orders.status, "open")),
+    db.select({ c: count() }).from(clusters),
+    db.select({ s: sum(orders.quantity) }).from(orders).where(eq(orders.status, "delivered")),
+    user && user.role !== "farmer" ? getOrdersForUser(user.id) : Promise.resolve([]),
   ]);
-
+  const near = me?.cluster_id ? groups.filter((g) => g.cluster_id === me.cluster_id) : [];
   return NextResponse.json({
-    farms: allFarms,
-    diary: diaryFeed.map(({ entry, farm }) => ({ ...entry, farm })),
-    groups: openGroups.map(({ group, farm }) => ({ ...group, farm_name: farm?.name ?? null })),
-    stats: { farms: f.c, products: p.c, groups: g.c },
+    delivery_date, cutoff_at: cutoffInstant(delivery_date).toISOString(),
+    pilot: { city: PILOT_CITY, provinces: SOURCE_PROVINCES },
+    boxes: boxList,
+    farms: farmList,
+    groups: [...near, ...groups.filter((g) => !near.includes(g))].slice(0, 6),
+    my_cluster_id: me?.cluster_id ?? null,
+    live_order: mine.find((o) => o.status !== "delivered" && o.status !== "cancelled") ?? null,
+    stats: { farms: f.c, clusters: c.c, boxes_delivered: Number(kg.s ?? 0) },
   });
 }

@@ -13,7 +13,7 @@ type Lookups = Record<string, { value: string; label: string }[]>;
 
 const toInput = (f: Field, v: unknown) => {
   if (v === null || v === undefined) return f.type === "boolean" ? false : "";
-  if (f.type === "date") return new Date(v as string).toISOString().slice(0, 10);
+  if (f.type === "day") return String(v).slice(0, 10);
   if (f.type === "list") return Array.isArray(v) ? v.join("\n") : String(v);
   if (f.type === "boolean") return !!v;
   return String(v);
@@ -37,7 +37,7 @@ export function AdminTable({ section, rows, columns, lookups }: { section: Secti
 
   const open = (r: Row | "new") => {
     const fields = r === "new" ? createFields : section.fields;
-    setForm(Object.fromEntries(fields.map((f) => [f.key, toInput(f, r === "new" ? (f.type === "number" ? 0 : "") : r[f.key])])));
+    setForm(Object.fromEntries(fields.map((f) => [f.key, toInput(f, r === "new" ? (f.type === "number" || f.type === "decimal" ? 0 : "") : r[f.key])])));
     setEditing(r);
   };
 
@@ -164,7 +164,7 @@ export function AdminTable({ section, rows, columns, lookups }: { section: Secti
                     ) : f.type === "textarea" || f.type === "list" ? (
                       <textarea id={`f-${f.key}`} className="m3-textarea" rows={f.type === "list" ? 5 : 4} value={String(v ?? "")} onChange={(e) => setForm({ ...form, [f.key]: e.target.value })} required={f.required} />
                     ) : (
-                      <input id={`f-${f.key}`} type={f.type === "number" ? "number" : f.type === "date" ? "date" : "text"} min={f.min} className="m3-input" value={String(v ?? "")} onChange={(e) => setForm({ ...form, [f.key]: e.target.value })} required={f.required} />
+                      <input id={`f-${f.key}`} type={f.type === "number" || f.type === "decimal" ? "number" : f.type === "day" ? "date" : "text"} step={f.type === "decimal" ? 0.5 : undefined} min={f.min} className="m3-input" value={String(v ?? "")} onChange={(e) => setForm({ ...form, [f.key]: e.target.value })} required={f.required} />
                     )}
                   </div>
                 );

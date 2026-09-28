@@ -4,8 +4,8 @@ import { getToken } from "next-auth/jwt";
 import { ADMIN_COOKIE, verifyAdminToken } from "@/lib/admin-auth";
 
 /**
- * Farmers use the farmer app only. The one customer-side page they may open is
- * their own farm page ("xem vườn của tôi như khách"), plus the shared account page.
+ * Farmers use the one-screen farmer interface only, plus their account, the public QR trace
+ * page and farm profiles.
  */
 export async function middleware(req: NextRequest) {
   const { pathname: path } = req.nextUrl;
@@ -25,14 +25,12 @@ export async function middleware(req: NextRequest) {
   if (token?.role !== "farmer") return NextResponse.next();
 
   const { pathname } = req.nextUrl;
-  const ownFarm = token.farmSlug ? `/farms/${token.farmSlug}` : null;
   const allowed =
     pathname.startsWith("/farmer") ||
     pathname === "/tai-khoan" ||
     pathname === "/dang-nhap" ||
     pathname.startsWith("/tra-cuu/") ||
-    pathname.startsWith("/nhat-ky/") ||
-    (ownFarm !== null && pathname === ownFarm);
+    pathname.startsWith("/farms");
 
   if (allowed) return NextResponse.next();
   return NextResponse.redirect(new URL("/farmer", req.url));

@@ -13,26 +13,28 @@ export const VISITOR_NAV: NavItem[] = [
 
 export const CUSTOMER_NAV: NavItem[] = [
   { href: "/", label: "Trang chủ", icon: "home", exact: true },
-  { href: "/rau-cu", label: "Rau củ", icon: "nutrition" },
-  { href: "/farms", label: "Vườn rau", icon: "potted_plant" },
+  { href: "/hop-rau", label: "Hộp rau", icon: "inventory_2" },
   { href: "/gom-don", label: "Gom đơn", icon: "groups" },
-  { href: "/cong-thuc", label: "Bếp", icon: "skillet" },
+  { href: "/dinh-ky", label: "Định kỳ", icon: "event_repeat" },
+  { href: "/don-hang", label: "Đơn hàng", icon: "package_2" },
 ];
 
 export const CUSTOMER_MOBILE_NAV: NavItem[] = [
   { href: "/", label: "Trang chủ", icon: "home", exact: true },
-  { href: "/rau-cu", label: "Rau củ", icon: "nutrition" },
-  { href: "/farms", label: "Vườn", icon: "potted_plant" },
-  { href: "/cong-thuc", label: "Bếp", icon: "skillet" },
+  { href: "/hop-rau", label: "Hộp rau", icon: "inventory_2" },
+  { href: "/gom-don", label: "Gom đơn", icon: "groups" },
+  { href: "/don-hang", label: "Đơn hàng", icon: "package_2" },
   { href: "/tai-khoan", label: "Tài khoản", icon: "account_circle" },
 ];
 
+/** Farmers get exactly one screen. */
 export const FARMER_NAV: NavItem[] = [
-  { href: "/farmer", label: "Tổng quan", icon: "dashboard", exact: true },
-  { href: "/farmer/don-hang", label: "Đơn hàng", icon: "package_2" },
-  { href: "/farmer/san-pham", label: "Sản phẩm", icon: "eco" },
-  { href: "/farmer/dang-ky", label: "Đăng ký", icon: "event_repeat" },
-  { href: "/farmer/nhat-ky", label: "Nhật ký", icon: "photo_camera" },
+  { href: "/farmer", label: "Lệnh thu hoạch", icon: "agriculture", exact: true },
+];
+
+export const FARMER_MOBILE_NAV: NavItem[] = [
+  { href: "/farmer", label: "Lệnh thu hoạch", icon: "agriculture", exact: true },
+  { href: "/tai-khoan", label: "Tài khoản", icon: "account_circle" },
 ];
 
 export function isActive(pathname: string, item: NavItem) {

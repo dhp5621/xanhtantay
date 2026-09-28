@@ -1,48 +1,32 @@
 import { useCallback, useState } from "react";
 import { View, Text, FlatList, StyleSheet, RefreshControl } from "react-native";
 import { router, useFocusEffect } from "expo-router";
-import type { Order, OrderStatus } from "@xanhtantay/types";
 import { apiFetch, ApiError } from "../../constants/api";
 import { useSession } from "../../hooks/useSession";
 import { useLiveRefresh } from "../../hooks/useLive";
-import { colors, shape, type, elevation, emojiFont, useStyles, type Colors } from "../../constants/theme";
-import { formatDateTime, formatVND, STATUS_ICONS } from "../../constants/format";
-import { ORDER_TYPE_LABELS } from "../../constants/commerce";
-import { AnimIn, Skeleton } from "../../components/motion";
+import { colors, shape, type, elevation, useStyles, type Colors } from "../../constants/theme";
+import { formatDay, formatVND } from "../../constants/format";
+import { ORDER_TYPE_ICONS, ORDER_TYPE_LABELS, SIZE_LABELS } from "../../constants/commerce";
+import type { MyOrder } from "../../constants/types";
+import { AnimIn, PressableScale, Skeleton } from "../../components/motion";
 import { Button, Chip, EmptyState, PageHeader, Screen } from "../../components/ui";
+import { OrderTimeline, StatusBanner } from "../../components/OrderTimeline";
+import { SmartImage } from "../../components/SmartImage";
+import { useDialog } from "../../components/Dialog";
 import { Icon } from "../../components/Icon";
 import { EmojiText } from "../../components/EmojiText";
 
-const STEPS: OrderStatus[] = ["harvesting", "loaded", "delivered"];
-const STEP_SHORT: Record<OrderStatus, string> = { harvesting: "Thu hoạch", loaded: "Lên xe", delivered: "Đã giao" };
+const canCancel = (o: MyOrder) => o.status === "placed" && !o.allocated;
 
-type MyOrder = Order & {
-  delivery_mode?: string;
-  farm?: { id: string; name: string; location: string; slug: string } | null;
-  farmer_name?: string | null;
-  items?: { id: string; quantity: number; product_name?: string | null; product_unit?: string | null }[];
-};
-
-/** Emotional status labels from the web (getOrderStatusLabel). */
-function statusLabel(status: OrderStatus, farmerName?: string | null) {
-  if (status === "harvesting") return `Rau đang được ${farmerName ?? "nhà vườn"} thu hoạch`;
-  if (status === "loaded") return "Hàng đã lên xe lạnh về phố";
-  return "Đồ quê đã đến tận cửa nhà bạn";
-}
-
-/** Mirrors apps/web/src/app/(customer)/don-hang/page.tsx. */
+/** My orders, each with its four-step journey and clock times. */
 export default function DonHangScreen() {
   const styles = useStyles(makeStyles);
+  const { alert } = useDialog();
   const { user, loading: sessionLoading } = useSession();
   const [orders, setOrders] = useState<MyOrder[] | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const statusStyle: Record<OrderStatus, { bg: string; fg: string }> = {
-    harvesting: { bg: colors.statusHarvestingBg, fg: colors.statusHarvestingFg },
-    loaded: { bg: colors.statusLoadedBg, fg: colors.statusLoadedFg },
-    delivered: { bg: colors.statusDeliveredBg, fg: colors.statusDeliveredFg },
-  };
+  const [busy, setBusy] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!user) {
@@ -64,10 +48,31 @@ export default function DonHangScreen() {
     }, [sessionLoading, load])
   );
 
+  const cancel = (o: MyOrder) => {
+    alert("Huỷ đơn này?", "Đơn chưa chốt sổ nên huỷ được ngay, nhà vườn chưa cắt rau cho đơn này.", [
+      { text: "Giữ đơn", style: "cancel" },
+      {
+        text: "Huỷ đơn",
+        style: "destructive",
+        onPress: async () => {
+          setBusy(o.id);
+          try {
+            await apiFetch(`/orders/${o.id}/cancel`, { method: "POST" });
+            await load();
+          } catch (e) {
+            alert("Không huỷ được đơn", e instanceof ApiError ? e.message : "Có lỗi xảy ra");
+          } finally {
+            setBusy(null);
+          }
+        },
+      },
+    ]);
+  };
+
   if (!sessionLoading && !user) {
     return (
       <Screen style={{ padding: 16 }}>
-        <PageHeader icon="package_2" title="Đơn hàng" subtitle="Theo dõi hành trình rau từ luống đến cửa" />
+        <PageHeader icon="package_2" title="Đơn hàng" subtitle="Theo dõi hộp rau từ vườn về sảnh chung cư" />
         <EmptyState icon="login" title="Đăng nhập để xem đơn hàng" description="Đơn lẻ, đơn định kỳ và đơn gom của bạn đều ở đây." action={<Button label="Đăng nhập" icon="login" onPress={() => router.push("/dang-nhap?next=/tabs/don-hang")} />} />
       </Screen>
     );
@@ -93,7 +98,7 @@ export default function DonHangScreen() {
         }
         ListHeaderComponent={
           <>
-            <PageHeader icon="package_2" eyebrow="Từ luống đến cửa" title="Đơn hàng" subtitle="Theo dõi trạng thái có cảm xúc, không còn “đang giao” khô khan" />
+            <PageHeader icon="package_2" eyebrow="Từ vườn về sảnh" title="Đơn hàng" subtitle="Mỗi chặng đều có giờ: 18h00 chốt sổ, 4h00 thu hoạch, 6h00 lên xe, 16h00 tới sảnh" />
             {error && (
               <View style={styles.errorBox}>
                 <Icon name="error" size={18} color={colors.onErrorContainer} />
@@ -105,77 +110,64 @@ export default function DonHangScreen() {
         ListEmptyComponent={
           orders === null || sessionLoading ? (
             <View style={{ gap: 12 }}>
-              <Skeleton height={200} radius={shape.xl} />
-              <Skeleton height={200} radius={shape.xl} />
+              <Skeleton height={320} radius={shape.xl} />
+              <Skeleton height={320} radius={shape.xl} />
             </View>
           ) : (
-            <EmptyState icon="shopping_basket" title="Chưa có đơn hàng nào" description="Khám phá các vườn rau và đặt đơn đầu tiên nhé!" action={<Button label="Chọn vườn rau" icon="potted_plant" onPress={() => router.push("/tabs/farms")} />} />
+            <EmptyState icon="inventory_2" title="Chưa có đơn hàng nào" description="Chọn một hộp rau trước 18h00, chiều mai rau có ở sảnh nhà bạn." action={<Button label="Chọn hộp rau" icon="inventory_2" onPress={() => router.push("/tabs/hop-rau")} />} />
           )
         }
         renderItem={({ item, index }) => {
-          const s = statusStyle[item.status];
-          const stepIdx = STEPS.indexOf(item.status);
+          const farmer = item.farmers?.find((f) => f.farmer)?.farmer ?? null;
+          const cancelled = item.status === "cancelled";
           return (
             <AnimIn index={Math.min(index, 6)} style={{ marginBottom: 12 }}>
-              <View style={[styles.card, elevation[1]]}>
-                <View style={styles.cardHeader}>
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={styles.farmName}>{item.farm?.name ?? "Vườn rau"}</Text>
-                    <View style={{ flexDirection: "row", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
-                      <Chip label={ORDER_TYPE_LABELS[item.type] ?? item.type} small />
-                      {item.delivery_mode === "pooled" && <Chip icon="group_work" label="Ghép chuyến" tone="tertiary" small />}
+              <View style={[styles.card, elevation[1], cancelled && { opacity: 0.8 }]}>
+                <PressableScale scaleTo={0.985} onPress={() => router.push(`/don-hang/${item.id}`)}>
+                  <View style={styles.cardHeader}>
+                    <SmartImage uri={item.box?.image_url} style={styles.photo} loaderSize={20} />
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text style={styles.boxName} numberOfLines={1}>
+                        {item.quantity} × {item.box?.name ?? "Hộp rau"}
+                      </Text>
+                      <View style={{ flexDirection: "row", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
+                        <Chip icon={ORDER_TYPE_ICONS[item.type]} label={ORDER_TYPE_LABELS[item.type] ?? item.type} tone={item.type === "single" ? "surface" : item.type === "subscription" ? "tertiary" : "secondary"} small />
+                        {item.box ? <Chip label={SIZE_LABELS[item.box.size] ?? item.box.size} small /> : null}
+                      </View>
+                    </View>
+                    <View style={{ alignItems: "flex-end" }}>
+                      <Text style={styles.total}>{formatVND(item.total)}</Text>
+                      <Text style={styles.meta}>#{item.id.slice(0, 8).toUpperCase()}</Text>
                     </View>
                   </View>
-                  <View style={{ alignItems: "flex-end" }}>
-                    <Text style={styles.total}>{formatVND(item.total)}</Text>
-                    <Text style={styles.meta}>#{item.id.slice(0, 8).toUpperCase()}</Text>
-                  </View>
-                </View>
 
-                <View style={[styles.statusChip, { backgroundColor: s.bg }]}>
-                  <Icon name={STATUS_ICONS[item.status]} size={18} filled color={s.fg} />
-                  <Text style={[styles.statusText, { color: s.fg }]}>{statusLabel(item.status, item.farmer_name)}</Text>
-                </View>
-
-                {!!item.items?.length && (
-                  <View style={styles.itemsRow}>
-                    {item.items.map((l) => <Chip key={l.id} icon="eco" label={`${l.quantity} ${l.product_unit ?? ""} ${l.product_name ?? ""}`} small />)}
+                  <View style={styles.deliveryRow}>
+                    <Icon name="event" size={16} color={colors.onSurfaceVariant} />
+                    <Text style={styles.deliveryText} numberOfLines={1}>
+                      Giao {formatDay(item.delivery_date)}
+                      {item.cluster ? ` · sảnh ${item.cluster.name}` : ""}
+                    </Text>
                   </View>
-                )}
+
+                  <StatusBanner status={item.status} farmer={farmer} />
+                  {!cancelled && (
+                    <View style={{ marginTop: 14 }}>
+                      <OrderTimeline status={item.status} farmer={farmer} stamps={{ harvesting: item.harvested_at, loaded: item.loaded_at, delivered: item.delivered_at }} />
+                    </View>
+                  )}
+                </PressableScale>
+
                 {item.note ? (
-                  <EmojiText style={styles.note}>
-                    <Icon name="sticky_note_2" size={13} color={colors.onSurfaceVariant} /> {item.note}
-                  </EmojiText>
+                  <View style={styles.noteRow}>
+                    <Icon name="sticky_note_2" size={14} color={colors.onSurfaceVariant} />
+                    <EmojiText style={styles.note}>{item.note}</EmojiText>
+                  </View>
                 ) : null}
 
-                <View style={styles.stepsRow}>
-                  {STEPS.map((st, i) => {
-                    const done = i < stepIdx;
-                    const current = i === stepIdx;
-                    return (
-                      <View key={st} style={{ flex: 1, flexDirection: "row", alignItems: "center" }}>
-                        <View style={{ alignItems: "center" }}>
-                          <View style={[styles.stepDot, (done || current) && { backgroundColor: colors.primary }]}>
-                            <Icon name={done ? "check" : STATUS_ICONS[st]} size={16} filled={current} color={done || current ? colors.onPrimary : colors.onSurfaceVariant} />
-                          </View>
-                          <Text style={[styles.stepLabel, current && { color: colors.primary, fontWeight: "700" }]}>{STEP_SHORT[st]}</Text>
-                        </View>
-                        {i < STEPS.length - 1 && <View style={[styles.stepLine, done && { backgroundColor: colors.primary }]} />}
-                      </View>
-                    );
-                  })}
+                <View style={styles.actions}>
+                  <Button label="Chi tiết & thực đơn" icon="menu_book" variant="tonal" small onPress={() => router.push(`/don-hang/${item.id}`)} />
+                  {canCancel(item) && <Button label="Huỷ đơn" icon="cancel" variant="error" small loading={busy === item.id} onPress={() => cancel(item)} />}
                 </View>
-
-                <View style={{ flexDirection: "row", gap: 8, marginTop: 14, flexWrap: "wrap", alignItems: "center" }}>
-                  {item.status === "delivered" && (
-                    <>
-                      <Button label="Kế hoạch ăn" icon="calendar_month" variant="tonal" small onPress={() => router.push(`/ke-hoach/${item.id}`)} />
-                      <Button label="Nấu gì?" icon="skillet" variant="tertiary" small onPress={() => router.push(`/tabs/cong-thuc?order=${item.id}`)} />
-                    </>
-                  )}
-                  <Button label="Mã QR gói rau" icon="qr_code_2" variant="outlined" small onPress={() => router.push(`/tra-cuu?id=${item.id}`)} />
-                </View>
-                <Text style={[styles.meta, { marginTop: 10 }]}>{formatDateTime(item.created_at)}</Text>
               </View>
             </AnimIn>
           );
@@ -190,16 +182,14 @@ const makeStyles = (colors: Colors) =>
     errorBox: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: colors.errorContainer, borderRadius: shape.md, padding: 10, marginBottom: 12 },
     errorText: { ...type.bodyMedium, color: colors.onErrorContainer, flex: 1, fontSize: 13 },
     card: { backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.xl, padding: 16 },
-    cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 8, marginBottom: 12 },
-    farmName: { ...type.titleLarge, color: colors.onSurface, fontSize: 18 },
+    cardHeader: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
+    photo: { width: 56, height: 56, borderRadius: shape.md },
+    boxName: { ...type.titleMedium, color: colors.onSurface, fontSize: 16 },
     meta: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12, marginTop: 2 },
-    total: { ...type.headlineSmall, color: colors.primary, fontSize: 20 },
-    statusChip: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 8, paddingHorizontal: 12, borderRadius: shape.full },
-    statusText: { ...type.labelLarge, fontSize: 13, flex: 1 },
-    itemsRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 12 },
-    note: { ...type.bodyMedium, color: colors.onSurfaceVariant, marginTop: 10, fontSize: 13 },
-    stepsRow: { flexDirection: "row", alignItems: "flex-start", marginTop: 16 },
-    stepDot: { width: 28, height: 28, borderRadius: 14, backgroundColor: colors.surfaceContainerHighest, alignItems: "center", justifyContent: "center" },
-    stepLabel: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 11, marginTop: 4 },
-    stepLine: { flex: 1, height: 3, backgroundColor: colors.surfaceContainerHighest, marginHorizontal: 6, marginTop: 13, borderRadius: 2 },
+    total: { ...type.headlineSmall, color: colors.primary, fontSize: 18, lineHeight: 24 },
+    deliveryRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 12, marginBottom: 10 },
+    deliveryText: { ...type.labelLarge, color: colors.onSurfaceVariant, fontSize: 13, flex: 1 },
+    noteRow: { flexDirection: "row", alignItems: "flex-start", gap: 6, marginTop: 12 },
+    note: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 13, flex: 1 },
+    actions: { flexDirection: "row", gap: 8, marginTop: 14, flexWrap: "wrap", alignItems: "center" },
   });

@@ -26,7 +26,7 @@ export function AdminNav() {
 
   if (pathname === "/admin/login") return null;
 
-  const items = [{ key: "", label: "Tổng quan", icon: "dashboard" }, ...SECTIONS.map((s) => ({ key: s.key, label: s.label, icon: s.icon }))];
+  const items = [{ key: "", label: "Bộ não", icon: "psychology" }, ...SECTIONS.map((s) => ({ key: s.key, label: s.label, icon: s.icon }))];
 
   const logout = async () => {
     await fetch("/api/admin/logout", { method: "POST" });

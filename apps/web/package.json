@@ -7,11 +7,9 @@
     "build": "node scripts/icon-subset.mjs && next build",
     "start": "next start",
     "lint": "next lint",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "tsx src/db/migrate.ts",
-    "db:push": "drizzle-kit push",
     "db:seed": "tsx src/db/seed.ts",
-    "icons": "node scripts/icon-subset.mjs"
+    "icons": "node scripts/icon-subset.mjs",
+    "db:setup": "tsx src/db/setup.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^0.10.4",

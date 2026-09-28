@@ -1,36 +1,37 @@
 import { useCallback, useState } from "react";
-import { View, Text, StyleSheet, ScrollView, RefreshControl } from "react-native";
-import { router, useFocusEffect } from "expo-router";
-import type { Order } from "@xanhtantay/types";
-import { apiFetch } from "../../constants/api";
-import { useSession } from "../../hooks/useSession";
-import { colors, shape, type, elevation, emojiFont, useStyles } from "../../constants/theme";
-import { formatDate, formatVND, STATUS_SHORT, STATUS_ICONS } from "../../constants/format";
-import { AnimIn, AnimInScale, PressableScale, Skeleton } from "../../components/motion";
-import { Chip, ListItem, StatTile } from "../../components/ui";
-import { Icon } from "../../components/Icon";
+import { View, Text, StyleSheet, ScrollView, RefreshControl, Platform } from "react-native";
+import * as Haptics from "expo-haptics";
+import { useFocusEffect } from "expo-router";
+import type { HarvestCommand } from "@xanhtantay/types";
+import { apiFetch, ApiError } from "../../constants/api";
+import { colors, shape, type, elevation, useStyles, type Colors } from "../../constants/theme";
+import { formatClockDay, formatDay, formatKg } from "../../constants/format";
+import type { FarmerCommands } from "../../constants/types";
 import { useLiveRefresh } from "../../hooks/useLive";
-import type { Colors } from "../../constants/theme";
+import { AnimIn, AnimInScale, PressableScale, Skeleton } from "../../components/motion";
+import { useDialog } from "../../components/Dialog";
+import { Loader } from "../../components/Loader";
+import { Icon } from "../../components/Icon";
 
-interface Me {
-  name: string;
-  stats: { pendingOrders: number; products: number; subscribers: number };
-  farm: { id: string; name: string; slug: string; location: string } | null;
-}
-type FarmerOrder = Order & { customer_name?: string | null };
-
-/** Mirrors apps/web/src/app/(farmer)/farmer/page.tsx. */
-export default function FarmerHomeScreen() {
+/**
+ * The farmer's only screen: today's harvest command in very large type, the amounts to cut,
+ * and one button. Everything else was removed on purpose.
+ */
+export default function FarmerScreen() {
   const styles = useStyles(makeStyles);
-  const { user } = useSession();
-  const [me, setMe] = useState<Me | null>(null);
-  const [orders, setOrders] = useState<FarmerOrder[] | null>(null);
+  const { alert } = useDialog();
+  const [data, setData] = useState<FarmerCommands | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
-    const [m, o] = await Promise.all([apiFetch("/users/me").catch(() => null), apiFetch("/orders").catch(() => [])]);
-    setMe(m);
-    setOrders(o);
+    try {
+      setData(await apiFetch("/farmer/commands"));
+      setError(null);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Không tải được lệnh thu hoạch. Bác kéo xuống để thử lại.");
+    }
   }, []);
 
   useLiveRefresh(load);
@@ -40,29 +41,29 @@ export default function FarmerHomeScreen() {
     }, [load])
   );
 
-  const hour = new Date().getHours();
-  const greeting = hour < 11 ? "Chào buổi sáng" : hour < 17 ? "Chào buổi chiều" : "Chào buổi tối";
-  const revenue = (orders ?? []).filter((o) => o.status === "delivered").reduce((s, o) => s + o.total, 0);
-  const pending = me?.stats.pendingOrders ?? (orders ?? []).filter((o) => o.status === "harvesting").length;
-  const recent = (orders ?? []).slice(0, 4);
+  const confirm = async (cmd: HarvestCommand) => {
+    setBusy(true);
+    try {
+      await apiFetch(`/farmer/commands/${cmd.id}/confirm`, { method: "POST" });
+      if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      // Show the confirmed state at once; the reload brings the server's own timestamp.
+      setData((d) => (d && d.current?.id === cmd.id ? { ...d, current: { ...d.current, status: "confirmed", confirmed_at: new Date().toISOString() } } : d));
+      await load();
+    } catch (e) {
+      alert("Chưa xác nhận được", e instanceof ApiError ? e.message : "Mạng đang yếu, bác bấm lại giúp nhé.");
+    } finally {
+      setBusy(false);
+    }
+  };
 
-  const tiles = [
-    { icon: "pending_actions", label: "Đơn chờ thu hoạch", value: pending, href: "/tabs/farmer-don-hang", tone: "tertiary" as const },
-    { icon: "package_2", label: "Tổng đơn hàng", value: orders?.length ?? 0, href: "/tabs/farmer-don-hang", tone: "secondary" as const },
-    { icon: "nutrition", label: "Sản phẩm", value: me?.stats.products ?? 0, href: "/tabs/farmer-san-pham", tone: "primary" as const },
-    { icon: "event_repeat", label: "Khách đăng ký", value: me?.stats.subscribers ?? 0, href: "/tabs/farmer-dang-ky", tone: "surface" as const },
-  ];
-  const quickLinks = [
-    { href: "/tabs/farmer-nhat-ky", icon: "photo_camera", label: "Đăng nhật ký hôm nay", desc: "Khách tin hơn khi thấy vườn mỗi ngày" },
-    { href: "/tabs/farmer-san-pham", icon: "inventory_2", label: "Cập nhật tồn kho", desc: "Bật/tắt món còn hàng" },
-    { href: "/tabs/farmer-don-hang", icon: "local_shipping", label: "Xử lý đơn mới", desc: `${pending} đơn đang chờ` },
-    ...(me?.farm ? [{ href: `/farms/${me.farm.id}`, icon: "storefront", label: "Xem trang vườn của tôi", desc: "Như khách hàng nhìn thấy" }] : []),
-  ];
+  const current = data?.current ?? null;
+  const history = (data?.commands ?? []).filter((c) => c.id !== current?.id);
+  const confirmed = current?.status === "confirmed";
 
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={{ padding: 16, paddingBottom: 32, gap: 20 }}
+      contentContainerStyle={{ padding: 16, paddingBottom: 40, gap: 20 }}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
@@ -76,108 +77,166 @@ export default function FarmerHomeScreen() {
         />
       }
     >
-      <AnimIn>
-        <Text style={styles.eyebrow}>{me?.farm ? `${me.farm.name} · ${me.farm.location}` : me ? "Chưa có vườn" : " "}</Text>
-        <Text style={styles.title}>
-          {greeting}, {(me?.name ?? user?.name)?.split(" ").pop()}!
-        </Text>
-      </AnimIn>
-
-      {me && !me.farm && (
+      {data?.farm ? (
         <AnimIn>
-          <View style={styles.warn}>
-            <Text style={{ color: colors.onErrorContainer }}>Tài khoản này chưa gắn với vườn nào. Liên hệ quản trị để tạo vườn.</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <Icon name="potted_plant" size={20} filled color={colors.primary} />
+            <Text style={styles.farm} numberOfLines={1}>
+              {data.farm.name} · {data.farm.location}
+            </Text>
           </View>
         </AnimIn>
-      )}
+      ) : null}
 
-      {orders === null ? (
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
-          <Skeleton height={100} radius={shape.xl} width="48%" />
-          <Skeleton height={100} radius={shape.xl} width="48%" />
-          <Skeleton height={100} radius={shape.xl} width="48%" />
-          <Skeleton height={100} radius={shape.xl} width="48%" />
+      {error && !data ? (
+        <View style={styles.errorBox}>
+          <Icon name="wifi_off" size={24} color={colors.onErrorContainer} />
+          <Text style={styles.errorText}>{error}</Text>
         </View>
-      ) : (
-        <View style={{ gap: 10 }}>
-          <View style={{ flexDirection: "row", gap: 10 }}>
-            {tiles.slice(0, 2).map((t, i) => (
-              <AnimInScale key={t.label} index={i} style={{ flex: 1 }}>
-                <StatTile icon={t.icon} value={t.value} label={t.label} tone={t.tone} onPress={() => router.push(t.href as never)} />
-              </AnimInScale>
-            ))}
-          </View>
-          <View style={{ flexDirection: "row", gap: 10 }}>
-            {tiles.slice(2).map((t, i) => (
-              <AnimInScale key={t.label} index={i + 2} style={{ flex: 1 }}>
-                <StatTile icon={t.icon} value={t.value} label={t.label} tone={t.tone} onPress={() => router.push(t.href as never)} />
-              </AnimInScale>
-            ))}
-          </View>
-          <AnimInScale index={4}>
-            <View style={styles.revenue}>
-              <View>
-                <Text style={styles.revenueLabel}>DOANH THU ĐÃ GIAO</Text>
-                <Text style={styles.revenueValue}>{formatVND(revenue)}</Text>
+      ) : null}
+
+      {!data && !error ? (
+        <View style={{ gap: 14 }}>
+          <Skeleton height={260} radius={shape.xlIncreased} />
+          <Skeleton height={76} radius={shape.xl} />
+          <Skeleton height={76} radius={shape.xl} />
+          <Skeleton height={72} radius={shape.full} />
+        </View>
+      ) : null}
+
+      {data && !data.farm ? (
+        <View style={styles.errorBox}>
+          <Icon name="info" size={24} color={colors.onErrorContainer} />
+          <Text style={styles.errorText}>Tài khoản này chưa gắn với vườn nào. Bác liên hệ quản trị để được tạo vườn nhé.</Text>
+        </View>
+      ) : null}
+
+      {current ? (
+        <>
+          <AnimInScale>
+            <View style={[styles.command, elevation[2]]}>
+              <View style={styles.commandHead}>
+                <Icon name="agriculture" size={26} filled color={colors.primary} />
+                <Text style={styles.commandEyebrow}>Lệnh thu hoạch</Text>
               </View>
-              <Icon name="payments" size={34} />
+              <Text style={styles.message}>{current.message}</Text>
+              <View style={styles.dateRow}>
+                <Icon name="event" size={22} color={colors.onSurfaceVariant} />
+                <Text style={styles.dateText}>Giao cho khách: {formatDay(current.delivery_date)}</Text>
+              </View>
             </View>
           </AnimInScale>
-        </View>
-      )}
 
-      <View>
-        <Text style={styles.sectionTitle}>Việc hôm nay</Text>
-        {quickLinks.map((l, i) => (
-          <AnimIn key={l.href} index={i} delay={150}>
-            <ListItem icon={l.icon} title={l.label} desc={l.desc} onPress={() => router.push(l.href as never)} />
-          </AnimIn>
-        ))}
-      </View>
-
-      {recent.length > 0 && (
-        <View>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-            <Text style={styles.sectionTitle}>Đơn gần đây</Text>
-            <PressableScale onPress={() => router.push("/tabs/farmer-don-hang")}>
-              <Text style={styles.link}>Tất cả →</Text>
-            </PressableScale>
-          </View>
-          <View style={{ gap: 8 }}>
-            {recent.map((o, i) => (
-              <AnimIn key={o.id} index={i} delay={250}>
-                <PressableScale style={[styles.orderRow, elevation[1]]} onPress={() => router.push("/tabs/farmer-don-hang")}>
-                  <Icon name={STATUS_ICONS[o.status]} size={22} />
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={styles.orderName}>{o.customer_name ?? "Khách hàng"}</Text>
-                    <Text style={styles.meta}>#{o.id.slice(0, 8).toUpperCase()} · {formatDate(o.created_at, { day: "numeric", month: "short" })}</Text>
-                  </View>
-                  <View style={{ alignItems: "flex-end", gap: 4 }}>
-                    <Text style={styles.orderTotal}>{formatVND(o.total)}</Text>
-                    <Chip label={STATUS_SHORT[o.status]} small tone={o.status === "delivered" ? "primary" : o.status === "loaded" ? "tertiary" : "surface"} />
-                  </View>
-                </PressableScale>
+          <View style={{ gap: 10 }}>
+            <Text style={styles.sectionTitle}>Cần cắt</Text>
+            {current.items.map((it, i) => (
+              <AnimIn key={it.produce_id} index={Math.min(i, 6)} delay={80}>
+                <View style={styles.item}>
+                  <Text style={styles.itemName}>{it.name}</Text>
+                  <Text style={styles.itemKg}>{formatKg(it.kg)}</Text>
+                </View>
               </AnimIn>
             ))}
+            <View style={styles.totalRow}>
+              <Text style={styles.totalLabel}>Tổng cộng</Text>
+              <Text style={styles.totalKg}>{formatKg(current.total_kg)}</Text>
+            </View>
           </View>
+
+          {confirmed ? (
+            <AnimInScale>
+              <View style={styles.confirmed}>
+                <Icon name="check_circle" size={44} filled color={colors.onPrimaryContainer} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.confirmedTitle}>Đã xác nhận</Text>
+                  <Text style={styles.confirmedSub}>{current.confirmed_at ? `Đã xác nhận lúc ${formatClockDay(current.confirmed_at)}` : "Hệ thống đã ghi nhận"}</Text>
+                  <Text style={styles.confirmedSub}>Xe tải lạnh sẽ qua lấy lúc 6h00.</Text>
+                </View>
+              </View>
+            </AnimInScale>
+          ) : (
+            <AnimIn delay={160}>
+              <PressableScale haptic={Haptics.ImpactFeedbackStyle.Medium} scaleTo={0.97} disabled={busy} style={[styles.confirmBtn, elevation[3]]} onPress={() => confirm(current)} accessibilityRole="button" accessibilityLabel="Đã hiểu và xác nhận">
+                {busy ? <Loader size={32} color={colors.onPrimary} /> : <Icon name="check_circle" size={34} filled color={colors.onPrimary} />}
+                <Text style={styles.confirmText}>{busy ? "Đang gửi…" : "Đã hiểu & Xác nhận"}</Text>
+              </PressableScale>
+            </AnimIn>
+          )}
+        </>
+      ) : data?.farm ? (
+        <AnimInScale>
+          <View style={styles.empty}>
+            <View style={styles.emptyIcon}>
+              <Icon name="bedtime" size={40} filled color={colors.onSecondaryContainer} />
+            </View>
+            <Text style={styles.emptyTitle}>Chưa có lệnh thu hoạch.</Text>
+            <Text style={styles.emptyBody}>18h00 mỗi ngày hệ thống sẽ gửi lệnh cho sáng hôm sau.</Text>
+          </View>
+        </AnimInScale>
+      ) : null}
+
+      {history.length > 0 && (
+        <View style={{ gap: 8 }}>
+          <Text style={styles.sectionTitle}>Các lệnh trước</Text>
+          {history.map((c, i) => {
+            const ok = c.status === "confirmed";
+            return (
+              <AnimIn key={c.id} index={Math.min(i, 6)} delay={200}>
+                <View style={styles.historyRow}>
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={styles.historyDate}>{formatDay(c.delivery_date)}</Text>
+                    <Text style={styles.historyKg}>{formatKg(c.total_kg)}</Text>
+                  </View>
+                  <View style={[styles.historyState, { backgroundColor: ok ? colors.primaryContainer : colors.surfaceContainerHighest }]}>
+                    <Icon name={ok ? "check_circle" : "schedule"} size={20} filled={ok} color={ok ? colors.onPrimaryContainer : colors.onSurfaceVariant} />
+                    <Text style={[styles.historyStateText, { color: ok ? colors.onPrimaryContainer : colors.onSurfaceVariant }]}>{ok ? "Đã xác nhận" : "Chưa xác nhận"}</Text>
+                  </View>
+                </View>
+              </AnimIn>
+            );
+          })}
         </View>
       )}
     </ScrollView>
   );
 }
 
-const makeStyles = (colors: Colors) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.surface },
-  eyebrow: { ...type.labelLarge, color: colors.primary, fontSize: 12, textTransform: "uppercase", letterSpacing: 0.6 },
-  title: {  ...type.headlineSmall, color: colors.onSurface, fontSize: 26 },
-  warn: { backgroundColor: colors.errorContainer, borderRadius: shape.xl, padding: 16 },
-  revenue: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: colors.surfaceContainerLow, borderRadius: shape.xl, padding: 18 },
-  revenueLabel: { ...type.labelLarge, color: colors.onSurfaceVariant, fontSize: 11, letterSpacing: 0.6 },
-  revenueValue: { ...type.headlineSmall, color: colors.primary, fontSize: 26, marginTop: 2 },
-  sectionTitle: { ...type.titleLarge, color: colors.onSurface, fontSize: 18, marginBottom: 10 },
-  link: { ...type.labelLarge, color: colors.primary, fontSize: 13 },
-  orderRow: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.lg, padding: 12 },
-  orderName: { ...type.titleMedium, color: colors.onSurface, fontSize: 14 },
-  meta: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 12 },
-  orderTotal: { ...type.labelLarge, color: colors.onSurface, fontSize: 14 },
-});
+const makeStyles = (c: Colors) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: c.surface },
+    farm: { ...type.titleMedium, color: c.onSurfaceVariant, fontSize: 16, flex: 1 },
+    errorBox: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: c.errorContainer, borderRadius: shape.xl, padding: 18 },
+    errorText: { ...type.bodyLarge, color: c.onErrorContainer, fontSize: 17, lineHeight: 25, flex: 1 },
+
+    command: { backgroundColor: c.surfaceContainerLowest, borderRadius: shape.xlIncreased, padding: 24, borderWidth: 3, borderColor: c.primary },
+    commandHead: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 14 },
+    commandEyebrow: { ...type.labelLarge, color: c.primary, fontSize: 16, lineHeight: 22, textTransform: "uppercase", letterSpacing: 0.8 },
+    message: { color: c.onSurface, fontSize: 28, lineHeight: 40, fontWeight: "700", includeFontPadding: false },
+    dateRow: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 18, paddingTop: 16, borderTopWidth: 1, borderTopColor: c.outlineVariant },
+    dateText: { ...type.titleMedium, color: c.onSurface, fontSize: 18, lineHeight: 26, flex: 1 },
+
+    sectionTitle: { ...type.titleLarge, color: c.onSurface, fontSize: 20 },
+    item: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, backgroundColor: c.surfaceContainerLow, borderRadius: shape.xl, paddingVertical: 18, paddingHorizontal: 20 },
+    itemName: { color: c.onSurface, fontSize: 24, lineHeight: 32, fontWeight: "700", flex: 1, includeFontPadding: false },
+    itemKg: { color: c.primary, fontSize: 30, lineHeight: 38, fontWeight: "800", includeFontPadding: false, fontVariant: ["tabular-nums"] },
+    totalRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingTop: 4 },
+    totalLabel: { ...type.titleMedium, color: c.onSurfaceVariant, fontSize: 18 },
+    totalKg: { ...type.titleLarge, color: c.onSurface, fontSize: 22 },
+
+    confirmBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 12, backgroundColor: c.primary, borderRadius: shape.full, minHeight: 84, paddingVertical: 20, paddingHorizontal: 24 },
+    confirmText: { color: c.onPrimary, fontSize: 24, lineHeight: 32, fontWeight: "800", includeFontPadding: false },
+    confirmed: { flexDirection: "row", alignItems: "center", gap: 16, backgroundColor: c.primaryContainer, borderRadius: shape.xlIncreased, padding: 22 },
+    confirmedTitle: { color: c.onPrimaryContainer, fontSize: 24, lineHeight: 32, fontWeight: "800", includeFontPadding: false },
+    confirmedSub: { ...type.bodyLarge, color: c.onPrimaryContainer, fontSize: 17, lineHeight: 25 },
+
+    empty: { alignItems: "center", backgroundColor: c.surfaceContainerLow, borderRadius: shape.xlIncreased, paddingVertical: 40, paddingHorizontal: 24 },
+    emptyIcon: { width: 84, height: 84, borderRadius: 42, backgroundColor: c.secondaryContainer, alignItems: "center", justifyContent: "center", marginBottom: 18 },
+    emptyTitle: { color: c.onSurface, fontSize: 24, lineHeight: 32, fontWeight: "800", textAlign: "center", includeFontPadding: false },
+    emptyBody: { ...type.bodyLarge, color: c.onSurfaceVariant, fontSize: 19, lineHeight: 28, textAlign: "center", marginTop: 8 },
+
+    historyRow: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: c.surfaceContainerLowest, borderRadius: shape.lg, padding: 16, borderWidth: 1, borderColor: c.outlineVariant },
+    historyDate: { ...type.titleMedium, color: c.onSurface, fontSize: 17 },
+    historyKg: { ...type.bodyLarge, color: c.onSurfaceVariant, fontSize: 16 },
+    historyState: { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: shape.full, paddingVertical: 8, paddingHorizontal: 14 },
+    historyStateText: { ...type.labelLarge, fontSize: 14 },
+  });

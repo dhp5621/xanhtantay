@@ -6,8 +6,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Icon } from "@/components/ui/Icon";
 
 const DEMO = {
-  customer: { email: "lan@gmail.com", label: "Khách hàng demo", who: "Chị Lan", icon: "shopping_basket", blurb: "Đặt rau, gom đơn, theo dõi đơn hàng" },
-  farmer: { email: "bacba@xanhtantay.vn", label: "Nông dân demo", who: "Bác Ba", icon: "agriculture", blurb: "Quản lý đơn, sản phẩm, đăng nhật ký" },
+  customer: { email: "lan@gmail.com", label: "Khách hàng demo", who: "Chị Lan", icon: "shopping_basket", blurb: "Đặt hộp rau, gom đơn, theo dõi hành trình" },
+  farmer: { email: "bacba@xanhtantay.vn", label: "Nông dân demo", who: "Bác Ba", icon: "agriculture", blurb: "Nhận lệnh thu hoạch và xác nhận" },
 } as const;
 type Role = "customer" | "farmer";
 

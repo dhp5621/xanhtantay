@@ -1,8 +1,8 @@
 {
   "crons": [
     {
-      "path": "/api/cron/subscriptions",
-      "schedule": "0 1 * * *"
+      "path": "/api/cron/cutoff",
+      "schedule": "0 11 * * *"
     }
   ]
 }

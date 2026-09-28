@@ -8,7 +8,6 @@ import { useTheme } from "./ThemeProvider";
 import { Icon } from "@/components/ui/Icon";
 import { Avatar } from "@/components/ui/Avatar";
 import { CUSTOMER_NAV, FARMER_NAV, VISITOR_NAV, isActive } from "./nav-config";
-import { useCart } from "@/components/cart/CartProvider";
 
 const HIDDEN_ON = ["/dang-nhap"];
 
@@ -82,24 +81,6 @@ function ThemeToggle() {
   );
 }
 
-function CartButton() {
-  const { count, open, hydrated } = useCart();
-  const [bump, setBump] = useState(false);
-  const prev = useRef(count);
-  useEffect(() => {
-    if (count > prev.current) { setBump(true); const t = setTimeout(() => setBump(false), 400); prev.current = count; return () => clearTimeout(t); }
-    prev.current = count;
-  }, [count]);
-  return (
-    <button className="m3-icon-btn" onClick={open} aria-label={`Giỏ hàng, ${count} món`} style={{ overflow: "visible" }}>
-      <span className={bump ? "m3-bump" : ""} style={{ display: "inline-flex", position: "relative" }}>
-        <Icon name="shopping_basket" filled={count > 0} />
-        {hydrated && count > 0 && <span className="m3-badge">{count > 99 ? "99+" : count}</span>}
-      </span>
-    </button>
-  );
-}
-
 function HeaderImpl() {
   const pathname = usePathname();
   const { data: session } = useSession();
@@ -108,8 +89,6 @@ function HeaderImpl() {
 
   const role = (session?.user as { role?: string } | undefined)?.role;
   const isFarmer = role === "farmer";
-  // /tai-khoan is neutral — keep farmer nav so the mode doesn't reset on account/settings pages
-  const inFarmerArea = pathname.startsWith("/farmer") || pathname === "/tai-khoan";
   const items = !session ? VISITOR_NAV : isFarmer ? FARMER_NAV : CUSTOMER_NAV;
 
   // Scroll elevation via IntersectionObserver instead of a scroll listener,
@@ -144,7 +123,6 @@ function HeaderImpl() {
           <NavTabs items={items} pathname={pathname} />
 
           <div className="m3-top-bar-actions">
-            {!isFarmer && session && <CartButton />}
             <ThemeToggle />
             {session ? (
               <>

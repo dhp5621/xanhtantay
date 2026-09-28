@@ -9,7 +9,7 @@ import { ICON_FONT_URL } from "@/generated/fonts";
 
 export const metadata: Metadata = {
   title: { default: "Xanh Tận Tay", template: "%s · Xanh Tận Tay" },
-  description: "Nông sản tươi từ vườn đến tay bạn",
+  description: "Hộp rau theo mùa từ nương đồi Bắc Kạn, Tuyên Quang. Đặt trước 18h00, mai có tại sảnh.",
   applicationName: "Xanh Tận Tay",
 };
 
