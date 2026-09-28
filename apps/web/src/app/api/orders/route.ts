@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import { boxes, clusters, orders, users } from "@/db/schema";
+import { boxes, callName, clusters, orders, users } from "@/db/schema";
+import { pushToUsers } from "@/lib/push";
+import { orderNotice } from "@/lib/messages";
 import { getSessionUser } from "@/lib/session";
 import { getOrdersForUser } from "@/lib/queries";
 import { careMessageFor, impactFor, nextDeliveryDate, SHIP_FEE } from "@/lib/commerce";
@@ -48,5 +50,8 @@ export async function POST(req: Request) {
   // Remember the building and flat for next time.
   if (me && (me.cluster_id !== cluster.id || (address && me.address !== address))) await db.update(users).set({ cluster_id: cluster.id, address: address ?? me.address }).where(eq(users.id, user.id));
 
+  // Best-effort: a polite confirmation that opens this order when tapped.
+  const [who] = await db.select({ name: callName }).from(users).where(eq(users.id, user.id));
+  await pushToUsers([user.id], { ...orderNotice({ name: who?.name ?? "bạn", role: "customer" }, "placed"), url: `/don-hang/${order.id}` });
   return NextResponse.json({ ...order, box: { name: box.name, size: box.size, slug: box.slug }, cluster, impact: impactFor(order.subtotal, Number(box.weight_kg) * qty, box.servings, box.days) }, { status: 201 });
 }

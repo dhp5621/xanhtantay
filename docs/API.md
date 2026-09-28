@@ -109,3 +109,16 @@ Changes to the farm profile and to the registered supply are **requests**. Nothi
 - `GET /farms/mine` adds `pending: { id, payload: { name?, location?, province?, description? }, created_at } | null` and `rejected: { note: string | null, reviewed_at } | null` (the last request was turned down within 7 days and nothing is pending). The farm's own fields are always the values in force.
 - `GET /farmer/capacity` adds the same `pending` / `rejected` (payload: `[{ produce_id, name, from_kg, to_kg }]`), and each item has `pending_kg: number | null` = the value asked for. `daily_kg` and `total_kg` are always what is in force.
 - The farmer is notified of the decision: push, and `GET /notifications` items with id `req-{id}-{approved|rejected}` and url `/farmer/vuon` or `/farmer/nang-suat`.
+
+## Forms of address and polite notifications
+
+- `users.salutation` ("bác", "cô", "u", "anh", "chị"…) and `users.short_name` ("Ba", "Lan") say how a person is addressed. Every notification is worded by the server with them ("Bác Ba ơi, … ạ", "Chị Lan ơi, …"). Clients display server text as is and never compose their own wording for notifications.
+- `GET /users/me` includes `salutation` and `short_name`.
+- `POST /farmer/commands/{id}/confirm|decline` responses include `notice: { title, body }`: the text to show the farmer after they answer (also from a notification button). Button labels are **"Đồng ý"** and **"Không đồng ý"**.
+- Notification `url`s are specific: `/don-hang/{orderId}` for order updates, `/farmer` for harvest commands, `/farmer/vuon` and `/farmer/nang-suat` for approval decisions. Tapping a notification must open exactly that screen.
+
+## Farmer: propose a produce that is not on the list
+
+- `POST /farmer/produce` `{ name, category: "rau_la" | "cu_qua", daily_kg (1..500), image_url?, note? }` → **202** `{ proposals }`. `image_url` is a data URL (`data:image/jpeg|webp|png;base64,…`) of a photo resized on the device to about 480 px, at most 160,000 characters. Errors: 400, 409 (already on the list or already waiting), 429 (5 waiting).
+- `DELETE /farmer/produce/{id}` withdraws a waiting proposal → `{ proposals }`.
+- `GET /farmer/capacity` adds `proposals: [{ id, name, category, daily_kg, image_url, note, status: "pending" | "approved" | "rejected", reason, created_at }]` (waiting ones, and those decided in the last 7 days). Once approved, the produce appears in `items` with its `daily_kg`.

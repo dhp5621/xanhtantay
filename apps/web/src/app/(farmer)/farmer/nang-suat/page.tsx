@@ -9,7 +9,8 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { CapacityEditor } from "@/components/farmer/CapacityEditor";
 import { getSessionUser } from "@/lib/session";
-import { requestState } from "@/lib/requests";
+import { produceProposals, requestState } from "@/lib/requests";
+import { ProduceProposals } from "@/components/farmer/ProduceProposals";
 import type { CapacityChange } from "@/db/schema";
 
 export const metadata = { title: "Rau củ đăng ký" };
@@ -30,6 +31,7 @@ export default async function CapacityPage() {
       {farm ? (
         <CapacityEditor initial={{ ...state, items: all.map((p) => ({ produce_id: p.id, name: p.name, category: p.category, image_url: p.image_url, daily_kg: mine.find((m) => m.produce_id === p.id)?.daily_kg ?? 0, pending_kg: want.find((c) => c.produce_id === p.id)?.to_kg ?? null })) }} />
       ) : <EmptyState icon="potted_plant" title="Tài khoản chưa gắn với vườn nào" description="Bác liên hệ điều phối để được gắn vườn." />}
+      {farm && <ProduceProposals initial={(await produceProposals(farm.id)).map((p) => ({ id: p.id, name: p.name, category: p.category, daily_kg: p.daily_kg, image_url: p.image_url, note: p.note, status: p.status, reason: p.reason }))} />}
     </div>
   );
 }

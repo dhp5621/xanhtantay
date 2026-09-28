@@ -9,5 +9,5 @@ export async function POST(_: Request, { params }: { params: Promise<{ id: strin
   if (!user) return NextResponse.json({ error: "Chưa đăng nhập" }, { status: 401 });
   if (user.role !== "farmer") return NextResponse.json({ error: "Không có quyền" }, { status: 403 });
   const r = await answerCommand(id, user.id, "confirm");
-  return r.ok ? NextResponse.json(r.command) : NextResponse.json({ error: r.error }, { status: r.status });
+  return r.ok ? NextResponse.json({ ...r.command, notice: r.notice }) : NextResponse.json({ error: r.error }, { status: r.status });
 }

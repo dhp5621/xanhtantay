@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { asc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { farm_capacity, farms, produce, type CapacityChange } from "@/db/schema";
-import { fileRequest, requestState, withdrawRequest } from "@/lib/requests";
+import { fileRequest, produceProposals, requestState, withdrawRequest } from "@/lib/requests";
 import { getSessionUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -20,7 +20,7 @@ async function load(userId: string) {
   const asked = (state.pending?.payload ?? []) as CapacityChange;
   // `daily_kg` is what is in force; `pending_kg` is what the farmer asked for and the operator has not decided yet.
   const items = all.map((p) => ({ produce_id: p.id, name: p.name, category: p.category, image_url: p.image_url, daily_kg: mine.find((m) => m.produce_id === p.id)?.daily_kg ?? 0, pending_kg: asked.find((c) => c.produce_id === p.id)?.to_kg ?? null }));
-  return { farm: { id: farm.id, name: farm.name, location: farm.location, slug: farm.slug }, items, total_kg: items.reduce((s, i) => s + i.daily_kg, 0), ...state };
+  return { farm: { id: farm.id, name: farm.name, location: farm.location, slug: farm.slug }, items, total_kg: items.reduce((s, i) => s + i.daily_kg, 0), ...state, proposals: await produceProposals(farm.id) };
 }
 
 async function farmer() {

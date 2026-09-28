@@ -1,6 +1,6 @@
 import { and, eq, inArray, lte, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { boxes, box_items, farm_capacity, farms, group_orders, harvest_commands, harvest_runs, orders, produce, subscriptions, users, type CommandItem } from "@/db/schema";
+import { boxes, box_items, farm_capacity, farms, group_orders, harvest_commands, harvest_runs, orders, produce, subscriptions, users, type CommandItem, callName } from "@/db/schema";
 import { addDays, careMessageFor, commandMessage, FREQUENCY_DAYS, formatKg, formatYMD, SHIP_FEE, vnInstant, HARVEST_TIME, PICKUP_TIME, ARRIVAL_TIME } from "./commerce";
 import { aiConfigured, chatJSON } from "./ai";
 
@@ -28,7 +28,7 @@ export async function allocate(demand: Map<string, number>): Promise<{ lines: De
   const [caps, prods, farmRows] = await Promise.all([
     db.select().from(farm_capacity),
     db.select().from(produce),
-    db.select({ id: farms.id, name: farms.name, owner_id: farms.owner_id, farmer: users.name }).from(farms).leftJoin(users, eq(farms.owner_id, users.id)),
+    db.select({ id: farms.id, name: farms.name, owner_id: farms.owner_id, farmer: callName }).from(farms).leftJoin(users, eq(farms.owner_id, users.id)),
   ]);
   const nameOf = new Map(prods.map((p) => [p.id, p.name]));
   const byFarm = new Map<string, Allocation>();
@@ -190,8 +190,9 @@ export async function advanceRun(runId: string, to?: RunStatus) {
   await db.update(harvest_runs).set({ status: next, ...patch }).where(eq(harvest_runs.id, runId));
   await db.update(orders).set({ status: next as "harvesting" | "loaded" | "delivered", ...patch }).where(and(eq(orders.run_id, runId), inArray(orders.status, ["placed", "harvesting", "loaded"])));
   if (next === "delivered") await db.update(group_orders).set({ status: "delivered" }).where(and(eq(group_orders.delivery_date, run.delivery_date), eq(group_orders.status, "locked")));
-  const affected = await db.select({ user_id: orders.user_id }).from(orders).where(eq(orders.run_id, runId));
-  return { run_id: runId, status: next, customers: Array.from(new Set(affected.map((a) => a.user_id))) };
+  const affected = await db.select({ id: orders.id, user_id: orders.user_id, status: orders.status, name: callName }).from(orders).innerJoin(users, eq(orders.user_id, users.id)).where(eq(orders.run_id, runId));
+  const [first] = await db.select({ farmer: callName }).from(harvest_commands).innerJoin(farms, eq(harvest_commands.farm_id, farms.id)).leftJoin(users, eq(farms.owner_id, users.id)).where(eq(harvest_commands.run_id, runId)).limit(1);
+  return { run_id: runId, status: next, farmer: first?.farmer ?? null, customers: Array.from(new Set(affected.map((a) => a.user_id))), orders: affected.filter((a) => a.status === next) };
 }
 
 /** Expected demand for the coming days from active subscriptions and orders already placed. */

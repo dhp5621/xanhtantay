@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { and, desc, eq, gte, inArray } from "drizzle-orm";
 import { db } from "@/db";
-import { broadcasts, farms, harvest_commands, harvest_runs, orders } from "@/db/schema";
+import { broadcasts, callName, farms, harvest_commands, harvest_runs, orders, users } from "@/db/schema";
 import { getSessionUser } from "@/lib/session";
 import { COMMAND_CATEGORY } from "@/lib/commands";
 import { recentDecisions } from "@/lib/requests";
 import { addDays, todayVN } from "@/lib/commerce";
-import { ORDER_STATUS_LABELS } from "@xanhtantay/types";
+import { decisionNotice, orderNotice } from "@/lib/messages";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +29,7 @@ export async function GET(req: Request) {
   for (const b of sent) out.push({ id: `bc-${b.id}`, title: b.title, body: b.body, url: b.url ?? "/", ...(b.category ? { category: b.category } : {}), ...(b.data ? { data: b.data } : {}) });
   if (!user) return NextResponse.json({ notifications: out }, { headers: { "Cache-Control": "no-store" } });
 
+  const [me] = await db.select({ name: callName }).from(users).where(eq(users.id, user.id));
   if (user.role === "farmer") {
     const rows = await db
       .select({ c: harvest_commands })
@@ -39,8 +40,7 @@ export async function GET(req: Request) {
       .orderBy(desc(harvest_commands.created_at))
       .limit(5);
     for (const { r } of await recentDecisions(user.id)) {
-      const what = r.kind === "farm" ? "thông tin vườn" : "rau củ đăng ký";
-      out.push({ id: `req-${r.id}-${r.status}`, title: r.status === "approved" ? "Đã duyệt thay đổi" : "Thay đổi chưa được duyệt", body: r.status === "approved" ? `Thay đổi ${what} của bác đã được duyệt.` : r.note ? `Thay đổi ${what}: ${r.note}` : `Thay đổi ${what} của bác chưa được duyệt.`, url: r.kind === "farm" ? "/farmer/vuon" : "/farmer/nang-suat" });
+      out.push({ id: `req-${r.id}-${r.status}`, ...decisionNotice({ name: me?.name ?? "bác", role: "farmer" }, r.kind, r.status === "approved", r.note), url: r.kind === "farm" ? "/farmer/vuon" : "/farmer/nang-suat" });
     }
     for (const { c } of rows) out.push({ id: `cmd-${c.id}`, title: "Lệnh thu hoạch mới", body: c.message, url: "/farmer", category: COMMAND_CATEGORY, data: { commandId: c.id } });
   } else {
@@ -50,7 +50,7 @@ export async function GET(req: Request) {
       .where(and(eq(orders.user_id, user.id), inArray(orders.status, ["harvesting", "loaded", "delivered"]), gte(orders.delivery_date, since)))
       .orderBy(desc(orders.delivery_date))
       .limit(10);
-    for (const o of rows) out.push({ id: `ord-${o.id}-${o.status}`, title: "Hộp rau của bạn", body: ORDER_STATUS_LABELS[o.status], url: `/don-hang/${o.id}` });
+    for (const o of rows) out.push({ id: `ord-${o.id}-${o.status}`, ...orderNotice({ name: me?.name ?? "bạn", role: "customer" }, o.status as "harvesting" | "loaded" | "delivered"), url: `/don-hang/${o.id}` });
   }
   return NextResponse.json({ notifications: out }, { headers: { "Cache-Control": "no-store" } });
 }

@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { count, eq, sum } from "drizzle-orm";
 import { db } from "@/db";
-import { clusters, farms, orders, users } from "@/db/schema";
+import { clusters, farms, orders, users, callName } from "@/db/schema";
 import { Icon } from "@/components/ui/Icon";
 import { SmartImage } from "@/components/ui/SmartImage";
 import { getSessionUser } from "@/lib/session";
@@ -11,7 +11,7 @@ import { MixCard } from "@/components/box/MixCard";
 import { CutoffBanner } from "@/components/ui/CutoffBanner";
 import { OrderTimeline } from "@/components/order/OrderTimeline";
 import { getBoxes, getFarms, getGroups, getOrdersForUser, groupMixes } from "@/lib/queries";
-import { cutoffInstant, formatYMD, nextDeliveryDate, addressFarmer } from "@/lib/commerce";
+import { cutoffInstant, formatYMD, nextDeliveryDate, addressFarmer, addressPerson } from "@/lib/commerce";
 
 export default async function HomePage() {
   const user = await getSessionUser();
@@ -29,7 +29,7 @@ export default async function HomePage() {
   }
 
   const [[me], groups, mine] = await Promise.all([
-    db.select({ cluster_id: users.cluster_id, cluster: clusters.name }).from(users).leftJoin(clusters, eq(users.cluster_id, clusters.id)).where(eq(users.id, user.id)),
+    db.select({ cluster_id: users.cluster_id, cluster: clusters.name, call: callName }).from(users).leftJoin(clusters, eq(users.cluster_id, clusters.id)).where(eq(users.id, user.id)),
     getGroups({ onlyOpen: true }),
     getOrdersForUser(user.id),
   ]);
@@ -42,7 +42,7 @@ export default async function HomePage() {
       <section className="m3-hero anim-in-scale">
         <span className="m3-hero-blob" style={{ width: 320, height: 320, right: -80, top: -120 }} />
         <div style={{ position: "relative", maxWidth: 620 }}>
-          <p className="m3-eyebrow anim-in" style={{ marginBottom: 12 }}>Chào {user.name?.split(" ").pop()}{me?.cluster ? ` · ${me.cluster}` : ""}</p>
+          <p className="m3-eyebrow anim-in" style={{ marginBottom: 12 }}>Chào {addressPerson(me?.call ?? user.name ?? "bạn").call.replace(/^./, (c) => c.toLowerCase())}{me?.cluster ? ` · ${me.cluster}` : ""}</p>
           <h1 className="display-md anim-in delay-1" style={{ color: "var(--md-on-primary-container)", marginBottom: 14 }}>Thùng rau mẹ gửi</h1>
           <p className="body-lg anim-in delay-2" style={{ color: "var(--md-on-secondary-container)", maxWidth: 480, marginBottom: 20 }}>Hộp rau theo mùa từ nương đồi Bắc Kạn, Tuyên Quang. Đặt hôm nay, mai có tại sảnh.</p>
           <div className="anim-in delay-3" style={{ marginBottom: 18 }}><CutoffBanner cutoffAt={cutoffAt} deliveryLabel={formatYMD(deliveryDate)} /></div>

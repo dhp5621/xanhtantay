@@ -54,14 +54,25 @@ export function shipFeeFor(type: "single" | "subscription" | "group") {
   return type === "subscription" ? 0 : SHIP_FEE;
 }
 
-/** "Bác Ba Nguyễn" → { call: "Bác Ba", pronoun: "bác" } */
-export function addressFarmer(fullName: string) {
-  const parts = fullName.trim().split(/\s+/);
-  const title = parts[0] ?? "Bác";
-  const known = ["bác", "cô", "chú", "u", "anh", "chị", "ông", "bà", "dì", "cậu"];
-  const isTitle = known.includes(title.toLowerCase());
-  return isTitle ? { call: `${title} ${parts[1] ?? ""}`.trim(), pronoun: title.toLowerCase() } : { call: `Bác ${parts[parts.length - 1]}`, pronoun: "bác" };
+/** Forms of address the platform understands at the start of a name. */
+export const SALUTATIONS = ["bác", "cô", "chú", "u", "anh", "chị", "ông", "bà", "dì", "cậu", "mế", "thím", "mợ", "bá", "cụ", "em", "bạn"];
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+/**
+ * How to address someone, from the form of address on file ("bác Ba", see `callName`) or, failing
+ * that, from their full name. `fallback` is used when the name carries no form of address:
+ * farmers are "bác", customers "bạn".
+ *   "bác Ba" / "Bác Ba Nguyễn" → { call: "Bác Ba", pronoun: "bác" }
+ *   "Nguyễn Thị Lan" (customer) → { call: "Bạn Lan", pronoun: "bạn" }
+ */
+export function addressPerson(name: string, fallback = "bạn") {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  const title = (parts[0] ?? "").toLowerCase();
+  if (SALUTATIONS.includes(title) && parts[1]) return { call: `${cap(title)} ${parts[1]}`, pronoun: title };
+  // Vietnamese given names come last.
+  return { call: `${cap(fallback)} ${parts[parts.length - 1] ?? ""}`.trim(), pronoun: fallback };
 }
+export const addressFarmer = (name: string) => addressPerson(name, "bác");
 
 /** "15 kg cà rốt và 20 kg bắp cải" */
 export function joinItems(items: { name: string; kg: number }[]) {
@@ -74,7 +85,7 @@ export const formatKg = (kg: number) => `${Number(kg.toFixed(1)).toLocaleString(
 /** The one message a farmer sees. */
 export function commandMessage(farmerName: string, deliveryDate: string, items: { name: string; kg: number }[]) {
   const { call, pronoun } = addressFarmer(farmerName);
-  return `${call} ơi, ${HARVEST_TIME.replace(":00", "h")} sáng ${formatYMD(deliveryDate, { day: "numeric", month: "numeric" })} ${pronoun} cắt đúng ${joinItems(items)} nhé. Xe tải lạnh sẽ qua lấy lúc ${PICKUP_TIME.replace(":00", "h")}.`;
+  return `${call} ơi, ${HARVEST_TIME.replace(":00", "h")} sáng ${formatYMD(deliveryDate, { day: "numeric", month: "numeric" })} nhờ ${pronoun} cắt giúp đúng ${joinItems(items)} ạ. Xe tải lạnh sẽ qua lấy lúc ${PICKUP_TIME.replace(":00", "h")}. Cảm ơn ${pronoun} nhiều ạ!`;
 }
 
 /** "Lời nhắn quan tâm": a note from home that comes with every box. */

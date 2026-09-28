@@ -60,7 +60,7 @@ export function NotificationPoller() {
           if (reg) {
             const commandId = n.category === "harvest_command" ? n.data?.commandId : undefined;
             const options: NotificationOptions & { actions?: { action: string; title: string }[] } = { body: n.body, icon: "/icon.png", badge: "/icon.png", tag: n.id, requireInteraction: !!commandId, data: { url: n.url, commandId: commandId ?? null } };
-            if (commandId) options.actions = [{ action: "confirm", title: "Có, xác nhận" }, { action: "decline", title: "Không" }];
+            if (commandId) options.actions = [{ action: "confirm", title: "Đồng ý" }, { action: "decline", title: "Không đồng ý" }];
             await reg.showNotification(n.title, options);
           } else {
             const note = new Notification(n.title, { body: n.body, icon: "/icon.png", tag: n.id });

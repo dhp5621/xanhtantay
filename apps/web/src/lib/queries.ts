@@ -1,6 +1,6 @@
 import { and, desc, eq, inArray, ne, sql, asc } from "drizzle-orm";
 import { db } from "@/db";
-import { boxes, box_items, clusters, farm_capacity, farms, group_orders, harvest_commands, harvest_runs, orders, produce, subscriptions, users } from "@/db/schema";
+import { boxes, box_items, clusters, farm_capacity, farms, group_orders, harvest_commands, harvest_runs, orders, produce, subscriptions, users, callName } from "@/db/schema";
 
 export type BoxItemView = { produce_id: string; name: string; image_url: string | null; category: string; quantity_kg: number; farms: { id: string; name: string; slug: string; province: string; location: string }[] };
 export type BoxView = Omit<typeof boxes.$inferSelect, "weight_kg"> & { weight_kg: number; items: BoxItemView[] };
@@ -56,7 +56,7 @@ async function farmersByRun(runIds: string[]) {
   const out = new Map<string, { farm_id: string; farm: string; slug: string; farmer: string; location: string; confirmed: boolean; items: { name: string; kg: number }[] }[]>();
   const ids = Array.from(new Set(runIds));
   if (!ids.length) return out;
-  const rows = await db.select({ c: harvest_commands, farm: farms, farmer: users.name }).from(harvest_commands).innerJoin(farms, eq(harvest_commands.farm_id, farms.id)).leftJoin(users, eq(farms.owner_id, users.id)).where(inArray(harvest_commands.run_id, ids));
+  const rows = await db.select({ c: harvest_commands, farm: farms, farmer: callName }).from(harvest_commands).innerJoin(farms, eq(harvest_commands.farm_id, farms.id)).leftJoin(users, eq(farms.owner_id, users.id)).where(inArray(harvest_commands.run_id, ids));
   for (const r of rows) out.set(r.c.run_id, [...(out.get(r.c.run_id) ?? []), { farm_id: r.farm.id, farm: r.farm.name, slug: r.farm.slug, farmer: r.farmer ?? r.farm.name, location: r.farm.location, confirmed: r.c.status === "confirmed", items: r.c.items.map((i) => ({ name: i.name, kg: i.kg })) }]);
   return out;
 }
@@ -108,7 +108,7 @@ export async function getSubscriptionsForUser(userId: string) {
 }
 
 export async function getFarms(slugOrId?: string) {
-  const rows = await db.select({ f: farms, farmer: users.name, avatar_url: users.avatar_url }).from(farms).leftJoin(users, eq(farms.owner_id, users.id)).where(slugOrId ? sql`${farms.slug} = ${slugOrId} OR ${farms.id} = ${slugOrId}` : undefined).orderBy(asc(farms.province), asc(farms.name));
+  const rows = await db.select({ f: farms, farmer: callName, avatar_url: users.avatar_url }).from(farms).leftJoin(users, eq(farms.owner_id, users.id)).where(slugOrId ? sql`${farms.slug} = ${slugOrId} OR ${farms.id} = ${slugOrId}` : undefined).orderBy(asc(farms.province), asc(farms.name));
   if (!rows.length) return [];
   const caps = await db.select({ c: farm_capacity, p: produce }).from(farm_capacity).innerJoin(produce, eq(farm_capacity.produce_id, produce.id)).where(inArray(farm_capacity.farm_id, rows.map((r) => r.f.id)));
   return rows.map((r) => ({ ...r.f, farmer: r.farmer, farmer_avatar: r.avatar_url, grows: caps.filter((c) => c.c.farm_id === r.f.id).map((c) => ({ produce_id: c.p.id, name: c.p.name, image_url: c.p.image_url, daily_kg: c.c.daily_kg })).sort((a, b) => b.daily_kg - a.daily_kg) }));

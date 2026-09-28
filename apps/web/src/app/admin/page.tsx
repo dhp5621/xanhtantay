@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { db } from "@/db";
-import { users, farms, orders, subscriptions, group_orders, push_devices, harvest_runs, harvest_commands, farm_capacity, produce, change_requests, type FarmChange, type CapacityChange } from "@/db/schema";
+import { users, farms, orders, subscriptions, group_orders, push_devices, harvest_runs, harvest_commands, farm_capacity, produce, change_requests, callName, type FarmChange, type CapacityChange, type ProduceProposal } from "@/db/schema";
 import { and, count, desc, eq, ne, sum } from "drizzle-orm";
 import { Icon } from "@/components/ui/Icon";
 import { AdminPush } from "@/components/admin/AdminPush";
@@ -21,7 +21,7 @@ export default async function BrainDashboard() {
   // If tomorrow's book is past its cut-off but was never closed, that one needs closing first.
   const tomorrow = addDays(today, 1);
 
-  const requests = await db.select({ r: change_requests, farm: farms, farmer: users.name }).from(change_requests).innerJoin(farms, eq(change_requests.farm_id, farms.id)).leftJoin(users, eq(farms.owner_id, users.id)).where(eq(change_requests.status, "pending")).orderBy(desc(change_requests.created_at));
+  const requests = await db.select({ r: change_requests, farm: farms, farmer: callName }).from(change_requests).innerJoin(farms, eq(change_requests.farm_id, farms.id)).leftJoin(users, eq(farms.owner_id, users.id)).where(eq(change_requests.status, "pending")).orderBy(desc(change_requests.created_at));
   const [preview, fc, runs, caps, [u], [f], [rev], [s], [g], pushRows, [openTomorrow]] = await Promise.all([
     previewFor(bookDate),
     forecast(addDays(today, 1), 7),
@@ -35,7 +35,7 @@ export default async function BrainDashboard() {
     db.select({ platform: push_devices.platform, c: count() }).from(push_devices).groupBy(push_devices.platform),
     db.select({ c: count() }).from(orders).where(and(eq(orders.delivery_date, tomorrow), eq(orders.status, "placed"), ne(orders.type, "subscription"))),
   ]);
-  const commands = runs.length ? await db.select({ c: harvest_commands, farm: farms.name, farmer: users.name }).from(harvest_commands).innerJoin(farms, eq(harvest_commands.farm_id, farms.id)).leftJoin(users, eq(farms.owner_id, users.id)).orderBy(desc(harvest_commands.total_kg)) : [];
+  const commands = runs.length ? await db.select({ c: harvest_commands, farm: farms.name, farmer: callName }).from(harvest_commands).innerJoin(farms, eq(harvest_commands.farm_id, farms.id)).leftJoin(users, eq(farms.owner_id, users.id)).orderBy(desc(harvest_commands.total_kg)) : [];
   const pushCounts = { mobile: pushRows.filter((r) => r.platform !== "web").reduce((n, r) => n + r.c, 0), web: pushRows.find((r) => r.platform === "web")?.c ?? 0 };
   const revenue = Number(rev.s ?? 0);
   const capOf = new Map(caps.map((c) => [c.produce_id, Number(c.s ?? 0)]));
@@ -183,10 +183,26 @@ export default async function BrainDashboard() {
                     <p className="title-md text-on-surface">{addressFarmer(farmer ?? farm.name).call} · {farm.name}</p>
                     <p className="body-sm text-on-surface-variant">{farm.location} · gửi lúc {formatClock(r.created_at)} {formatYMD(todayVN(r.created_at), { day: "numeric", month: "numeric" })}</p>
                   </div>
-                  <span className="m3-chip sm round m3-chip-surface"><Icon name={r.kind === "farm" ? "storefront" : "scale"} size={14} filled /> {r.kind === "farm" ? "Thông tin vườn" : "Rau củ đăng ký"}</span>
+                  <span className="m3-chip sm round m3-chip-surface"><Icon name={r.kind === "farm" ? "storefront" : r.kind === "produce" ? "add_photo_alternate" : "scale"} size={14} filled /> {r.kind === "farm" ? "Thông tin vườn" : r.kind === "produce" ? "Rau củ mới" : "Rau củ đăng ký"}</span>
                 </div>
+                {r.kind === "produce" && (() => {
+                  const p = r.payload as ProduceProposal;
+                  return (
+                    <div style={{ display: "flex", gap: 14, alignItems: "flex-start", marginBottom: 4 }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <span className="m3-capacity-photo" style={{ width: 96, height: 96 }}>{p.image_url ? <img src={p.image_url} alt={p.name} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} /> : <Icon name="eco" filled />}</span>
+                      <dl className="m3-diff" style={{ flex: 1 }}>
+                        <div style={{ display: "contents" }}><dt>Tên</dt><dd><ins>{p.name}</ins></dd></div>
+                        <div style={{ display: "contents" }}><dt>Loại</dt><dd>{p.category === "cu_qua" ? "Củ quả" : "Rau lá"}</dd></div>
+                        <div style={{ display: "contents" }}><dt>Sản lượng</dt><dd>{formatKg(p.daily_kg)} mỗi ngày</dd></div>
+                        {p.note && <div style={{ display: "contents" }}><dt>Ghi chú</dt><dd>{p.note}</dd></div>}
+                        {!p.image_url && <div style={{ display: "contents" }}><dt>Ảnh</dt><dd>Không gửi ảnh</dd></div>}
+                      </dl>
+                    </div>
+                  );
+                })()}
                 <dl className="m3-diff">
-                  {r.kind === "farm"
+                  {r.kind === "produce" ? null : r.kind === "farm"
                     ? (Object.entries(r.payload as FarmChange) as [keyof FarmChange, string | null][]).map(([k, v]) => (
                         <div key={k} style={{ display: "contents" }}><dt>{FARM_FIELD_LABELS[k]}</dt><dd><del>{farm[k] || "(để trống)"}</del><br /><ins>{v || "(để trống)"}</ins></dd></div>
                       ))

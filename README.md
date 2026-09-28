@@ -46,6 +46,8 @@ Font tự host trong `apps/web/public/fonts`. Icon là bản rút gọn theo tê
 
 ### Thông báo
 
+Lời lẽ thông báo do máy chủ soạn, lịch sự và xưng hô theo cách gọi lưu trong cơ sở dữ liệu (`users.salutation` + `users.short_name`, ví dụ "bác Ba", "chị Lan"; sửa ở `/admin` → Người dùng). Lệnh thu hoạch có hai nút **Đồng ý** / **Không đồng ý** ngay trên thông báo. Bấm vào thông báo sẽ mở đúng màn hình liên quan (đúng đơn hàng, lệnh thu hoạch, trang duyệt).
+
 Có hai đường giao thông báo (lệnh thu hoạch cho nông dân, hành trình hộp rau cho khách):
 
 1. **Hỏi máy chủ định kỳ** (luôn chạy, không cần cấu hình): khi app hoặc trang web đang mở, cứ 15 giây hỏi `/api/notifications` rồi hiện thông báo tại chỗ (cả thông báo quản trị gửi từ `/admin`). Không phụ thuộc Google / Apple.
@@ -93,7 +95,7 @@ Trang đăng nhập có nút một chạm cho cả hai. Quản trị: `/admin/lo
 - Một màn hình duy nhất, chữ to: *"Bác Ba ơi, 4h sáng mai bác cắt đúng 15 kg cà rốt và 20 kg bắp cải nhé. Xe tải lạnh sẽ qua lấy lúc 6h."*
 - Trả lời bằng **Có** (Đã hiểu & Xác nhận) hoặc **Không** (không cắt được), bấm được ngay trên thông báo (Android, iOS, trình duyệt) mà không cần mở app. Bộ não thấy hộ nào báo không cắt được.
 - Bên dưới là các lần thu hoạch trước.
-- **Rau củ đăng ký** (`/farmer/nang-suat`) và **Thông tin vườn** (`/farmer/vuon`): nông dân gửi yêu cầu đổi sản lượng mỗi ngày, thêm hoặc ngừng cung cấp, đổi tên, địa chỉ, lời giới thiệu vườn. **Mọi thay đổi phải được quản trị duyệt** mới có hiệu lực; nông dân thấy yêu cầu đang chờ, rút lại được, và được báo kết quả kèm lý do nếu bị từ chối.
+- **Rau củ đăng ký** (`/farmer/nang-suat`) và **Thông tin vườn** (`/farmer/vuon`): nông dân gửi yêu cầu đổi sản lượng mỗi ngày, thêm hoặc ngừng cung cấp, đổi tên, địa chỉ, lời giới thiệu vườn. Loại rau củ chưa có trong danh sách thì nông dân **đăng ký mới kèm ảnh** (chụp hoặc chọn ảnh). **Mọi thay đổi phải được quản trị duyệt** mới có hiệu lực; nông dân thấy yêu cầu đang chờ, rút lại được, và được báo kết quả kèm lý do nếu bị từ chối.
 
 ### Bộ não trung tâm (`/admin`)
 - Gom đơn đặt trước, gói định kỳ tới hạn và nhóm gom đơn của chuyến sắp chốt; so nhu cầu với năng suất từng loại rau.

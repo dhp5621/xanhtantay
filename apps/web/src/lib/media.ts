@@ -158,3 +158,25 @@ export async function compressVideo(file: File, onProgress?: (p: number) => void
   const ext = blob.type.includes("mp4") ? "mp4" : "webm";
   return new File([blob], file.name.replace(/\.[^.]+$/, "") + "." + ext, { type: blob.type });
 }
+
+/**
+ * A photo small enough to travel inside a request and live in the database: about 480 px on the
+ * long side, shrunk further until the data URL fits `maxChars`.
+ */
+export async function makePhotoDataUrl(file: File, maxChars = 150_000): Promise<string> {
+  const bmp = await loadBitmap(file);
+  const read = (blob: Blob) => new Promise<string>((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result));
+    r.onerror = () => reject(new Error("read"));
+    r.readAsDataURL(blob);
+  });
+  for (const [edge, quality] of [[480, 0.72], [480, 0.55], [400, 0.55], [320, 0.5], [240, 0.5]] as const) {
+    const canvas = drawScaled(bmp, edge);
+    let blob = await toBlob(canvas, "image/webp", quality);
+    if (blob.type !== "image/webp") blob = await toBlob(canvas, "image/jpeg", quality);
+    const url = await read(blob);
+    if (url.length <= maxChars) return url;
+  }
+  throw new Error("Ảnh quá lớn, bác chọn ảnh khác giúp ạ");
+}

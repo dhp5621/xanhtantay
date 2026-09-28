@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import { pgTable, text, timestamp, boolean, integer, numeric, jsonb, pgEnum, date, uniqueIndex } from "drizzle-orm/pg-core";
 
 /**
@@ -35,8 +36,14 @@ export const users = pgTable("users", {
   /** Customer's building and flat, prefilled at checkout. */
   cluster_id: text("cluster_id").references(() => clusters.id, { onDelete: "set null" }),
   address: text("address"),
+  /** How this person is addressed: "bác", "cô", "u", "anh", "chị"… with the name they go by ("Ba", "Lan"). */
+  salutation: text("salutation"),
+  short_name: text("short_name"),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
+
+/** "bác Ba" when the form of address is on file, else the full name. Feed it to addressFarmer / addressPerson. */
+export const callName = sql<string>`case when ${users.salutation} is not null and ${users.short_name} is not null then ${users.salutation} || ' ' || ${users.short_name} else ${users.name} end`;
 
 export const farms = pgTable("farms", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
@@ -210,6 +217,8 @@ export const push_devices = pgTable("push_devices", {
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
 });
+/** A produce that is not on the platform's list yet, asked for by a farmer. `image_url` is a small data URL. */
+export type ProduceProposal = { name: string; category: string; daily_kg: number; image_url: string | null; note: string | null };
 export type FarmChange = { name?: string; location?: string; province?: string; description?: string | null };
 export type CapacityChange = { produce_id: string; name: string; from_kg: number; to_kg: number }[];
 /**
@@ -219,9 +228,9 @@ export type CapacityChange = { produce_id: string; name: string; from_kg: number
 export const change_requests = pgTable("change_requests", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   farm_id: text("farm_id").notNull().references(() => farms.id, { onDelete: "cascade" }),
-  /** "farm" (name, address, description) | "capacity" (kg per day per produce) */
+  /** "farm" (name, address, description) | "capacity" (kg per day per produce) | "produce" (a new produce, with photo) */
   kind: text("kind").notNull(),
-  payload: jsonb("payload").$type<FarmChange | CapacityChange>().notNull(),
+  payload: jsonb("payload").$type<FarmChange | CapacityChange | ProduceProposal>().notNull(),
   /** "pending" | "approved" | "rejected" */
   status: text("status").notNull().default("pending"),
   /** The operator's reason, shown to the farmer. */

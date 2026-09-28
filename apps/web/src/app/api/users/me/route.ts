@@ -7,7 +7,7 @@ import { getSessionUser } from "@/lib/session";
 // Avatars are stored inline as a tiny data URL (96×96 WebP ≈ 3–5 KB), never in Blob storage.
 const MAX_AVATAR_CHARS = 24 * 1024;
 const DATA_URL = /^data:image\/(webp|jpeg|png);base64,[A-Za-z0-9+/=]+$/;
-const FIELDS = { id: users.id, name: users.name, email: users.email, phone: users.phone, role: users.role, avatar_url: users.avatar_url, cluster_id: users.cluster_id, address: users.address };
+const FIELDS = { id: users.id, name: users.name, email: users.email, phone: users.phone, role: users.role, avatar_url: users.avatar_url, cluster_id: users.cluster_id, address: users.address, salutation: users.salutation, short_name: users.short_name };
 
 export async function GET() {
   const user = await getSessionUser();

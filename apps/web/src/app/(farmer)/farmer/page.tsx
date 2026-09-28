@@ -1,5 +1,8 @@
 export const dynamic = "force-dynamic";
 import Link from "next/link";
+import { eq } from "drizzle-orm";
+import { db } from "@/db";
+import { callName, users } from "@/db/schema";
 import { getSessionUser } from "@/lib/session";
 import { getCommandsForFarmer } from "@/lib/queries";
 import { Icon } from "@/components/ui/Icon";
@@ -17,7 +20,8 @@ export default async function FarmerPage() {
   // The command that needs attention: unconfirmed first, else the upcoming / today's one.
   const current = commands.find((c) => c.status === "sent") ?? commands.find((c) => c.delivery_date >= today && c.run_status !== "delivered") ?? null;
   const history = commands.filter((c) => c.id !== current?.id);
-  const call = addressFarmer(user.name ?? "Bác").call;
+  const [me] = await db.select({ name: callName }).from(users).where(eq(users.id, user.id));
+  const call = addressFarmer(me?.name ?? user.name ?? "Bác").call;
 
   return (
     <div className="max-w-2xl mx-auto flex flex-col gap-6">

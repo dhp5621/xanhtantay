@@ -139,6 +139,8 @@ export const SECTIONS: Section[] = [
   {
     key: "users", table: "users", label: "Người dùng", icon: "group", desc: "Khách hàng và nhà vườn", canDelete: true,
     fields: [
+      { key: "salutation", label: "Xưng hô (bác, cô, u, anh, chị…)", type: "text" },
+      { key: "short_name", label: "Tên gọi (Ba, Lan…)", type: "text" },
       { key: "name", label: "Tên", type: "text", required: true },
       { key: "email", label: "Email", type: "text" },
       { key: "phone", label: "Điện thoại", type: "text" },
