@@ -122,3 +122,18 @@ Changes to the farm profile and to the registered supply are **requests**. Nothi
 - `POST /farmer/produce` `{ name, category: "rau_la" | "cu_qua", daily_kg (1..500), image_url?, note? }` → **202** `{ proposals }`. `image_url` is a data URL (`data:image/jpeg|webp|png;base64,…`) of a photo resized on the device to about 480 px, at most 160,000 characters. Errors: 400, 409 (already on the list or already waiting), 429 (5 waiting).
 - `DELETE /farmer/produce/{id}` withdraws a waiting proposal → `{ proposals }`.
 - `GET /farmer/capacity` adds `proposals: [{ id, name, category, daily_kg, image_url, note, status: "pending" | "approved" | "rejected", reason, created_at }]` (waiting ones, and those decided in the last 7 days). Once approved, the produce appears in `items` with its `daily_kg`.
+
+## Return / refund after delivery
+
+Shown on an order once it is `delivered`, for 3 days after `delivered_at`. One request per order. The operator verifies it in `/admin` and the customer is notified of the outcome.
+
+- `GET /orders/{id}/refund` (owner) → `{ request: Refund | null, can_request: boolean, until: string | null, reason: string | null }` (`reason` says why a request cannot be filed).
+- `POST /orders/{id}/refund` `{ reason, description, photos, video_url, method }` → 201 `{ request }`. Errors `{ error }`: 400 / 401 / 404 / 409 (already filed).
+  - `reason`: `"not_received"` Chưa nhận được hàng · `"missing"` Thiếu hàng · `"spoiled"` Hàng bị hư hỏng · `"wrong"` Giao sai hàng · `"broken"` Giao hàng bị vỡ, hỏng hàng
+  - `description`: the customer's own account, 3 to **200 words**.
+  - `photos`: **exactly 4** URLs (all sides of the box) and `video_url`: **1** video of at most **60 seconds**. Required for every reason except `not_received`, where both are optional. Only URLs returned by `POST /upload` are accepted.
+  - `method`: what the customer asks for: `"refund"` Hoàn tiền · `"replace"` Giao bù hộp khác. The operator decides and may grant the other one.
+- `DELETE /orders/{id}/refund` withdraws it while `status` is `pending`.
+- `Refund = { id, order_id, reason, description, photos: string[], video_url, method, status: "pending" | "approved" | "rejected", resolution: "refund" | "replace" | null, refund_amount: number | null, note: string | null, created_at, reviewed_at }`
+- Upload evidence first: `POST /upload` as multipart with `file` and `purpose=refund` → `{ url }`. Images up to 3 MB, evidence video up to 30 MB. **Compress on the device before uploading**: images to at most 1280 px on the long side (JPEG/WebP), video to at most 720p and 60 s.
+- The verdict arrives as a push and in `GET /notifications` with id `refund-{id}-{approved|rejected}` and url `/don-hang/{orderId}`.

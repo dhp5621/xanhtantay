@@ -18,6 +18,7 @@ function databaseUrl() {
 }
 
 const DROP = [
+  "refund_requests",
   // pre-pivot tables
   "user_recipes", "meal_plans", "recipes", "order_items", "farm_diary", "products", "group_order_members",
   // current tables (children first)
@@ -51,6 +52,7 @@ const CREATE = [
   `CREATE TABLE IF NOT EXISTS push_devices (id text PRIMARY KEY, platform text NOT NULL, token text NOT NULL UNIQUE, subscription jsonb, user_id text REFERENCES users(id) ON DELETE SET NULL, created_at timestamp NOT NULL DEFAULT now(), updated_at timestamp NOT NULL DEFAULT now())`,
   `CREATE TABLE IF NOT EXISTS broadcasts (id text PRIMARY KEY, title text NOT NULL, body text NOT NULL, url text, target text NOT NULL DEFAULT 'all', category text, data jsonb, created_at timestamp NOT NULL DEFAULT now())`,
   `CREATE TABLE IF NOT EXISTS change_requests (id text PRIMARY KEY, farm_id text NOT NULL REFERENCES farms(id) ON DELETE CASCADE, kind text NOT NULL, payload jsonb NOT NULL, status text NOT NULL DEFAULT 'pending', note text, created_at timestamp NOT NULL DEFAULT now(), reviewed_at timestamp)`,
+  `CREATE TABLE IF NOT EXISTS refund_requests (id text PRIMARY KEY, order_id text NOT NULL UNIQUE REFERENCES orders(id) ON DELETE CASCADE, user_id text NOT NULL REFERENCES users(id), reason text NOT NULL, description text NOT NULL, photos jsonb NOT NULL DEFAULT '[]', video_url text, method text NOT NULL, status text NOT NULL DEFAULT 'pending', resolution text, refund_amount integer, note text, created_at timestamp NOT NULL DEFAULT now(), reviewed_at timestamp)`,
   // Columns added after the first release: existing databases are upgraded in place.
   `ALTER TYPE command_status ADD VALUE IF NOT EXISTS 'declined'`,
   `ALTER TABLE harvest_commands ADD COLUMN IF NOT EXISTS declined_at timestamp`,

@@ -9,6 +9,8 @@ import { OrderTimeline } from "@/components/order/OrderTimeline";
 import { CancelOrderButton } from "@/components/order/CancelOrderButton";
 import { BoxContents } from "@/components/box/BoxContents";
 import { BoxMenu } from "@/components/box/BoxMenu";
+import { RefundSection } from "@/components/refund/RefundSection";
+import { refundFor, refundWindow } from "@/lib/refunds";
 import { formatVND, ORDER_TYPE_LABELS } from "@/lib/format";
 import { addressFarmer, formatYMD } from "@/lib/commerce";
 
@@ -20,6 +22,8 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   if (!user) redirect(`/dang-nhap?next=/don-hang/${id}&role=customer`);
   const o = await getOrderTrace(id);
   if (!o || o.user_id !== user.id) notFound();
+  const refund = o.status === "delivered" ? await refundFor(o.id) : null;
+  const win = refundWindow({ status: o.status, delivered_at: o.delivered_at });
   const farmer = o.farms[0] ? addressFarmer(o.farms[0].farmer).call.replace(/^./, (c) => c.toLowerCase()) : null;
 
   return (
@@ -56,6 +60,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
       </section>
 
       <BoxContents items={o.contents} title="Trong hộp của bạn" />
+      {o.status === "delivered" && <RefundSection orderId={o.id} initial={refund} canRequest={win.open} until={win.until?.toISOString() ?? null} blocked={win.reason} />}
       <BoxMenu plan={o.box.meal_plan} title="Ăn gì mấy ngày tới" target={o.status === "cancelled" ? undefined : { orderId: o.id }} customised={o.box.customised} />
     </div>
   );

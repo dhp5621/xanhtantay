@@ -100,10 +100,10 @@ export function canCompressVideo() {
 }
 
 /**
- * Re-encodes a video at ≤720p / 25 fps / ~1.2 Mbps and stops at 30 s.
+ * Re-encodes a video at ≤720p / 25 fps / ~1.2 Mbps and stops at `maxSeconds` (30 s by default).
  * onProgress receives 0..1. Throws if the browser cannot re-encode.
  */
-export async function compressVideo(file: File, onProgress?: (p: number) => void): Promise<File> {
+export async function compressVideo(file: File, onProgress?: (p: number) => void, maxSeconds = VIDEO_MAX_SECONDS): Promise<File> {
   const mime = pickVideoMime();
   if (!mime || !HTMLCanvasElement.prototype.captureStream) throw new Error("unsupported");
 
@@ -135,7 +135,7 @@ export async function compressVideo(file: File, onProgress?: (p: number) => void
   const chunks: Blob[] = [];
   rec.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
 
-  const limit = Math.min(video.duration || VIDEO_MAX_SECONDS, VIDEO_MAX_SECONDS);
+  const limit = Math.min(video.duration || maxSeconds, maxSeconds);
   const done = new Promise<void>((res) => { rec.onstop = () => res(); });
 
   let raf = 0;

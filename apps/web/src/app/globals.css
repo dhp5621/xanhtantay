@@ -2070,3 +2070,21 @@ input[type="number"].tabular::-webkit-inner-spin-button { -webkit-appearance: no
 .m3-diff dd { margin: 0; overflow-wrap: anywhere; }
 .m3-diff del { color: var(--md-on-surface-variant); }
 .m3-diff ins { text-decoration: none; font-weight: 600; color: var(--md-primary); }
+
+/* Return / refund: evidence and the request form */
+.m3-evidence { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; }
+.m3-evidence-item { position: relative; aspect-ratio: 1; border: none; padding: 0; border-radius: var(--shape-md); overflow: hidden; background: var(--md-surface-container-highest); cursor: zoom-in; }
+.m3-evidence-item img, .m3-evidence-item video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.m3-evidence-item:focus-visible { outline: 2px solid var(--md-primary); outline-offset: 2px; }
+.m3-evidence-play { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; background: rgba(0, 0, 0, 0.35); }
+.m3-evidence-view { position: fixed; inset: 0; z-index: 1001; display: grid; place-items: center; padding: 16px; pointer-events: none; }
+.m3-evidence-view > * { pointer-events: auto; }
+.m3-evidence-view img, .m3-evidence-view video { max-width: min(100%, 1100px); max-height: calc(100dvh - 32px); border-radius: var(--shape-lg); background: #000; }
+.m3-refund-dialog { width: min(640px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); overflow-y: auto; }
+.m3-refund-slots { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 520px) { .m3-refund-slots { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.m3-refund-slot { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; min-width: 0; }
+.m3-refund-thumb { width: 100%; aspect-ratio: 1; border-radius: var(--shape-md); overflow: hidden; display: grid; place-items: center; background: var(--md-surface-container-highest); color: var(--md-on-surface-variant); outline: 1px dashed var(--md-outline-variant); outline-offset: -1px; }
+.m3-refund-thumb img, .m3-refund-thumb video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.m3-refund-thumb.wide { width: 140px; aspect-ratio: 16 / 10; flex-shrink: 0; }
+.m3-refund-video { display: flex; gap: 12px; align-items: center; margin-top: 10px; }

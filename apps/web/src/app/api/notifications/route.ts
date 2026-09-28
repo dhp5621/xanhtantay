@@ -5,8 +5,9 @@ import { broadcasts, callName, farms, harvest_commands, harvest_runs, orders, us
 import { getSessionUser } from "@/lib/session";
 import { COMMAND_CATEGORY } from "@/lib/commands";
 import { recentDecisions } from "@/lib/requests";
+import { recentRefundDecisions } from "@/lib/refunds";
 import { addDays, todayVN } from "@/lib/commerce";
-import { decisionNotice, orderNotice } from "@/lib/messages";
+import { decisionNotice, orderNotice, refundNotice } from "@/lib/messages";
 
 export const dynamic = "force-dynamic";
 
@@ -50,6 +51,7 @@ export async function GET(req: Request) {
       .where(and(eq(orders.user_id, user.id), inArray(orders.status, ["harvesting", "loaded", "delivered"]), gte(orders.delivery_date, since)))
       .orderBy(desc(orders.delivery_date))
       .limit(10);
+    for (const r of await recentRefundDecisions(user.id)) out.push({ id: `refund-${r.id}-${r.status}`, ...refundNotice({ name: me?.name ?? "bạn", role: "customer" }, r.status === "approved", r.resolution, r.refund_amount, r.note), url: `/don-hang/${r.order_id}` });
     for (const o of rows) out.push({ id: `ord-${o.id}-${o.status}`, ...orderNotice({ name: me?.name ?? "bạn", role: "customer" }, o.status as "harvesting" | "loaded" | "delivered"), url: `/don-hang/${o.id}` });
   }
   return NextResponse.json({ notifications: out }, { headers: { "Cache-Control": "no-store" } });

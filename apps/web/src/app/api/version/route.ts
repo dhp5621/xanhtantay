@@ -21,6 +21,7 @@ export async function GET() {
     (select count(*) || ':' || coalesce(sum(daily_kg), 0) from farm_capacity) as k,
     (select count(*) || ':' || coalesce(sum(length(coalesce(cover_url, '')) + length(name) + length(coalesce(description, ''))), 0) from farms) as f,
     (select count(*) || ':' || coalesce(sum(case status when 'pending' then 1 when 'approved' then 3 else 7 end), 0) || ':' || coalesce(max(extract(epoch from created_at)), 0) from change_requests) as q,
+    (select count(*) || ':' || coalesce(sum(case status when 'pending' then 1 when 'approved' then 3 else 7 end), 0) from refund_requests) as rf,
     (select count(*) || ':' || coalesce(sum(length(coalesce(avatar_url, '')) + length(name) + length(coalesce(cluster_id, ''))), 0) from users) as u`);
   const row = Array.isArray(result) ? result[0] : (result as { rows?: unknown[] }).rows?.[0];
   const v = createHash("sha1").update(JSON.stringify(row ?? {})).digest("hex").slice(0, 12);

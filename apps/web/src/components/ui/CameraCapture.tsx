@@ -7,7 +7,7 @@ import { Icon } from "./Icon";
 type Mode = "photo" | "video";
 type Facing = "user" | "environment";
 
-const VIDEO_MAX_SECONDS = 30;
+const DEFAULT_MAX_SECONDS = 30;
 const VIDEO_BITRATE = 1_200_000;
 const AUDIO_BITRATE = 64_000;
 
@@ -30,12 +30,15 @@ export function CameraCapture({
   onCapture,
   onClose,
   title,
+  maxSeconds: VIDEO_MAX_SECONDS = DEFAULT_MAX_SECONDS,
 }: {
   modes?: Mode[];
   initialFacing?: Facing;
   onCapture: (file: File, kind: Mode) => void;
   onClose: () => void;
   title?: string;
+  /** Recording stops by itself after this long. */
+  maxSeconds?: number;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);

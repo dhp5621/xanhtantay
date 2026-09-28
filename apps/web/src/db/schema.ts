@@ -239,6 +239,31 @@ export const change_requests = pgTable("change_requests", {
   reviewed_at: timestamp("reviewed_at"),
 });
 
+/**
+ * Return / refund request for a delivered order, with evidence. The operator verifies it in
+ * /admin and tells the customer the outcome. One request per order.
+ */
+export const refund_requests = pgTable("refund_requests", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  order_id: text("order_id").notNull().unique().references(() => orders.id, { onDelete: "cascade" }),
+  user_id: text("user_id").notNull().references(() => users.id),
+  /** "not_received" | "missing" | "spoiled" | "wrong" | "broken" */
+  reason: text("reason").notNull(),
+  description: text("description").notNull(),
+  photos: jsonb("photos").$type<string[]>().notNull().default([]),
+  video_url: text("video_url"),
+  /** What the customer asks for: "refund" (money back) | "replace" (another box in the next run) */
+  method: text("method").notNull(),
+  /** "pending" | "approved" | "rejected" */
+  status: text("status").notNull().default("pending"),
+  /** What the operator granted; may differ from what was asked. */
+  resolution: text("resolution"),
+  refund_amount: integer("refund_amount"),
+  note: text("note"),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  reviewed_at: timestamp("reviewed_at"),
+});
+
 /** Admin broadcasts, kept so clients without a push service can still pick them up by polling. */
 export const broadcasts = pgTable("broadcasts", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),

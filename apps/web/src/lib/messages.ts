@@ -34,6 +34,13 @@ export function decisionNotice(w: Who, kind: string, approved: boolean, reason?:
 }
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
+export function refundNotice(w: Who, approved: boolean, resolution: string | null, amount: number | null, reason?: string | null) {
+  const { call, pronoun } = to(w);
+  if (!approved) return { title: "Yêu cầu trả hàng / hoàn tiền", body: `${call} ơi, rất tiếc sau khi xác minh, yêu cầu của ${pronoun} chưa được chấp nhận ạ.${reason ? ` Lý do: ${reason.replace(/[.!\\s]+$/, "")}.` : ""} ${cap(pronoun)} cần hỗ trợ thêm xin nhắn lại cho chúng tôi nhé.` };
+  const how = resolution === "replace" ? `hộp rau mới sẽ được giao bù cho ${pronoun} ở chuyến kế tiếp` : `${amount ? `${amount.toLocaleString("vi-VN")}₫` : "tiền"} sẽ được hoàn lại cho ${pronoun}`;
+  return { title: "Yêu cầu trả hàng / hoàn tiền", body: `${call} ơi, chúng tôi xin lỗi vì hộp rau chưa như ý ạ. Yêu cầu của ${pronoun} đã được chấp nhận: ${how}.${reason ? ` ${reason.replace(/[.!\\s]+$/, "")}.` : ""} Cảm ơn ${pronoun} đã báo cho chúng tôi!` };
+}
+
 /** Shown after the farmer answers from the notification. */
 export function answerNotice(w: Who, answer: "confirm" | "decline") {
   const { pronoun } = to(w);
