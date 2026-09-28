@@ -27,7 +27,8 @@
         "backgroundColor": "#F6FBF4"
       },
       "package": "dhp.vkn.xanhtantay",
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "favicon": "./assets/favicon.png"

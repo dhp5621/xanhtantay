@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "295854682258",
+    "project_id": "tensile-cogency-369701",
+    "storage_bucket": "tensile-cogency-369701.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:295854682258:android:9c762ae6ff6a820e3fb64b",
+        "android_client_info": {
+          "package_name": "dhp.vkn.xanhtantay"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAg6edSxe40lvRBtJ7N5JcYlyPgZi6XXmI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
