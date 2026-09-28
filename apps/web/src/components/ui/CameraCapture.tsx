@@ -22,7 +22,7 @@ function pickMime(): string | null {
 
 /**
  * In-app camera (MediaDevices API). Photo: canvas frame → WebP. Video: MediaRecorder at
- * ≤720p / 25 fps / ~1.2 Mbps, auto-stops at 30 s. Renders full-screen through a portal.
+ * ≤720p / 30 fps / ~1.2 Mbps, auto-stops at 30 s. Renders full-screen through a portal.
  */
 export function CameraCapture({
   modes = ["photo"],
@@ -68,7 +68,7 @@ export function CameraCapture({
     setError(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: facing }, width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 25, max: 30 } },
+        video: { facingMode: { ideal: facing }, width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30, max: 30 } },
         audio: mode === "video",
       });
       streamRef.current = stream;
@@ -245,7 +245,7 @@ export function CameraCapture({
                 <span className="m3-shutter-core" />
               </button>
               <p className="body-sm" style={{ color: "rgba(255,255,255,.7)", marginTop: 12 }}>
-                {mode === "photo" ? "Ảnh được nén còn ≤1280px" : recording ? "Chạm để dừng" : `Tối đa ${VIDEO_MAX_SECONDS} giây · 720p · 25fps`}
+                {mode === "photo" ? "Ảnh được nén còn ≤1280px" : recording ? "Chạm để dừng" : `Tối đa ${VIDEO_MAX_SECONDS} giây · 720p · 30fps`}
               </p>
             </>
           )}

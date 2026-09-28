@@ -3,14 +3,14 @@
 /**
  * Client-side media compression so the 1 GB Blob store lasts.
  * Images  → max 1280px on the long edge, WebP q0.72 (≈150–300 KB from a phone photo).
- * Videos  → max 720p, 25 fps, ~1.2 Mbps, cut at 30 s (≈4–5 MB max) via canvas + MediaRecorder.
+ * Videos  → max 720p, 30 fps, ~1.2 Mbps, cut at 30 s (≈4–5 MB max) via canvas + MediaRecorder.
  * Avatars → 96×96 WebP q0.7 as a data URL (≈3–5 KB) stored straight in the database.
  */
 
 export const VIDEO_MAX_SECONDS = 30;
 const IMAGE_MAX_EDGE = 1280;
 const VIDEO_MAX_EDGE = 1280; // 720p landscape / portrait
-const VIDEO_FPS = 25;
+const VIDEO_FPS = 30;
 const VIDEO_BITRATE = 1_200_000;
 const AUDIO_BITRATE = 64_000;
 
@@ -100,7 +100,7 @@ export function canCompressVideo() {
 }
 
 /**
- * Re-encodes a video at ≤720p / 25 fps / ~1.2 Mbps and stops at `maxSeconds` (30 s by default).
+ * Re-encodes a video at ≤720p / 30 fps / ~1.2 Mbps and stops at `maxSeconds` (30 s by default).
  * onProgress receives 0..1. Throws if the browser cannot re-encode.
  */
 export async function compressVideo(file: File, onProgress?: (p: number) => void, maxSeconds = VIDEO_MAX_SECONDS): Promise<File> {
@@ -160,8 +160,9 @@ export async function compressVideo(file: File, onProgress?: (p: number) => void
 }
 
 /**
- * A photo small enough to travel inside a request and live in the database: about 480 px on the
- * long side, shrunk further until the data URL fits `maxChars`.
+ * A photo small enough to travel inside a request and live in the database: 320 px on the long
+ * side (it is only ever shown as a thumbnail of at most 96 px, so this stays sharp on 3x screens),
+ * shrunk further until the data URL fits `maxChars`.
  */
 export async function makePhotoDataUrl(file: File, maxChars = 150_000): Promise<string> {
   const bmp = await loadBitmap(file);
@@ -171,7 +172,7 @@ export async function makePhotoDataUrl(file: File, maxChars = 150_000): Promise<
     r.onerror = () => reject(new Error("read"));
     r.readAsDataURL(blob);
   });
-  for (const [edge, quality] of [[480, 0.72], [480, 0.55], [400, 0.55], [320, 0.5], [240, 0.5]] as const) {
+  for (const [edge, quality] of [[320, 0.8], [320, 0.6], [256, 0.6], [200, 0.5]] as const) {
     const canvas = drawScaled(bmp, edge);
     let blob = await toBlob(canvas, "image/webp", quality);
     if (blob.type !== "image/webp") blob = await toBlob(canvas, "image/jpeg", quality);

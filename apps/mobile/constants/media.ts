@@ -88,13 +88,12 @@ const VIDEO_MAX_EDGE = 1280;
 const VIDEO_BITRATE = 1_200_000;
 
 /**
- * Re-encodes a video to at most 720p at about 1.2 Mbps (H.264, MP4), the same budget as the web.
- * Android needs this: its picker hands over whatever the camera recorded. On iOS the picker has
- * already exported at 720p, so the file is left alone. Falls back to the original when the
- * encoder is missing (an older build) or fails, or when the result is not smaller.
+ * Re-encodes a video to at most 720p, 30 fps and about 1.2 Mbps (H.264, MP4), the same budget as
+ * the web. The 30 fps cap lives in the encoder itself (see patches/react-native-compressor); a
+ * faster recording has frames dropped. Falls back to the file as picked when the encoder is
+ * missing (an older build) or fails, or when the result is not smaller.
  */
 export async function compressVideo(m: PickedMedia, onProgress?: (fraction: number) => void): Promise<PickedMedia> {
-  if (Platform.OS !== "android") return m;
   try {
     // Required lazily: importing the module throws in builds made before it was added.
     const { Video, getVideoMetaData } = require("react-native-compressor") as typeof import("react-native-compressor");
@@ -166,7 +165,7 @@ export async function makeAvatarDataUrl(uri: string, width: number, height: numb
  * Shrinks a photo to about `longSide` px and returns a JPEG data URL of at most `maxChars`
  * characters: quality goes down first, then the size, until it fits.
  */
-export async function makePhotoDataUrl(uri: string, width: number, height: number, maxChars = 160_000, longSide = 480): Promise<string> {
+export async function makePhotoDataUrl(uri: string, width: number, height: number, maxChars = 160_000, longSide = 320): Promise<string> {
   let side = longSide;
   let quality = 0.7;
   for (let attempt = 0; attempt < 10; attempt++) {

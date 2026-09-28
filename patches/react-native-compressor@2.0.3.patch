@@ -1,0 +1,27 @@
+diff --git a/android/src/main/java/com/reactnativecompressor/Video/VideoCompressionProfile.kt b/android/src/main/java/com/reactnativecompressor/Video/VideoCompressionProfile.kt
+index 0fb84530d7b6b97c1d4a3ff31256303db8cec531..34bd4200371213ce8e25ddc7e8c1b8c84e2c5f75 100644
+--- a/android/src/main/java/com/reactnativecompressor/Video/VideoCompressionProfile.kt
++++ b/android/src/main/java/com/reactnativecompressor/Video/VideoCompressionProfile.kt
+@@ -17,7 +17,8 @@ object VideoCompressionProfileFactory {
+     // Hard upper bound. 60 fps covers every modern phone capture (24/25/30/
+     // 50/60). Capping at 30 — the previous behaviour — silently halved 60
+     // fps recordings and made the output look choppy.
+-    private const val MAX_FRAME_RATE = 60
++    // Xanh Tận Tay: evidence videos never need more than 30 fps; faster sources have frames dropped.
++    private const val MAX_FRAME_RATE = 30
+ 
+     fun createAuto(
+         sourceWidth: Int,
+diff --git a/ios/Video/NextLevelSessionExporter.swift b/ios/Video/NextLevelSessionExporter.swift
+index e25af6987e811f1b83d2c475409213883d4742cc..1a2acc39ff30e768b39d6721529bd5b63fcdbe65 100644
+--- a/ios/Video/NextLevelSessionExporter.swift
++++ b/ios/Video/NextLevelSessionExporter.swift
+@@ -503,6 +503,8 @@ extension NextLevelSessionExporter {
+             if frameRate == 0 {
+                 frameRate = 30
+             }
++            // Xanh Tận Tay: cap the output at 30 fps.
++            frameRate = min(frameRate, 30)
+             videoComposition.frameDuration = CMTimeMake(value: 1, timescale: Int32(frameRate))
+             
+             // determine the appropriate size and transform
