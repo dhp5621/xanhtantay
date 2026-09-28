@@ -10,8 +10,8 @@ interface Cluster { id: string; name: string; district: string }
 
 /** Building and flat: used as the default delivery point and to show groups in your building first. */
 const GENDERS = [{ value: "", label: "Không nêu" }, { value: "female", label: "Nữ" }, { value: "male", label: "Nam" }];
-/** What follows from gender: farmers bác / cô, customers anh / chị, "bạn" when not given. */
-const byGender = (gender: string, farmer: boolean) => (gender === "female" ? (farmer ? "cô" : "chị") : gender === "male" ? (farmer ? "bác" : "anh") : "bạn");
+/** What follows from gender: farmers bác / cô (bác when not given), customers anh / chị (bạn when not given). */
+const byGender = (gender: string, farmer: boolean) => (gender === "female" ? (farmer ? "cô" : "chị") : gender === "male" ? (farmer ? "bác" : "anh") : farmer ? "bác" : "bạn");
 
 export function ProfileForm({ initial, clusters, showAddress, farmer = false }: { initial: { name: string; phone: string | null; cluster_id: string | null; address: string | null; gender?: string | null; salutation?: string | null; short_name?: string | null }; clusters: Cluster[]; showAddress: boolean; farmer?: boolean }) {
   const start = { name: initial.name, phone: initial.phone ?? "", cluster_id: initial.cluster_id ?? "", address: initial.address ?? "", gender: initial.gender ?? "", salutation: initial.salutation ?? "", short_name: initial.short_name ?? "" };

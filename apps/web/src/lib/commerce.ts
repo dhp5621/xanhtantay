@@ -54,7 +54,7 @@ export function shipFeeFor(type: "single" | "subscription" | "group") {
   return type === "subscription" ? 0 : SHIP_FEE;
 }
 
-/** Follows from gender by default (farmers: bác / cô, customers: anh / chị, "bạn" when not given). These are offered when choosing by hand; anything else is typed. */
+/** Follows from gender by default (farmers: bác / cô, and bác when not given; customers: anh / chị, and bạn when not given). These are offered when choosing by hand; anything else is typed. */
 export const FARMER_SALUTATIONS = ["bác", "cô", "chú"];
 export const CUSTOMER_SALUTATIONS = ["anh", "chị", "bạn"];
 /** Forms of address the platform understands at the start of a name. */
@@ -64,7 +64,7 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 /**
  * How to address someone, from the form of address on file ("bác Ba", see `callName`) or, failing
  * that, from their full name. `fallback` is used when the name carries no form of address:
- * "bạn", for farmers and customers alike.
+ * farmers are "bác", customers "bạn".
  *   "bác Ba" / "Bác Ba Nguyễn" → { call: "Bác Ba", pronoun: "bác" }
  *   "Nguyễn Thị Lan" (customer) → { call: "Bạn Lan", pronoun: "bạn" }
  */
@@ -78,7 +78,7 @@ export function addressPerson(name: string, fallback = "bạn") {
   // Vietnamese given names come last.
   return { call: `${cap(fallback)} ${parts[parts.length - 1] ?? ""}`.trim(), pronoun: fallback };
 }
-export const addressFarmer = (name: string) => addressPerson(name);
+export const addressFarmer = (name: string) => addressPerson(name, "bác");
 
 /** "15 kg cà rốt và 20 kg bắp cải" */
 export function joinItems(items: { name: string; kg: number }[]) {

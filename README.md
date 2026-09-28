@@ -47,7 +47,7 @@ Font tự host trong `apps/web/public/fonts`. Icon là bản rút gọn theo tê
 
 ### Thông báo
 
-Lời lẽ thông báo do máy chủ soạn, lịch sự và xưng hô theo cơ sở dữ liệu. Mặc định theo giới tính (`users.gender`): nông dân là **bác** (nam) / **cô** (nữ), người mua là **anh** / **chị**, không nêu giới tính thì gọi **bạn**. Người dùng có thể tự chọn cách xưng hô khác (`users.salutation`) và tên gọi (`users.short_name`) trong trang Tài khoản; quản trị sửa ở `/admin` → Người dùng. Mọi màn hình của nông dân dùng đúng cách xưng hô này, không mặc định "bác". Lệnh thu hoạch có hai nút **Đồng ý** / **Không đồng ý** ngay trên thông báo. Bấm vào thông báo sẽ mở đúng màn hình liên quan (đúng đơn hàng, lệnh thu hoạch, trang duyệt).
+Lời lẽ thông báo do máy chủ soạn, lịch sự và xưng hô theo cơ sở dữ liệu. Mặc định theo giới tính (`users.gender`): nông dân là **bác** (nam, hoặc không nêu giới tính) / **cô** (nữ); người mua là **anh** / **chị**, không nêu giới tính thì gọi **bạn**. Người dùng có thể tự chọn cách xưng hô khác (`users.salutation`) và tên gọi (`users.short_name`) trong trang Tài khoản; quản trị sửa ở `/admin` → Người dùng. Mọi màn hình của nông dân dùng đúng cách xưng hô này, không mặc định "bác". Lệnh thu hoạch có hai nút **Đồng ý** / **Không đồng ý** ngay trên thông báo. Bấm vào thông báo sẽ mở đúng màn hình liên quan (đúng đơn hàng, lệnh thu hoạch, trang duyệt).
 
 Có hai đường giao thông báo (lệnh thu hoạch cho nông dân, hành trình hộp rau cho khách):
 
@@ -106,7 +106,7 @@ Trang đăng nhập có nút một chạm cho cả hai. Quản trị: `/admin/lo
 - Theo dõi chuyến: nông hộ nào đã xác nhận, chuyển trạng thái thu hoạch → lên xe lạnh → tới sảnh (khách nhận thông báo).
 - **Người dùng**: xem và đổi ảnh đại diện, đặt mật khẩu riêng cho từng tài khoản khách hoặc nông dân (lưu dạng mã hoá scrypt), hoặc cho tài khoản dùng lại mật khẩu demo.
 - Quản lý mọi bảng: đơn, hộp rau, thành phần hộp, loại rau, năng suất, nông hộ, lệnh thu hoạch, gói định kỳ, gom đơn, cụm chung cư, người dùng. Xem được trên điện thoại.
-- **Tab Dung lượng** (`/admin/dung-luong`): xem cơ sở dữ liệu và kho tệp đang đầy tới đâu, dung lượng từng bảng, và dọn dữ liệu không còn nơi nào dùng (tệp mồ côi, bằng chứng hoàn tiền đã xử lý quá 60 ngày, yêu cầu của nông hộ đã xử lý quá 30 ngày, thông báo cũ). Trước khi xoá có danh sách từng mục và phải xác nhận vì không khôi phục được. Đơn hàng, chuyến giao, lệnh thu hoạch và kết quả hoàn tiền luôn được giữ. Việc dọn cũng tự chạy mỗi ngày lúc 18h00; tệp của yêu cầu hoàn tiền đã rút thì xoá ngay.
+- **Tab Dung lượng** (`/admin/dung-luong`): xem cơ sở dữ liệu và kho tệp đang đầy tới đâu, dung lượng từng bảng, và dọn dữ liệu không còn nơi nào dùng (tệp mồ côi, bằng chứng hoàn tiền đã xử lý quá 60 ngày, yêu cầu của nông hộ đã xử lý quá 30 ngày, thông báo cũ). Trước khi xoá có danh sách từng mục và phải xác nhận vì không khôi phục được. Đơn hàng, chuyến giao, lệnh thu hoạch và kết quả hoàn tiền luôn được giữ. Hệ thống không tự xoá theo lịch; chỉ xoá khi quản trị chọn và xác nhận. Riêng tệp của yêu cầu hoàn tiền do chính khách rút thì xoá ngay.
 - **Tab Hoàn tiền** (`/admin/hoan-tien`): xem ảnh, video bằng chứng, chọn hoàn tiền (kèm số tiền) hoặc giao bù, chấp nhận hoặc từ chối kèm lời nhắn; khách được báo kết quả.
 - **Yêu cầu chờ duyệt**: mỗi thay đổi nông hộ xin được hiện dạng cũ → mới, duyệt hoặc từ chối kèm lý do.
 - Gửi thông báo đẩy tới điện thoại và trình duyệt, kèm **mẫu gửi thử** cho từng loại thông báo (lệnh thu hoạch có nút Có / Không, đơn mới, các bước hành trình, nhắc chốt sổ, nhóm đủ nhà, thực đơn).

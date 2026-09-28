@@ -7,7 +7,7 @@ import { formatClock } from "@/lib/format";
 export interface RequestInfo { pending: { created_at: string | Date } | null; rejected: { note: string | null } | null }
 
 /** Tells the farmer where their change stands: waiting for the operator, or turned down and why. */
-export function RequestBanner({ state, lines, onWithdraw, you = "bạn" }: { state: RequestInfo; lines: string[]; onWithdraw: () => Promise<void>; you?: string }) {
+export function RequestBanner({ state, lines, onWithdraw, you = "bác" }: { state: RequestInfo; lines: string[]; onWithdraw: () => Promise<void>; you?: string }) {
   const [busy, setBusy] = useState(false);
   if (state.pending) {
     const at = new Date(state.pending.created_at);

@@ -140,7 +140,7 @@ Shown on an order once it is `delivered`, for 3 days after `delivered_at`. One r
 
 ## Form of address follows gender (supersedes the earlier note)
 
-- `users.gender`: `"male" | "female" | null`. When no form of address was chosen by hand, it follows from gender and role: **farmers "bác" (male) / "cô" (female); customers "anh" (male) / "chị" (female); "bạn" for anyone who did not give their gender.** A hand-chosen `salutation` overrides it (offered: bác / cô / chú for farmers, anh / chị / bạn for customers, or any typed word).
+- `users.gender`: `"male" | "female" | null`. When no form of address was chosen by hand, it follows from gender and role: **farmers "bác" (male, or gender not given) / "cô" (female); customers "anh" (male) / "chị" (female) / "bạn" (gender not given).** A hand-chosen `salutation` overrides it (offered: bác / cô / chú for farmers, anh / chị / bạn for customers, or any typed word).
 - `GET /users/me` returns `gender`, `salutation`, `short_name`, and the resolved **`call_name`** (e.g. "Cô Tư") and **`pronoun`** (e.g. "cô"). Clients must use `pronoun` wherever the app addresses the signed-in person in its own text (never a hardcoded "bác"), capitalised at the start of a sentence, and `call_name` in greetings.
 - `PATCH /users/me` accepts `gender` (`"male" | "female" | null`), `salutation` (letters only, max 12, empty string = follow gender) and `short_name` (max 24, empty = given name), and returns the same fields including the new `call_name` and `pronoun`.
 - Accounts may have their own password (set by the admin); sign-in is unchanged for clients.

@@ -10,7 +10,7 @@ import { formatClock } from "@/lib/format";
 export interface Command { id: string; message: string; items: { name: string; kg: number }[]; total_kg: number; status: "sent" | "confirmed" | "declined"; confirmed_at: string | Date | null; declined_at?: string | Date | null; delivery_date: string }
 
 /** The whole farmer interface: one message, answered with Có or Không. */
-export function HarvestCommand({ command, dateLabel, you = "bạn" }: { command: Command; dateLabel: string; /** How the farmer is addressed: "bác", "cô", "chú"… */ you?: string }) {
+export function HarvestCommand({ command, dateLabel, you = "bác" }: { command: Command; dateLabel: string; /** How the farmer is addressed: "bác", "cô", "chú"… */ you?: string }) {
   const [state, setState] = useState(command.status);
   const [at, setAt] = useState<string | Date | null>(command.status === "declined" ? command.declined_at ?? null : command.confirmed_at);
   const [busy, setBusy] = useState<"confirm" | "decline" | null>(null);

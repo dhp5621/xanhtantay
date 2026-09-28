@@ -16,7 +16,7 @@ const asked = (i: CapacityItem) => i.pending_kg ?? i.daily_kg;
 const describe = (i: CapacityItem) => (i.pending_kg === 0 ? `${i.name}: xin ngừng cung cấp` : i.daily_kg === 0 ? `${i.name}: xin đăng ký ${formatKg(i.pending_kg ?? 0)} mỗi ngày` : `${i.name}: ${formatKg(i.daily_kg)} → ${formatKg(i.pending_kg ?? 0)} mỗi ngày`);
 
 /** What the farm can cut per day, per produce. Changes are requests: the operator approves them first. */
-export function CapacityEditor({ initial, you = "bạn" }: { initial: Data; you?: string }) {
+export function CapacityEditor({ initial, you = "bác" }: { initial: Data; you?: string }) {
   const [data, setData] = useState(initial);
   const [kg, setKg] = useState<Record<string, number>>(() => Object.fromEntries(initial.items.map((i) => [i.produce_id, asked(i)])));
   const [busy, setBusy] = useState(false);

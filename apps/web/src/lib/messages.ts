@@ -5,7 +5,7 @@ import { addressPerson } from "./commerce";
  * addressed in the database ("bác Ba", "chị Lan").
  */
 type Who = { name: string; role?: "farmer" | "customer" | null };
-const to = (w: Who) => addressPerson(w.name);
+const to = (w: Who) => addressPerson(w.name, w.role === "farmer" ? "bác" : "bạn");
 
 export const ANSWER_LABELS = { confirm: "Đồng ý", decline: "Không đồng ý" };
 

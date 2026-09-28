@@ -45,8 +45,8 @@ const GENDERS: { value: Gender | null; label: string }[] = [
 ];
 /** The forms of address offered by hand; anything else is typed under "Khác". */
 const SALUTATIONS = { farmer: ["bác", "cô", "chú"], customer: ["anh", "chị", "bạn"] };
-/** What follows from gender: farmers bác / cô, customers anh / chị, "bạn" when not given. */
-const byGender = (gender: Gender | null, farmer: boolean) => (gender === "female" ? (farmer ? "cô" : "chị") : gender === "male" ? (farmer ? "bác" : "anh") : "bạn");
+/** What follows from gender: farmers bác / cô (bác when not given), customers anh / chị (bạn when not given). */
+const byGender = (gender: Gender | null, farmer: boolean) => (gender === "female" ? (farmer ? "cô" : "chị") : gender === "male" ? (farmer ? "bác" : "anh") : farmer ? "bác" : "bạn");
 const capitalise = (s: string) => s.charAt(0).toLocaleUpperCase("vi") + s.slice(1);
 /** Letters only: Vietnamese letters have an upper and a lower case, digits and signs do not. */
 const lettersOnly = (s: string) => Array.from(s.normalize("NFC")).filter((ch) => ch.toLowerCase() !== ch.toUpperCase()).join("");

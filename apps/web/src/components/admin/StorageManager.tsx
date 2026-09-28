@@ -82,7 +82,7 @@ export function StorageManager() {
       </div>
 
       <section>
-        <div className="m3-section-head"><h2 className="title-lg text-on-surface"><Icon name="cleaning_services" filled /> Dọn dữ liệu không còn cần</h2><span className="body-sm text-on-surface-variant">Tự dọn mỗi ngày lúc 18h00 · có thể dọn ngay tại đây</span></div>
+        <div className="m3-section-head"><h2 className="title-lg text-on-surface"><Icon name="cleaning_services" filled /> Dọn dữ liệu không còn cần</h2><span className="body-sm text-on-surface-variant">Không tự xoá · chỉ xoá khi bạn chọn và xác nhận</span></div>
         <div className="m3-list-group">
           {data.items.map((i) => {
             const on = chosen.includes(i.key);

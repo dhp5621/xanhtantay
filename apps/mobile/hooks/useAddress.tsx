@@ -19,8 +19,8 @@ type AddressContextValue = {
   apply: (me: Pick<Me, "id" | "call_name" | "pronoun"> | null | undefined) => void;
 };
 
-/** Until the server has answered, and whenever it cannot be reached, nobody is given a gender. */
-const NEUTRAL = "bạn";
+/** Until the server has answered, and whenever it cannot be reached: farmers are "bác", everyone else "bạn". */
+const neutral = (role?: string | null) => (role === "farmer" ? "bác" : "bạn");
 const lowerFirst = (s: string) => s.charAt(0).toLocaleLowerCase("vi") + s.slice(1);
 const upperFirst = (s: string) => s.charAt(0).toLocaleUpperCase("vi") + s.slice(1);
 
@@ -30,6 +30,7 @@ const AddressContext = createContext<AddressContextValue | null>(null);
 export function AddressProvider({ children }: { children: React.ReactNode }) {
   const { user } = useSession();
   const userId = user?.id ?? null;
+  const role = user?.role ?? null;
   const [resolved, setResolved] = useState<Resolved | null>(null);
   // An answer that arrives after the account changed must not be shown to the next person.
   const current = useRef<string | null>(userId);
@@ -54,14 +55,15 @@ export function AddressProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo(() => {
     const mine = resolved && resolved.userId === userId ? resolved : null;
-    const pronoun = lowerFirst(mine?.pronoun ?? NEUTRAL);
-    return { call: lowerFirst(mine?.call ?? NEUTRAL), pronoun, Pronoun: upperFirst(pronoun), refresh, apply };
-  }, [resolved, userId, refresh, apply]);
+    const fallback = neutral(role);
+    const pronoun = lowerFirst(mine?.pronoun ?? fallback);
+    return { call: lowerFirst(mine?.call ?? fallback), pronoun, Pronoun: upperFirst(pronoun), refresh, apply };
+  }, [resolved, userId, role, refresh, apply]);
 
   return <AddressContext.Provider value={value}>{children}</AddressContext.Provider>;
 }
 
-/** How to address the signed-in person: `{ call: "cô Tư", pronoun: "cô", Pronoun: "Cô" }`; "bạn" when unknown. */
+/** How to address the signed-in person: `{ call: "cô Tư", pronoun: "cô", Pronoun: "Cô" }`; while unknown, "bác" for farmers and "bạn" for everyone else. */
 export function useAddress() {
   const ctx = useContext(AddressContext);
   if (!ctx) throw new Error("useAddress must be used within AddressProvider");

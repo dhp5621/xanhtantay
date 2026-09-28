@@ -36,7 +36,7 @@ export const users = pgTable("users", {
   /** Customer's building and flat, prefilled at checkout. */
   cluster_id: text("cluster_id").references(() => clusters.id, { onDelete: "set null" }),
   address: text("address"),
-  /** "male" | "female" | null. Decides the form of address when none was chosen: farmers bác (male) / cô (female), customers anh / chị; "bạn" for anyone who did not say. */
+  /** "male" | "female" | null. Decides the form of address when none was chosen: farmers bác (male, or not given) / cô (female); customers anh / chị, "bạn" when not given. */
   gender: text("gender"),
   /** A form of address chosen by hand ("bác", "u", "thầy"…); overrides the one that follows from gender. With the name they go by ("Ba", "Lan"). */
   salutation: text("salutation"),
@@ -51,8 +51,8 @@ export const users = pgTable("users", {
  * chose) from a full name. Feed it to addressFarmer / addressPerson.
  */
 export const callName = sql<string>`case
-  when coalesce(${users.salutation}, case ${users.gender} when 'female' then (case when ${users.role} = 'farmer' then 'cô' else 'chị' end) when 'male' then (case when ${users.role} = 'farmer' then 'bác' else 'anh' end) end) is not null
-  then coalesce(${users.salutation}, case ${users.gender} when 'female' then (case when ${users.role} = 'farmer' then 'cô' else 'chị' end) when 'male' then (case when ${users.role} = 'farmer' then 'bác' else 'anh' end) end)
+  when coalesce(${users.salutation}, case ${users.gender} when 'female' then (case when ${users.role} = 'farmer' then 'cô' else 'chị' end) when 'male' then (case when ${users.role} = 'farmer' then 'bác' else 'anh' end) else (case when ${users.role} = 'farmer' then 'bác' end) end) is not null
+  then coalesce(${users.salutation}, case ${users.gender} when 'female' then (case when ${users.role} = 'farmer' then 'cô' else 'chị' end) when 'male' then (case when ${users.role} = 'farmer' then 'bác' else 'anh' end) else (case when ${users.role} = 'farmer' then 'bác' end) end)
     || chr(160) || coalesce(${users.short_name}, (regexp_match(trim(${users.name}), '([^ ]+)$'))[1])
   else ${users.name} end`;
 

@@ -4,8 +4,10 @@ import { db } from "@/db";
 import { boxes, broadcasts, change_requests, farms, produce, refund_requests, users } from "@/db/schema";
 
 /**
- * Keeps the database and the file store from filling up. Only data nothing shows any more is
- * ever removed: orders, harvest runs, commands and verdicts are history people still look up,
+ * Keeps the database and the file store from filling up. Nothing is removed on a schedule: the
+ * operator looks at the list in /admin/dung-luong and deletes by hand. The one exception is the
+ * evidence of a refund request its own customer withdrew. Only data nothing shows any more is
+ * ever offered for removal: orders, harvest runs, commands and verdicts are history people still look up,
  * so they are never touched here, however old.
  */
 const token = () => process.env.BLOB_READ_WRITE_TOKEN;
@@ -127,6 +129,3 @@ export async function runCleanup(keys: CleanupKey[]): Promise<CleanupResult[]> {
   }
   return out;
 }
-
-/** The daily clean-up that rides along with the cut-off. */
-export const sweepStorage = () => runCleanup(["evidence", "requests", "broadcasts", "orphans"]);

@@ -18,7 +18,7 @@ const asked = (d: FarmData): Fields => ({ ...inForce(d), ...Object.fromEntries(O
 const short = (s: string) => (s.length > 80 ? `${s.slice(0, 80)}…` : s || "(để trống)");
 
 /** How the farm is presented to customers. Changes are requests: the operator approves them first. */
-export function FarmForm({ initial, you = "bạn" }: { initial: FarmData; you?: string }) {
+export function FarmForm({ initial, you = "bác" }: { initial: FarmData; you?: string }) {
   const [data, setData] = useState(initial);
   const [form, setForm] = useState(() => asked(initial));
   const [busy, setBusy] = useState(false);

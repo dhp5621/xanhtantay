@@ -18,7 +18,7 @@ const STATUS: Record<string, { label: string; chip: string; icon: string }> = {
 const EMPTY = { name: "", category: "rau_la", daily_kg: 10, image_url: "", note: "" };
 
 /** Produce that is not on the platform's list yet: the farmer proposes it with a photo, the operator approves. */
-export function ProduceProposals({ initial, you = "bạn" }: { initial: Proposal[]; you?: string }) {
+export function ProduceProposals({ initial, you = "bác" }: { initial: Proposal[]; you?: string }) {
   const [list, setList] = useState(initial);
   const [open, setOpen] = useState(false);
   const [camera, setCamera] = useState(false);

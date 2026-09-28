@@ -12,7 +12,7 @@ const FIELDS = { id: users.id, name: users.name, email: users.email, phone: user
 
 /** `call_name` ("Cô Tư") and `pronoun` ("cô") are how every screen and notification addresses this person. */
 function withAddress<T extends { call: string; role: "farmer" | "customer" }>({ call, ...row }: T) {
-  const a = addressPerson(call ?? "");
+  const a = addressPerson(call ?? "", row.role === "farmer" ? "bác" : "bạn");
   return { ...row, call_name: a.call, pronoun: a.pronoun };
 }
 
