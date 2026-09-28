@@ -1,4 +1,4 @@
-import { API_URL } from "./api";
+import { API_URL, type SessionUser } from "./api";
 
 /**
  * Push payloads and QR codes carry the web's paths (`/don-hang`, `/farmer`, `/tra-cuu/{id}` …).
@@ -20,7 +20,7 @@ export function resolveAppLink(url: string | null | undefined): string | null {
     case "":
       return "/tabs";
     case "farmer":
-      return "/tabs/farmer";
+      return id === "vuon" ? "/farmer/vuon" : id === "nang-suat" ? "/farmer/nang-suat" : "/tabs/farmer";
     case "don-hang":
       return id ? `/don-hang/${id}` : "/tabs/don-hang";
     case "hop-rau":
@@ -39,4 +39,23 @@ export function resolveAppLink(url: string | null | undefined): string | null {
     default:
       return null;
   }
+}
+
+const FARMER_ONLY = ["/tabs/farmer", "/farmer"];
+const CUSTOMER_ONLY = ["/don-hang", "/tabs/don-hang", "/dinh-ky", "/tabs/gom-don", "/tabs/hop-rau", "/hop-rau"];
+const SIGNED_IN = ["/farms"];
+const under = (href: string, roots: string[]) => roots.some((r) => href === r || href.startsWith(`${r}/`));
+
+/**
+ * Where a link from a notification may really go for whoever is signed in: the screen itself, or
+ * the login / the person's own home when the screen belongs to the other role.
+ */
+export function guardAppLink(href: string, user: SessionUser | null): string {
+  const farmerOnly = under(href, FARMER_ONLY);
+  const customerOnly = under(href, CUSTOMER_ONLY);
+  if (!user) return farmerOnly || customerOnly || under(href, SIGNED_IN) ? `/dang-nhap?${farmerOnly ? "role=farmer&" : ""}next=${encodeURIComponent(href)}` : href;
+  const isFarmer = user.role === "farmer";
+  if (farmerOnly && !isFarmer) return "/tabs";
+  if ((customerOnly || href === "/tabs") && isFarmer) return "/tabs/farmer";
+  return href;
 }

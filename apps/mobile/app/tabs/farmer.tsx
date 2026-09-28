@@ -5,8 +5,8 @@ import { router, useFocusEffect } from "expo-router";
 import type { HarvestCommand } from "@xanhtantay/types";
 import { apiFetch, ApiError } from "../../constants/api";
 import { colors, shape, type, elevation, useStyles, type Colors } from "../../constants/theme";
-import { formatClock, formatClockDay, formatDay, formatKg } from "../../constants/format";
-import type { FarmerCapacity, FarmerCommands, FarmProfile } from "../../constants/types";
+import { formatClock, formatClockDay, formatDay, formatKg, greetingOf } from "../../constants/format";
+import type { FarmerCapacity, FarmerCommands, FarmProfile, Me } from "../../constants/types";
 import { useLiveRefresh } from "../../hooks/useLive";
 import { AnimIn, AnimInScale, PressableScale, Skeleton } from "../../components/motion";
 import { Chip } from "../../components/ui";
@@ -27,11 +27,16 @@ export default function FarmerScreen() {
   const [busy, setBusy] = useState<"confirm" | "decline" | null>(null);
   const [capacity, setCapacity] = useState<FarmerCapacity | null>(null);
   const [farmPending, setFarmPending] = useState(false);
+  // "Chào bác Ba!", once the profile says how the farmer is addressed.
+  const [greeting, setGreeting] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     // Only feeds the subtitle of "Rau củ đăng ký"; the row works without it.
     apiFetch("/farmer/capacity")
       .then(setCapacity)
+      .catch(() => {});
+    apiFetch("/users/me")
+      .then((p: Me) => setGreeting(greetingOf(p)))
       .catch(() => {});
     // Only feeds the "Chờ duyệt" chip of "Thông tin vườn".
     apiFetch("/farms/mine")
@@ -41,7 +46,7 @@ export default function FarmerScreen() {
       setData(await apiFetch("/farmer/commands"));
       setError(null);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Không tải được lệnh thu hoạch. Bác kéo xuống để thử lại.");
+      setError(e instanceof ApiError ? e.message : "Không tải được lệnh thu hoạch. Xin kéo xuống để thử lại giúp ạ.");
     }
   }, []);
 
@@ -63,7 +68,7 @@ export default function FarmerScreen() {
       setData((d) => (d && d.current?.id === cmd.id ? { ...d, current: { ...d.current, ...next } } : d));
       await load();
     } catch (e) {
-      alert(choice === "confirm" ? "Chưa xác nhận được" : "Chưa gửi được", e instanceof ApiError ? e.message : "Mạng đang yếu, bác bấm lại giúp nhé.");
+      alert(choice === "confirm" ? "Chưa xác nhận được" : "Chưa gửi được", e instanceof ApiError ? e.message : "Mạng đang yếu, xin bấm lại giúp ạ.");
       // The command may have been answered elsewhere (e.g. from the notification) in the meantime.
       load();
     } finally {
@@ -98,6 +103,8 @@ export default function FarmerScreen() {
         />
       }
     >
+      {greeting ? <Text style={styles.greeting}>{greeting}!</Text> : null}
+
       {data?.farm ? (
         <AnimIn>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
@@ -128,7 +135,7 @@ export default function FarmerScreen() {
       {data && !data.farm ? (
         <View style={styles.errorBox}>
           <Icon name="info" size={24} color={colors.onErrorContainer} />
-          <Text style={styles.errorText}>Tài khoản này chưa gắn với vườn nào. Bác liên hệ quản trị để được tạo vườn nhé.</Text>
+          <Text style={styles.errorText}>Tài khoản này chưa gắn với vườn nào. Xin liên hệ quản trị để được tạo vườn giúp ạ.</Text>
         </View>
       ) : null}
 
@@ -277,6 +284,7 @@ export default function FarmerScreen() {
 const makeStyles = (c: Colors) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: c.surface },
+    greeting: { ...type.titleLarge, color: c.onSurface, fontSize: 24, lineHeight: 32 },
     farm: { ...type.titleMedium, color: c.onSurfaceVariant, fontSize: 16, flex: 1 },
     errorBox: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: c.errorContainer, borderRadius: shape.xl, padding: 18 },
     errorText: { ...type.bodyLarge, color: c.onErrorContainer, fontSize: 17, lineHeight: 25, flex: 1 },

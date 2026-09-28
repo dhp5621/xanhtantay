@@ -137,8 +137,11 @@ export interface Feed {
   stats: { farms: number; clusters: number; boxes_delivered: number };
 }
 
-/** `GET /users/me`. */
-export type Me = User & { cluster?: Cluster | null };
+/** `GET /users/me`. `salutation` ("bác", "chị"…) and `short_name` ("Ba", "Lan") say how the person is addressed. */
+export type Me = User & { cluster?: Cluster | null; salutation?: string | null; short_name?: string | null };
+
+/** `POST /farmer/commands/{id}/confirm|decline`: the command, and the server's words to show after the answer. */
+export type CommandAnswer = HarvestCommand & { notice?: { title: string; body: string } | null };
 
 export interface FarmerCommands {
   farm: { id: string; name: string; location: string } | null;
@@ -158,12 +161,30 @@ export interface FarmerCapacityItem {
   daily_kg: number;
   pending_kg?: number | null;
 }
+export type ProduceCategory = "rau_la" | "cu_qua";
+/** A produce the farm asked to add to the list: waiting, or decided in the last 7 days. */
+export interface ProduceProposal {
+  id: string;
+  name: string;
+  category: ProduceCategory;
+  daily_kg: number;
+  image_url: string | null;
+  note: string | null;
+  status: "pending" | "approved" | "rejected";
+  reason: string | null;
+  created_at: string;
+}
+/** `POST /farmer/produce` (202) and `DELETE /farmer/produce/{id}`. */
+export interface ProduceProposals {
+  proposals: ProduceProposal[];
+}
 export interface FarmerCapacity {
   farm: { id: string; name: string; location: string; slug: string };
   items: FarmerCapacityItem[];
   total_kg: number;
   pending?: PendingRequest<CapacityChangeItem[]> | null;
   rejected?: RejectedRequest | null;
+  proposals?: ProduceProposal[];
 }
 
 /** Where a changed menu belongs: saved on an order, or only on screen for a box not bought yet. */

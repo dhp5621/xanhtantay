@@ -60,7 +60,7 @@ export default function DonHangScreen() {
             await apiFetch(`/orders/${o.id}/cancel`, { method: "POST" });
             await load();
           } catch (e) {
-            alert("Không huỷ được đơn", e instanceof ApiError ? e.message : "Có lỗi xảy ra");
+            alert("Không huỷ được đơn", e instanceof ApiError ? e.message : "Có lỗi xảy ra, xin thử lại giúp ạ.");
           } finally {
             setBusy(null);
           }

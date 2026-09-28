@@ -90,7 +90,7 @@ function requestWithTimeout(url: string, options: RequestInit, timeoutMs: number
       resolve({ ok: xhr.status >= 200 && xhr.status < 300, status: xhr.status, json: async () => JSON.parse(text) });
     };
     xhr.onerror = () => reject(new TypeError("Network request failed"));
-    xhr.ontimeout = () => reject(new ApiError("Máy chủ trả lời quá lâu, bạn thử lại nhé", 408));
+    xhr.ontimeout = () => reject(new ApiError("Máy chủ trả lời quá lâu, xin thử lại giúp ạ", 408));
     xhr.send(typeof options.body === "string" ? options.body : null);
   });
 }

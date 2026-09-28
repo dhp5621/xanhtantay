@@ -1,12 +1,13 @@
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AppState, Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants, { ExecutionEnvironment } from "expo-constants";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
-import { router } from "expo-router";
-import { apiFetch, ApiError } from "../constants/api";
-import { resolveAppLink } from "../constants/links";
+import { router, usePathname } from "expo-router";
+import { apiFetch } from "../constants/api";
+import { guardAppLink, resolveAppLink } from "../constants/links";
+import { categoriesReady, notificationData } from "../constants/push-actions";
 import { useSession } from "./useSession";
 
 // Show broadcasts as a banner even while the app is open.
@@ -17,27 +18,7 @@ Notifications.setNotificationHandler({
 const POLL_MS = 15_000;
 const SEEN_KEY = "xtt-seen-notifications";
 
-// The server names this category on every harvest command (docs/API.md).
-const COMMAND_CATEGORY = "harvest_command";
-
 interface Item { id: string; title: string; body: string; url: string; category?: string; data?: Record<string, string> }
-
-/** The two answers a farmer gives from the notification itself, without opening the app. */
-async function registerCategories() {
-  if (Platform.OS === "web") return;
-  try {
-    await Notifications.setNotificationCategoryAsync(COMMAND_CATEGORY, [
-      { identifier: "confirm", buttonTitle: "Có, xác nhận", options: { opensAppToForeground: false } },
-      { identifier: "decline", buttonTitle: "Không", options: { opensAppToForeground: false, isDestructive: true } },
-    ]);
-  } catch (e) {
-    // not available in this runtime (e.g. Expo Go on Android)
-    console.warn("[push] notification actions unavailable", e);
-  }
-}
-
-// Registered as soon as the bundle loads, so the buttons exist before the first notification shows.
-const categoriesReady = registerCategories();
 
 /** Notification permission + Android channel. Local notifications need these too. */
 async function ensurePermission(): Promise<boolean> {
@@ -76,56 +57,25 @@ async function pollNotifications() {
   if (fresh.length) await categoriesReady;
   for (const n of fresh.reverse()) {
     await Notifications.scheduleNotificationAsync({
-      content: { title: n.title, body: n.body, sound: "default", data: { ...n.data, url: n.url }, ...(n.category ? { categoryIdentifier: n.category } : {}) },
+      // `url` is the specific screen the server named for this notification.
+      content: { title: n.title, body: n.body, sound: "default", data: { ...n.data, url: n.url || n.data?.url || "/" }, ...(n.category ? { categoryIdentifier: n.category } : {}) },
       trigger: null,
     });
   }
 }
 
-/** Sends the farmer's Có / Không and tells them, in the notification bar, whether it arrived. */
-async function answerCommand(response: Notifications.NotificationResponse, choice: "confirm" | "decline") {
-  const commandId = response.notification.request.content.data?.commandId;
-  let title: string;
-  let body: string;
-  try {
-    if (typeof commandId !== "string" || !commandId) throw new Error("no command id");
-    await apiFetch(`/farmer/commands/${encodeURIComponent(commandId)}/${choice}`, { method: "POST" });
-    title = choice === "confirm" ? "Đã xác nhận" : "Đã báo không cắt được";
-    body = choice === "confirm" ? "Hẹn bác 4h sáng. Xe tải lạnh qua lấy lúc 6h." : "Điều phối sẽ liên hệ lại với bác.";
-  } catch (e) {
-    title = "Chưa gửi được câu trả lời";
-    body = e instanceof ApiError ? e.message : "Bác mở app để trả lời lại nhé.";
-  }
-  try {
-    await Notifications.dismissNotificationAsync(response.notification.request.identifier);
-  } catch {
-    // already gone
-  }
-  await Notifications.scheduleNotificationAsync({ content: { title, body, data: { url: "/farmer" } }, trigger: null });
-}
+// The launch check and the listener can both see one tap; it opens one screen.
+const opened = new Set<string>();
 
-// The launch check and the listener can both see one response; each is handled once.
-const handled = new Set<string>();
-
-/** A button on the notification answers the command; a tap on the notification itself opens the app. */
-function handleResponse(response: Notifications.NotificationResponse | null) {
-  if (!response) return;
-  const key = `${response.notification.request.identifier}:${response.actionIdentifier}`;
-  if (handled.has(key)) return;
-  handled.add(key);
-  const action = response.actionIdentifier;
-  if (action === "confirm" || action === "decline") {
-    answerCommand(response, action).catch(() => {});
-    return;
-  }
-  if (action === Notifications.DEFAULT_ACTION_IDENTIFIER) openNotification(response);
-}
-
-/** Opens the screen a tapped notification points at (`data.url`, e.g. "/don-hang" or "/farmer"). */
-function openNotification(response: Notifications.NotificationResponse | null) {
-  const url = response?.notification.request.content.data?.url;
-  const href = resolveAppLink(typeof url === "string" ? url : null);
-  if (href) router.push(href as never);
+/** The in-app route a tapped notification points at (`data.url`, e.g. "/don-hang/{id}" or "/farmer/vuon"). */
+function tappedLink(response: Notifications.NotificationResponse | null): string | null {
+  if (!response || response.actionIdentifier !== Notifications.DEFAULT_ACTION_IDENTIFIER) return null;
+  // Some system-shown pushes come without an identifier; the date tells them apart.
+  const key = `${response.notification.request.identifier}:${response.notification.date}`;
+  if (opened.has(key)) return null;
+  opened.add(key);
+  const url = notificationData(response.notification.request.content).url;
+  return resolveAppLink(typeof url === "string" ? url : null);
 }
 
 /**
@@ -174,32 +124,53 @@ export function usePushNotifications() {
     };
   }, [loading, userId]);
 
-  // Tapping a notification deep-links into the app, its Có / Không buttons answer the command;
-  // the launch notification is handled once the session is known.
+  // A tapped notification waits here until there is a screen to leave from and the session is known.
+  const pending = useRef<string | null>(null);
+  const [queued, setQueued] = useState(0);
+  const pathname = usePathname();
+
+  // The Đồng ý / Không đồng ý buttons are answered in constants/push-actions; only taps on the
+  // notification itself come here, including the one that started the app.
   useEffect(() => {
-    if (loading || Platform.OS === "web") return;
-    try {
-      const last = Notifications.getLastNotificationResponse();
-      if (last) {
+    if (Platform.OS === "web") return;
+    const take = (response: Notifications.NotificationResponse | null) => {
+      const href = tappedLink(response);
+      if (!response || response.actionIdentifier !== Notifications.DEFAULT_ACTION_IDENTIFIER) return;
+      try {
         Notifications.clearLastNotificationResponse();
-        handleResponse(last);
+      } catch {
+        // not available in this runtime
       }
-    } catch {
-      // not available in this runtime (e.g. Expo Go on Android)
-    }
+      if (!href) return;
+      pending.current = href;
+      setQueued((n) => n + 1);
+    };
     let sub: { remove: () => void } | undefined;
     try {
-      sub = Notifications.addNotificationResponseReceivedListener((r) => {
-        try {
-          Notifications.clearLastNotificationResponse();
-        } catch {
-          // not available in this runtime
-        }
-        handleResponse(r);
-      });
+      sub = Notifications.addNotificationResponseReceivedListener(take);
+      take(Notifications.getLastNotificationResponse());
     } catch {
       // not available in this runtime (e.g. Expo Go on Android)
     }
     return () => sub?.remove();
-  }, [loading]);
+  }, []);
+
+  // "/" is only the redirect of a cold start: going anywhere before it settles would be undone.
+  useEffect(() => {
+    const href = pending.current;
+    if (!href || loading || pathname === "/") return;
+    pending.current = null;
+    const target = guardAppLink(href, user);
+    let tries = 0;
+    const go = () => {
+      try {
+        router.push(target as never);
+      } catch {
+        // the navigator is not ready yet
+        if (++tries < 20) setTimeout(go, 150);
+      }
+    };
+    go();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queued, loading, pathname]);
 }

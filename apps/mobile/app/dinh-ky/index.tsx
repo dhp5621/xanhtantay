@@ -51,7 +51,7 @@ export default function DinhKyScreen() {
       load();
       return true;
     } catch (e) {
-      alert("Không cập nhật được", e instanceof ApiError ? e.message : "Có lỗi xảy ra");
+      alert("Không cập nhật được", e instanceof ApiError ? e.message : "Có lỗi xảy ra, xin thử lại giúp ạ.");
       return false;
     } finally {
       setBusy(null);

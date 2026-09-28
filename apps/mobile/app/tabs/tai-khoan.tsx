@@ -136,7 +136,7 @@ export default function TaiKhoanScreen() {
       setMe((m) => (m ? { ...m, avatar_url } : m));
       refresh().catch(() => {});
     } catch (e) {
-      alert("Không lưu được", e instanceof ApiError ? e.message : "Có lỗi xảy ra");
+      alert("Không lưu được", e instanceof ApiError ? e.message : "Có lỗi xảy ra, xin thử lại giúp ạ.");
     } finally {
       setBusy(false);
     }
@@ -145,7 +145,7 @@ export default function TaiKhoanScreen() {
   const pickAvatar = async (source: "camera" | "library") => {
     try {
       const perm = source === "camera" ? await ImagePicker.requestCameraPermissionsAsync() : await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!perm.granted) throw new Error("Cần cấp quyền để chọn ảnh");
+      if (!perm.granted) throw new Error("Xin cho phép dùng máy ảnh hoặc thư viện ảnh trong phần Cài đặt ạ.");
       const res = source === "camera" ? await ImagePicker.launchCameraAsync({ mediaTypes: ["images"], allowsEditing: true, aspect: [1, 1], quality: 0.9, cameraType: ImagePicker.CameraType.front }) : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], allowsEditing: true, aspect: [1, 1], quality: 0.9 });
       if (res.canceled) return;
       const a = res.assets[0];
@@ -171,7 +171,7 @@ export default function TaiKhoanScreen() {
   const saveProfile = async () => {
     if (!form) return;
     if (!form.name.trim()) {
-      alert("Thiếu tên", isFarmer ? "Bác điền tên để khách hàng biết ai trồng rau nhé." : "Bạn điền tên để bác giao hàng gọi cho đúng nhé.");
+      alert("Thiếu tên", isFarmer ? "Xin điền tên để khách hàng biết ai trồng rau ạ." : "Xin điền tên để người giao hàng gọi cho đúng ạ.");
       return;
     }
     setSaving(true);
@@ -183,7 +183,7 @@ export default function TaiKhoanScreen() {
         setMe((m) => (m ? { ...m, ...body, phone: body.phone || null } : m));
         setForm((f) => (f ? { ...f, ...body } : f));
         refresh().catch(() => {});
-        alert("Đã lưu thông tin", "Tên và số điện thoại của bác đã được cập nhật.", undefined, { icon: "check_circle" });
+        alert("Đã lưu thông tin", `Tên và số điện thoại của ${me?.salutation?.trim() || "bác"} đã được cập nhật ạ.`, undefined, { icon: "check_circle" });
         return;
       }
       const body = { name: form.name.trim(), phone: form.phone.trim(), cluster_id: form.cluster_id, address: form.address.trim() };
@@ -193,7 +193,7 @@ export default function TaiKhoanScreen() {
       refresh().catch(() => {});
       alert("Đã lưu thông tin", "Các đơn mới sẽ mặc định giao tới địa chỉ này.", undefined, { icon: "check_circle" });
     } catch (e) {
-      alert("Không lưu được", e instanceof ApiError ? e.message : "Có lỗi xảy ra");
+      alert("Không lưu được", e instanceof ApiError ? e.message : "Có lỗi xảy ra, xin thử lại giúp ạ.");
     } finally {
       setSaving(false);
     }
@@ -355,7 +355,7 @@ export default function TaiKhoanScreen() {
                   </View>
                 ) : farmState === "none" ? (
                   <View style={[styles.card, { backgroundColor: colors.errorContainer }]}>
-                    <Text style={[styles.muted, { color: colors.onErrorContainer }]}>Tài khoản này chưa gắn với vườn nào. Bác liên hệ quản trị để được tạo vườn nhé.</Text>
+                    <Text style={[styles.muted, { color: colors.onErrorContainer }]}>Tài khoản này chưa gắn với vườn nào. Xin liên hệ quản trị để được tạo vườn giúp ạ.</Text>
                   </View>
                 ) : farmState === "error" ? (
                   <View style={[styles.card, styles.retry]}>

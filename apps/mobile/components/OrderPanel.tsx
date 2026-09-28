@@ -86,7 +86,7 @@ export function OrderPanel({ box, deliveryDate, shipFee = SHIP_FEE, initialMode 
     return false;
   };
 
-  const fail = (title: string, e: unknown) => alert(title, e instanceof ApiError ? e.message : "Có lỗi xảy ra, bạn thử lại nhé.");
+  const fail = (title: string, e: unknown) => alert(title, e instanceof ApiError ? e.message : "Có lỗi xảy ra, xin thử lại giúp ạ.");
 
   const placeOrder = async () => {
     if (!requireCluster()) return;

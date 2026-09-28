@@ -65,3 +65,13 @@ export function formatCountdown(ms: number) {
   if (h > 0) return `${h} giờ ${String(m).padStart(2, "0")} phút`;
   return `${m} phút ${String(s).padStart(2, "0")} giây`;
 }
+
+/**
+ * "Chào bác Ba" / "Chào chị Lan" from the profile's form of address (`GET /users/me`), or null
+ * when the profile does not say how the person is addressed.
+ */
+export function greetingOf(me: { salutation?: string | null; short_name?: string | null } | null | undefined): string | null {
+  const salutation = me?.salutation?.trim();
+  const name = me?.short_name?.trim();
+  return salutation && name ? `Chào ${salutation} ${name}` : null;
+}

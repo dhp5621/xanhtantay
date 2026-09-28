@@ -109,7 +109,7 @@ export default function FarmInfoScreen() {
       apply(await apiFetch("/farms/mine", { method: "DELETE" }));
       if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     } catch (e) {
-      alert("Chưa rút được", e instanceof ApiError ? e.message : "Mạng đang yếu, bác bấm lại giúp nhé.");
+      alert("Chưa rút được", e instanceof ApiError ? e.message : "Mạng đang yếu, xin bấm lại giúp ạ.");
     } finally {
       setWithdrawing(false);
     }
@@ -139,7 +139,7 @@ export default function FarmInfoScreen() {
       if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       alert("Đã gửi", "Quản trị sẽ duyệt rồi thay đổi mới có hiệu lực.", undefined, { icon: "check_circle" });
     } catch (e) {
-      alert("Chưa gửi được", e instanceof ApiError ? e.message : "Mạng đang yếu, bác bấm lại giúp nhé.");
+      alert("Chưa gửi được", e instanceof ApiError ? e.message : "Mạng đang yếu, xin bấm lại giúp ạ.");
     } finally {
       setSaving(false);
     }
@@ -203,7 +203,7 @@ export default function FarmInfoScreen() {
         {state === "none" ? (
           <View style={styles.errorBox}>
             <Icon name="info" size={24} color={colors.onErrorContainer} />
-            <Text style={styles.errorText}>Tài khoản này chưa gắn với vườn nào. Bác liên hệ quản trị để được tạo vườn nhé.</Text>
+            <Text style={styles.errorText}>Tài khoản này chưa gắn với vườn nào. Xin liên hệ quản trị để được tạo vườn giúp ạ.</Text>
           </View>
         ) : null}
 

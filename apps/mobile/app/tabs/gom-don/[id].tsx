@@ -62,7 +62,7 @@ export default function GomDonDetailScreen() {
       alert("Bạn đã vào nhóm!", "Rủ thêm hàng xóm cho đủ số nhà để cả nhóm miễn phí giao nhé.", undefined, { icon: "celebration" });
       await load();
     } catch (e) {
-      alert("Không tham gia được", e instanceof ApiError ? e.message : "Có lỗi xảy ra");
+      alert("Không tham gia được", e instanceof ApiError ? e.message : "Có lỗi xảy ra, xin thử lại giúp ạ.");
     } finally {
       setBusy(false);
     }
@@ -80,7 +80,7 @@ export default function GomDonDetailScreen() {
             await apiFetch(`/groups/${id}/leave`, { method: "POST" });
             await load();
           } catch (e) {
-            alert("Không rời được", e instanceof ApiError ? e.message : "Có lỗi xảy ra");
+            alert("Không rời được", e instanceof ApiError ? e.message : "Có lỗi xảy ra, xin thử lại giúp ạ.");
           } finally {
             setBusy(false);
           }

@@ -59,7 +59,7 @@ export function BoxMenu({ mealPlan, target, customised: wasCustomised = false }:
           { text: "Đăng nhập", onPress: () => router.push("/dang-nhap") },
         ]);
       } else {
-        alert("Chưa đổi được thực đơn", e instanceof ApiError ? e.message : "Mạng đang yếu, bạn thử lại nhé.");
+        alert("Chưa đổi được thực đơn", e instanceof ApiError ? e.message : "Mạng đang yếu, xin thử lại giúp ạ.");
       }
       return false;
     } finally {

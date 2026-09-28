@@ -78,7 +78,7 @@ export default function GomDonScreen() {
 
   const submit = async () => {
     if (!form.box_id || !form.cluster_id) {
-      alert("Thiếu thông tin", "Bạn chọn hộp rau và cụm chung cư nhận hàng nhé.");
+      alert("Thiếu thông tin", "Xin chọn hộp rau và cụm chung cư nhận hàng giúp ạ.");
       return;
     }
     setBusy(true);
@@ -99,7 +99,7 @@ export default function GomDonScreen() {
       setForm((x) => ({ ...x, title: "" }));
       router.push(`/tabs/gom-don/${data.id}`);
     } catch (e) {
-      alert("Không tạo được nhóm", e instanceof ApiError ? e.message : "Có lỗi xảy ra");
+      alert("Không tạo được nhóm", e instanceof ApiError ? e.message : "Có lỗi xảy ra, xin thử lại giúp ạ.");
     } finally {
       setBusy(false);
     }

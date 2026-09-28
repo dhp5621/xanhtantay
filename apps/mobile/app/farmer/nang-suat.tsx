@@ -6,14 +6,15 @@ import { router, useFocusEffect } from "expo-router";
 import { apiFetch, ApiError } from "../../constants/api";
 import { colors, shape, type, useStyles, type Colors } from "../../constants/theme";
 import { formatDateTime, formatKg } from "../../constants/format";
-import type { FarmerCapacity, FarmerCapacityItem } from "../../constants/types";
+import type { FarmerCapacity, FarmerCapacityItem, ProduceProposal, ProduceProposals } from "../../constants/types";
 import { useSession } from "../../hooks/useSession";
 import { useLiveRefresh } from "../../hooks/useLive";
 import { AnimIn, PressableScale, Skeleton } from "../../components/motion";
-import { Button, EmptyState } from "../../components/ui";
+import { Button, Chip, EmptyState } from "../../components/ui";
 import { KeyboardScroll } from "../../components/keyboard";
 import { QuantityStepper } from "../../components/QuantityStepper";
 import { SmartImage } from "../../components/SmartImage";
+import { ProduceProposalSheet } from "../../components/ProduceProposalSheet";
 import { useDialog } from "../../components/Dialog";
 import { Loader } from "../../components/Loader";
 import { Icon } from "../../components/Icon";
@@ -40,6 +41,9 @@ export default function FarmerCapacityScreen() {
   const [withdrawing, setWithdrawing] = useState(false);
   // Only what the farmer changed on screen: produce_id → kg. Survives a reload of the server's values.
   const [draft, setDraft] = useState<Record<string, number>>({});
+  const [proposing, setProposing] = useState(false);
+  // The proposal being withdrawn, by id.
+  const [removing, setRemoving] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!isFarmer) return;
@@ -47,7 +51,7 @@ export default function FarmerCapacityScreen() {
       setData(await apiFetch("/farmer/capacity"));
       setError(null);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Không tải được dữ liệu. Bác kéo xuống để thử lại.");
+      setError(e instanceof ApiError ? e.message : "Không tải được dữ liệu. Xin kéo xuống để thử lại giúp ạ.");
     }
   }, [isFarmer]);
 
@@ -79,7 +83,8 @@ export default function FarmerCapacityScreen() {
   };
 
   const apply = (next: FarmerCapacity) => {
-    setData(next);
+    // The proposals on screen stay when an answer comes without them.
+    setData((d) => ({ ...next, proposals: next.proposals ?? d?.proposals }));
     setDraft({});
     setError(null);
   };
@@ -90,7 +95,7 @@ export default function FarmerCapacityScreen() {
       apply(await apiFetch("/farmer/capacity", { method: "DELETE" }));
       if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     } catch (e) {
-      alert("Chưa rút được", e instanceof ApiError ? e.message : "Mạng đang yếu, bác bấm lại giúp nhé.");
+      alert("Chưa rút được", e instanceof ApiError ? e.message : "Mạng đang yếu, xin bấm lại giúp ạ.");
     } finally {
       setWithdrawing(false);
     }
@@ -99,6 +104,27 @@ export default function FarmerCapacityScreen() {
     alert("Rút yêu cầu đang chờ duyệt?", message, [
       { text: "Không", style: "cancel" },
       { text: "Rút yêu cầu", style: "destructive", onPress: withdraw },
+    ]);
+
+  const proposals = data?.proposals ?? [];
+  const setProposals = (next: ProduceProposal[]) => setData((d) => (d ? { ...d, proposals: next } : d));
+  const withdrawProposal = async (p: ProduceProposal) => {
+    setRemoving(p.id);
+    try {
+      const res: ProduceProposals = await apiFetch(`/farmer/produce/${encodeURIComponent(p.id)}`, { method: "DELETE" });
+      setProposals(res?.proposals ?? []);
+      if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    } catch (e) {
+      alert("Chưa rút được", e instanceof ApiError ? e.message : "Mạng đang yếu, xin bấm lại giúp ạ.");
+      load();
+    } finally {
+      setRemoving(null);
+    }
+  };
+  const askWithdrawProposal = (p: ProduceProposal) =>
+    alert(`Rút yêu cầu đăng ký "${p.name}"?`, "Quản trị sẽ không duyệt loại rau củ này nữa. Sau này vẫn gửi lại được ạ.", [
+      { text: "Không", style: "cancel" },
+      { text: "Rút yêu cầu", style: "destructive", onPress: () => withdrawProposal(p) },
     ]);
 
   const save = async () => {
@@ -114,7 +140,7 @@ export default function FarmerCapacityScreen() {
       if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       alert("Đã gửi", "Quản trị sẽ duyệt rồi thay đổi mới có hiệu lực.", undefined, { icon: "check_circle" });
     } catch (e) {
-      alert("Chưa gửi được", e instanceof ApiError ? e.message : "Mạng đang yếu, bác bấm lại giúp nhé.");
+      alert("Chưa gửi được", e instanceof ApiError ? e.message : "Mạng đang yếu, xin bấm lại giúp ạ.");
     } finally {
       setSaving(false);
     }
@@ -273,7 +299,7 @@ export default function FarmerCapacityScreen() {
 
             <View style={{ gap: 10 }}>
               <Text style={styles.sectionTitle}>Đang cung cấp</Text>
-              {supplied.length ? supplied.map(row) : <Text style={styles.hint}>Bác chưa đăng ký loại nào. Bác bấm “Đăng ký” ở loại rau củ bên dưới nhé.</Text>}
+              {supplied.length ? supplied.map(row) : <Text style={styles.hint}>Bác chưa đăng ký loại nào. Xin bấm “Đăng ký” ở loại rau củ bên dưới ạ.</Text>}
             </View>
 
             {others.length ? (
@@ -282,6 +308,26 @@ export default function FarmerCapacityScreen() {
                 {others.map(row)}
               </View>
             ) : null}
+
+            <View style={{ gap: 10 }}>
+              <Text style={styles.sectionTitle}>Rau củ khác</Text>
+              <Text style={styles.hint}>Vườn có loại rau củ chưa có trong danh sách? Bác gửi tên, ảnh và sản lượng, quản trị duyệt xong là có trong danh sách.</Text>
+              <Button label="Đăng ký rau củ mới" icon="add" variant="tonal" onPress={() => setProposing(true)} style={styles.proposeBtn} />
+              {proposals.map((p) => (
+                <View key={p.id} style={styles.row}>
+                  <View style={styles.rowHead}>
+                    <SmartImage uri={p.image_url} style={styles.photo} loaderSize={22} />
+                    <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
+                      <Text style={styles.name}>{p.name}</Text>
+                      <Text style={styles.state}>{formatKg(Number(p.daily_kg) || 0)} mỗi ngày</Text>
+                      {p.status === "pending" ? <Chip label="Chờ duyệt" icon="hourglass_empty" tone="tertiary" /> : p.status === "approved" ? <Chip label="Đã duyệt" icon="check_circle" tone="primary" /> : <Chip label="Chưa được duyệt" icon="error" tone="error" />}
+                    </View>
+                  </View>
+                  {p.status === "rejected" && p.reason ? <Text style={styles.reason}>Lý do: {p.reason}</Text> : null}
+                  {p.status === "pending" ? <Button label="Rút yêu cầu" icon="cancel" variant="outlined" onPress={() => askWithdrawProposal(p)} loading={removing === p.id} disabled={!!removing} style={{ alignSelf: "stretch", paddingVertical: 14 }} /> : null}
+                </View>
+              ))}
+            </View>
 
             <View style={styles.note}>
               <Icon name="info" size={24} color={colors.onSecondaryContainer} />
@@ -309,6 +355,16 @@ export default function FarmerCapacityScreen() {
           {pending ? <Text style={styles.footerHint}>Gửi lại sẽ thay cho yêu cầu đang chờ.</Text> : null}
         </View>
       ) : null}
+
+      <ProduceProposalSheet
+        visible={proposing}
+        onClose={() => setProposing(false)}
+        onSent={(next) => {
+          setProposals(next);
+          setProposing(false);
+          alert("Đã gửi", "Quản trị duyệt xong là rau củ này có trong danh sách ạ.", undefined, { icon: "check_circle" });
+        }}
+      />
     </View>
   );
 }
@@ -348,6 +404,8 @@ const makeStyles = (c: Colors) =>
     textBtn: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 48, paddingHorizontal: 8 },
     textBtnLabel: { ...type.labelLarge, color: c.primary, fontSize: 17, lineHeight: 24 },
     registerBtn: { alignSelf: "stretch", paddingVertical: 16 },
+    proposeBtn: { alignSelf: "stretch", paddingVertical: 18 },
+    reason: { ...type.bodyLarge, color: c.error, fontSize: 17, lineHeight: 25 },
 
     note: { flexDirection: "row", alignItems: "flex-start", gap: 12, backgroundColor: c.secondaryContainer, borderRadius: shape.xl, padding: 16 },
     noteText: { ...type.bodyLarge, color: c.onSecondaryContainer, fontSize: 17, lineHeight: 25, flex: 1 },
