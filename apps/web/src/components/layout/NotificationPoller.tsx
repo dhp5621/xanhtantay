@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useSnackbar } from "@/components/ui/Snackbar";
 
-const INTERVAL_MS = 30_000;
+const INTERVAL_MS = 15_000;
 const KEY = "xtt-seen-notifications";
 
 interface Item { id: string; title: string; body: string; url: string }
@@ -38,17 +38,18 @@ async function pushIsOn() {
 }
 
 /**
- * Delivery that does not depend on a push service: while a signed-in tab is open, polls
+ * Delivery that does not depend on a push service: while a tab is open, polls
  * /api/notifications and announces anything new as a system notification (when allowed)
  * or a snackbar.
  */
 export function NotificationPoller() {
+  // Re-run on sign-in / sign-out so personal notifications start and stop with the session.
   const { status } = useSession();
   const { show } = useSnackbar();
   const router = useRouter();
 
   useEffect(() => {
-    if (status !== "authenticated") return;
+    if (status === "loading") return;
     let stopped = false;
 
     const announce = async (n: Item) => {

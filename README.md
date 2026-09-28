@@ -48,7 +48,7 @@ Font tự host trong `apps/web/public/fonts`. Icon là bản rút gọn theo tê
 
 Có hai đường giao thông báo (lệnh thu hoạch cho nông dân, hành trình hộp rau cho khách):
 
-1. **Hỏi máy chủ định kỳ** (luôn chạy, không cần cấu hình): khi app hoặc trang web đang mở, cứ 30 giây hỏi `/api/notifications` rồi hiện thông báo tại chỗ. Không phụ thuộc Google / Apple.
+1. **Hỏi máy chủ định kỳ** (luôn chạy, không cần cấu hình): khi app hoặc trang web đang mở, cứ 15 giây hỏi `/api/notifications` rồi hiện thông báo tại chỗ (cả thông báo quản trị gửi từ `/admin`). Không phụ thuộc Google / Apple.
 2. **Đẩy thật** (nhận cả khi đã đóng app), cần thêm khoá:
    - **Web**: ba biến `VAPID_*` trên Vercel, khoá công khai và khoá riêng phải cùng một cặp (`npx web-push generate-vapid-keys`). Đổi khoá xong phải deploy lại.
    - **Android**: tạo dự án Firebase cho gói `dhp.vkn.xanhtantay`, đặt `google-services.json` vào `apps/mobile/` (hoặc biến `GOOGLE_SERVICES_JSON` trỏ tới file), rồi tải khoá FCM V1 lên Expo bằng `eas credentials`.

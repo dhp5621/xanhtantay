@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { and, desc, eq, gte, inArray } from "drizzle-orm";
 import { db } from "@/db";
-import { farms, harvest_commands, harvest_runs, orders } from "@/db/schema";
+import { broadcasts, farms, harvest_commands, harvest_runs, orders } from "@/db/schema";
 import { getSessionUser } from "@/lib/session";
 import { addDays, todayVN } from "@/lib/commerce";
 import { ORDER_STATUS_LABELS } from "@xanhtantay/types";
@@ -11,15 +11,21 @@ export const dynamic = "force-dynamic";
 export interface AppNotification { id: string; title: string; body: string; url: string }
 
 /**
- * The signed-in user's recent notifications, derived from live data (no push service involved).
+ * Recent notifications for this visitor: admin broadcasts for everyone, plus the signed-in user's
+ * harvest commands or order updates (no push service involved).
  * Clients poll this and show a local notification for every id they have not seen yet, so
  * harvest commands and order updates still arrive where FCM / APNs / Web Push are unavailable.
  */
-export async function GET() {
+export async function GET(req: Request) {
+  const platform = new URL(req.url).searchParams.get("platform") === "mobile" ? "mobile" : "web";
   const user = await getSessionUser();
-  if (!user) return NextResponse.json({ notifications: [] }, { headers: { "Cache-Control": "no-store" } });
   const since = addDays(todayVN(), -1);
   const out: AppNotification[] = [];
+
+  // Admin broadcasts of the last day reach everyone, signed in or not.
+  const sent = await db.select().from(broadcasts).where(and(gte(broadcasts.created_at, new Date(Date.now() - 864e5)), inArray(broadcasts.target, ["all", platform]))).orderBy(desc(broadcasts.created_at)).limit(10);
+  for (const b of sent) out.push({ id: `bc-${b.id}`, title: b.title, body: b.body, url: b.url ?? "/" });
+  if (!user) return NextResponse.json({ notifications: out }, { headers: { "Cache-Control": "no-store" } });
 
   if (user.role === "farmer") {
     const rows = await db

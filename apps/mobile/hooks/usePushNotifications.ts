@@ -14,7 +14,7 @@ Notifications.setNotificationHandler({
   handleNotification: async () => ({ shouldShowBanner: true, shouldShowList: true, shouldPlaySound: true, shouldSetBadge: false }),
 });
 
-const POLL_MS = 30_000;
+const POLL_MS = 15_000;
 const SEEN_KEY = "xtt-seen-notifications";
 
 interface Item { id: string; title: string; body: string; url: string }
@@ -45,7 +45,7 @@ async function getExpoPushToken(): Promise<string | null> {
  * notification for every id not seen before. Runs while the app is open.
  */
 async function pollNotifications() {
-  const { notifications } = (await apiFetch("/notifications")) as { notifications: Item[] };
+  const { notifications } = (await apiFetch("/notifications?platform=mobile")) as { notifications: Item[] };
   const raw = await AsyncStorage.getItem(SEEN_KEY);
   const seen = raw ? new Set(JSON.parse(raw) as string[]) : null;
   // First run on this phone: remember what exists without announcing old news.
@@ -94,7 +94,7 @@ export function usePushNotifications() {
         console.warn("[push] remote push unavailable, polling instead", e);
       }
       // Remote push already delivers everything; polling would only duplicate it.
-      if (cancelled || remote || !allowed || !userId) return;
+      if (cancelled || remote || !allowed) return;
       const tick = () => {
         if (AppState.currentState === "active") pollNotifications().catch(() => {});
       };

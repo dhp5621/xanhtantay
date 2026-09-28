@@ -72,7 +72,7 @@ export function AdminPush({ counts }: { counts: { mobile: number; web: number } 
           {error && <span className="body-sm" style={{ color: "var(--md-error)" }}>{error}</span>}
           {result && (
             <span className="body-sm text-on-surface-variant">
-              <Icon name="task_alt" size={16} /> Điện thoại: {result.mobile.sent} đã gửi{result.mobile.failed ? `, ${result.mobile.failed} lỗi` : ""} · Trình duyệt: {result.webConfigured ? `${result.web.sent} đã gửi${result.web.failed ? `, ${result.web.failed} lỗi` : ""}` : "chưa cấu hình VAPID"}
+              <Icon name="task_alt" size={16} /> Điện thoại: {result.mobile.sent} đã gửi{result.mobile.failed ? `, ${result.mobile.failed} lỗi` : ""} · Trình duyệt: {result.webConfigured ? `${result.web.sent} đã gửi${result.web.failed ? `, ${result.web.failed} lỗi` : ""}` : "chưa cấu hình VAPID"} · Máy chưa đăng ký đẩy sẽ nhận trong 15 giây khi đang mở app hoặc trang
               {result.removed ? ` · đã xoá ${result.removed} thiết bị hết hạn` : ""}
             </span>
           )}

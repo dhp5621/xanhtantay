@@ -21,7 +21,7 @@ const DROP = [
   // pre-pivot tables
   "user_recipes", "meal_plans", "recipes", "order_items", "farm_diary", "products", "group_order_members",
   // current tables (children first)
-  "harvest_commands", "orders", "harvest_runs", "group_orders", "subscriptions", "box_items", "boxes", "farm_capacity", "produce", "farms", "push_devices", "users", "clusters",
+  "harvest_commands", "orders", "harvest_runs", "group_orders", "subscriptions", "box_items", "boxes", "farm_capacity", "produce", "farms", "push_devices", "broadcasts", "users", "clusters",
 ];
 const DROP_TYPES = ["order_status", "order_type", "subscription_frequency", "group_order_status", "run_status", "command_status", "user_role", "fulfillment"];
 
@@ -49,6 +49,7 @@ const CREATE = [
   `CREATE INDEX IF NOT EXISTS orders_delivery_idx ON orders(delivery_date, status)`,
   `CREATE INDEX IF NOT EXISTS orders_user_idx ON orders(user_id, created_at DESC)`,
   `CREATE TABLE IF NOT EXISTS push_devices (id text PRIMARY KEY, platform text NOT NULL, token text NOT NULL UNIQUE, subscription jsonb, user_id text REFERENCES users(id) ON DELETE SET NULL, created_at timestamp NOT NULL DEFAULT now(), updated_at timestamp NOT NULL DEFAULT now())`,
+  `CREATE TABLE IF NOT EXISTS broadcasts (id text PRIMARY KEY, title text NOT NULL, body text NOT NULL, url text, target text NOT NULL DEFAULT 'all', created_at timestamp NOT NULL DEFAULT now())`,
   // Columns added after the first release: existing databases are upgraded in place.
   `ALTER TABLE boxes ADD COLUMN IF NOT EXISTS mix text NOT NULL DEFAULT 'me-gui'`,
   `ALTER TABLE boxes ADD COLUMN IF NOT EXISTS mix_name text NOT NULL DEFAULT 'Thùng rau mẹ gửi'`,

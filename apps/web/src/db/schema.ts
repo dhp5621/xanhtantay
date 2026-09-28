@@ -205,4 +205,14 @@ export const push_devices = pgTable("push_devices", {
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
 });
+/** Admin broadcasts, kept so clients without a push service can still pick them up by polling. */
+export const broadcasts = pgTable("broadcasts", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  url: text("url"),
+  /** "mobile" | "web" | "all" */
+  target: text("target").notNull().default("all"),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
 export interface WebPushSubscription { endpoint: string; expirationTime?: number | null; keys: { p256dh: string; auth: string } }
