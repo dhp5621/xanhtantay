@@ -26,7 +26,7 @@ export function AdminNav() {
 
   if (pathname === "/admin/login") return null;
 
-  const items = [{ key: "", label: "Bộ não", icon: "psychology" }, { key: "hoan-tien", label: "Hoàn tiền", icon: "assignment_return" }, ...SECTIONS.map((s) => ({ key: s.key, label: s.label, icon: s.icon }))];
+  const items = [{ key: "", label: "Bộ não", icon: "psychology" }, { key: "hoan-tien", label: "Hoàn tiền", icon: "assignment_return" }, ...SECTIONS.map((s) => ({ key: s.key, label: s.label, icon: s.icon })), { key: "dung-luong", label: "Dung lượng", icon: "database" }];
 
   const logout = async () => {
     await fetch("/api/admin/logout", { method: "POST" });

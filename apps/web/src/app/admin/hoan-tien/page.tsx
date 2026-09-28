@@ -6,7 +6,6 @@ import { boxes, callName, clusters, orders, refund_requests, users } from "@/db/
 import { Icon } from "@/components/ui/Icon";
 import { Evidence } from "@/components/refund/Evidence";
 import { RefundReview } from "@/components/admin/RefundReview";
-import { StorageCard } from "@/components/admin/StorageCard";
 import { addressPerson, formatYMD } from "@/lib/commerce";
 import { formatClock, formatVND } from "@/lib/format";
 import { methodLabel, reasonLabel, REFUND_STATUS } from "@/lib/refund-config";
@@ -69,7 +68,6 @@ export default async function RefundsPage({ searchParams }: { searchParams: Prom
           })}
         </div>
       )}
-      <StorageCard />
     </div>
   );
 }

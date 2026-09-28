@@ -39,6 +39,7 @@ Font tự host trong `apps/web/public/fonts`. Icon là bản rút gọn theo tê
 | `NEXTAUTH_URL`, `NEXTAUTH_SECRET` | ✔ | Phiên đăng nhập khách / nông dân |
 | `DEMO_PASSWORD` | | Mật khẩu chung cho tài khoản demo, mặc định `demo123` |
 | `ADMIN_PASSWORD` | ✔ cho `/admin` | Mật khẩu quản trị; `ADMIN_USER` mặc định `admin`; `ADMIN_SESSION_SECRET` tuỳ chọn |
+| `DB_LIMIT_MB` | | Giới hạn cơ sở dữ liệu để tính phần trăm ở tab Dung lượng, mặc định 512 |
 | `CRON_SECRET` | ✔ cho chốt sổ tự động | Bảo vệ `/api/cron/cutoff` (Vercel Cron chạy 11:00 UTC = 18h00 giờ Việt Nam) |
 | `CHAT_API_SECRET` | cho AI | Khoá chat API ([gemini-web2api](https://github.com/Sophomoresty/gemini-web2api), OpenAI-compatible). Dùng để tìm công thức mới trên mạng và viết tóm tắt chuyến. `CHAT_API_URL`, `CHAT_API_MODEL` tuỳ chọn; `CHAT_SEARCH_MODEL` (mặc định `gemini-3.6-flash`) là model dùng khi cần tìm kiếm web. Không có khoá thì thực đơn đổi sang các món khác của bếp nhà |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | cho thông báo đẩy | Web Push; app mobile dùng Expo push |
@@ -105,7 +106,7 @@ Trang đăng nhập có nút một chạm cho cả hai. Quản trị: `/admin/lo
 - Theo dõi chuyến: nông hộ nào đã xác nhận, chuyển trạng thái thu hoạch → lên xe lạnh → tới sảnh (khách nhận thông báo).
 - **Người dùng**: xem và đổi ảnh đại diện, đặt mật khẩu riêng cho từng tài khoản khách hoặc nông dân (lưu dạng mã hoá scrypt), hoặc cho tài khoản dùng lại mật khẩu demo.
 - Quản lý mọi bảng: đơn, hộp rau, thành phần hộp, loại rau, năng suất, nông hộ, lệnh thu hoạch, gói định kỳ, gom đơn, cụm chung cư, người dùng. Xem được trên điện thoại.
-- **Dung lượng lưu trữ**: tệp được xoá ngay khi không còn nơi nào hiển thị (yêu cầu hoàn tiền đã rút), và mỗi ngày lúc 18h00 hệ thống tự dọn tệp tải lên mà không gửi, tệp không còn được tham chiếu, bằng chứng của yêu cầu đã xử lý quá 60 ngày. Tab Hoàn tiền có thẻ xem dung lượng và nút **Dọn ngay**.
+- **Tab Dung lượng** (`/admin/dung-luong`): xem cơ sở dữ liệu và kho tệp đang đầy tới đâu, dung lượng từng bảng, và dọn dữ liệu không còn nơi nào dùng (tệp mồ côi, bằng chứng hoàn tiền đã xử lý quá 60 ngày, yêu cầu của nông hộ đã xử lý quá 30 ngày, thông báo cũ). Trước khi xoá có danh sách từng mục và phải xác nhận vì không khôi phục được. Đơn hàng, chuyến giao, lệnh thu hoạch và kết quả hoàn tiền luôn được giữ. Việc dọn cũng tự chạy mỗi ngày lúc 18h00; tệp của yêu cầu hoàn tiền đã rút thì xoá ngay.
 - **Tab Hoàn tiền** (`/admin/hoan-tien`): xem ảnh, video bằng chứng, chọn hoàn tiền (kèm số tiền) hoặc giao bù, chấp nhận hoặc từ chối kèm lời nhắn; khách được báo kết quả.
 - **Yêu cầu chờ duyệt**: mỗi thay đổi nông hộ xin được hiện dạng cũ → mới, duyệt hoặc từ chối kèm lý do.
 - Gửi thông báo đẩy tới điện thoại và trình duyệt, kèm **mẫu gửi thử** cho từng loại thông báo (lệnh thu hoạch có nút Có / Không, đơn mới, các bước hành trình, nhắc chốt sổ, nhóm đủ nhà, thực đơn).

@@ -4,9 +4,9 @@ import { db } from "@/db";
 import { boxes, broadcasts, change_requests, farms, produce, refund_requests, users } from "@/db/schema";
 
 /**
- * Keeps the 1 GB file store from filling up: files are removed as soon as nothing shows them any
- * more, and a daily sweep catches whatever was left behind (uploads that were never sent, files
- * of features that no longer exist).
+ * Keeps the database and the file store from filling up. Only data nothing shows any more is
+ * ever removed: orders, harvest runs, commands and verdicts are history people still look up,
+ * so they are never touched here, however old.
  */
 const token = () => process.env.BLOB_READ_WRITE_TOKEN;
 const isStored = (u: unknown): u is string => typeof u === "string" && /^https:\/\/[a-z0-9.-]+\.blob\.vercel-storage\.com\//i.test(u);
@@ -15,10 +15,16 @@ const isStored = (u: unknown): u is string => typeof u === "string" && /^https:\
 const ORPHAN_AFTER_MS = 24 * 3600 * 1000;
 /** Evidence of a decided return / refund request is kept this long for disputes, then removed. */
 export const EVIDENCE_KEEP_DAYS = 60;
-/** Decided change requests (with their photos) and old broadcasts are history after this long. */
-const HISTORY_KEEP_DAYS = 30;
+/** Decided change requests (with their photos) are history after this long. */
+export const REQUEST_KEEP_DAYS = 30;
+export const BROADCAST_KEEP_DAYS = 7;
+export const FILE_LIMIT_BYTES = 1024 ** 3;
+export const DB_LIMIT_BYTES = Number(process.env.DB_LIMIT_MB ?? 512) * 1024 * 1024;
 
-/** Best-effort: a failed delete is picked up by the next sweep. */
+export type CleanupKey = "orphans" | "evidence" | "requests" | "broadcasts";
+export interface CleanupItem { key: CleanupKey; label: string; what: string; count: number; bytes: number | null; examples: string[]; available: boolean }
+
+/** Best-effort: a failed delete is picked up by the next clean-up. */
 export async function removeFiles(urls: (string | null | undefined)[]) {
   const mine = urls.filter(isStored);
   if (!mine.length || !token()) return 0;
@@ -45,56 +51,82 @@ async function referenced() {
   return used;
 }
 
-export interface SweepResult { configured: boolean; files: number; bytes: number; removed: number; freed: number; expiredEvidence: number; historyRows: number }
-
-/** Totals of the store, without removing anything. */
-export async function storageUsage() {
-  if (!token()) return { configured: false, files: 0, bytes: 0 };
-  let files = 0, bytes = 0, cursor: string | undefined;
-  do {
-    const page = await list({ token: token(), cursor, limit: 1000 });
-    files += page.blobs.length;
-    bytes += page.blobs.reduce((s, b) => s + b.size, 0);
-    cursor = page.hasMore ? page.cursor : undefined;
-  } while (cursor);
-  return { configured: true, files, bytes };
-}
-
-export async function sweepStorage(): Promise<SweepResult> {
-  const out: SweepResult = { configured: !!token(), files: 0, bytes: 0, removed: 0, freed: 0, expiredEvidence: 0, historyRows: 0 };
-
-  // 1. Evidence of requests decided long ago: the verdict stays, the files go.
-  const old = await db.select().from(refund_requests).where(and(ne(refund_requests.status, "pending"), lt(refund_requests.reviewed_at, new Date(Date.now() - EVIDENCE_KEEP_DAYS * 864e5)), or(isNotNull(refund_requests.video_url), sql`jsonb_array_length(${refund_requests.photos}) > 0`)));
-  for (const r of old) {
-    await db.update(refund_requests).set({ photos: [], video_url: null }).where(eq(refund_requests.id, r.id));
-    out.expiredEvidence++;
-  }
-
-  // 2. Rows that only hold history (decided change requests carry photos inline; broadcasts are read once).
-  const history = new Date(Date.now() - HISTORY_KEEP_DAYS * 864e5);
-  const gone = await db.delete(change_requests).where(and(ne(change_requests.status, "pending"), lt(change_requests.reviewed_at, history))).returning({ id: change_requests.id });
-  const sent = await db.delete(broadcasts).where(lt(broadcasts.created_at, new Date(Date.now() - 7 * 864e5))).returning({ id: broadcasts.id });
-  out.historyRows = gone.length + sent.length;
-
-  // 3. Files nothing points at any more.
+async function allFiles() {
+  const out: { url: string; pathname: string; size: number; uploadedAt: Date }[] = [];
   if (!token()) return out;
-  const used = await referenced();
-  const doomed: string[] = [];
   let cursor: string | undefined;
   do {
     const page = await list({ token: token(), cursor, limit: 1000 });
-    for (const b of page.blobs) {
-      out.files++;
-      out.bytes += b.size;
-      if (!used.has(b.url) && Date.now() - new Date(b.uploadedAt).getTime() > ORPHAN_AFTER_MS) { doomed.push(b.url); out.freed += b.size; }
-    }
+    out.push(...page.blobs.map((b) => ({ url: b.url, pathname: b.pathname, size: b.size, uploadedAt: new Date(b.uploadedAt) })));
     cursor = page.hasMore ? page.cursor : undefined;
   } while (cursor);
-  for (let i = 0; i < doomed.length; i += 100) {
-    await del(doomed.slice(i, i + 100), { token: token() });
-    out.removed += Math.min(100, doomed.length - i);
-  }
-  out.files -= out.removed;
-  out.bytes -= out.freed;
   return out;
 }
+
+const oldEvidence = () => db.select().from(refund_requests).where(and(ne(refund_requests.status, "pending"), lt(refund_requests.reviewed_at, new Date(Date.now() - EVIDENCE_KEEP_DAYS * 864e5)), or(isNotNull(refund_requests.video_url), sql`jsonb_array_length(${refund_requests.photos}) > 0`)));
+const oldRequests = () => and(ne(change_requests.status, "pending"), lt(change_requests.reviewed_at, new Date(Date.now() - REQUEST_KEEP_DAYS * 864e5)));
+const oldBroadcasts = () => lt(broadcasts.created_at, new Date(Date.now() - BROADCAST_KEEP_DAYS * 864e5));
+const rowsOf = <T>(r: T[] | { rows?: T[] }) => (Array.isArray(r) ? r : r.rows ?? []);
+
+/** Size of the database and of each table, from Postgres itself. */
+export async function databaseUsage() {
+  const [total] = rowsOf<{ bytes: string }>(await db.execute(sql`select pg_database_size(current_database())::text as bytes`));
+  const tables = rowsOf<{ name: string; bytes: string; rows: string }>(await db.execute(sql`
+    select c.relname as name, pg_total_relation_size(c.oid)::text as bytes, greatest(c.reltuples, 0)::bigint::text as rows
+    from pg_class c join pg_namespace n on n.oid = c.relnamespace
+    where n.nspname = 'public' and c.relkind = 'r' order by pg_total_relation_size(c.oid) desc`));
+  // Postgres only estimates row counts after an ANALYZE; these tables are small enough to count.
+  const counted = await Promise.all(tables.map(async (t) => {
+    if (!/^[a-z_][a-z0-9_]*$/.test(t.name)) return Number(t.rows);
+    const [c] = rowsOf<{ n: string }>(await db.execute(sql.raw(`select count(*)::text as n from "${t.name}"`)));
+    return Number(c?.n ?? t.rows);
+  }));
+  return { bytes: Number(total?.bytes ?? 0), limit: DB_LIMIT_BYTES, tables: tables.map((t, i) => ({ name: t.name, bytes: Number(t.bytes), rows: counted[i] })) };
+}
+
+/** What a clean-up would remove right now. Nothing is changed. */
+export async function cleanupPlan() {
+  const configured = !!token();
+  const [files, used, evidence, requests, sent] = await Promise.all([
+    allFiles(), referenced(), oldEvidence(),
+    db.select({ id: change_requests.id, kind: change_requests.kind, status: change_requests.status, payload: change_requests.payload }).from(change_requests).where(oldRequests()),
+    db.select({ id: broadcasts.id, title: broadcasts.title }).from(broadcasts).where(oldBroadcasts()),
+  ]);
+  const orphans = files.filter((f) => !used.has(f.url) && Date.now() - f.uploadedAt.getTime() > ORPHAN_AFTER_MS);
+  const sizeOf = new Map(files.map((f) => [f.url, f.size]));
+  const evidenceUrls = evidence.flatMap((r) => [...r.photos, ...(r.video_url ? [r.video_url] : [])]);
+  const kindLabel: Record<string, string> = { farm: "thông tin vườn", capacity: "rau củ đăng ký", produce: "rau củ mới" };
+  const items: CleanupItem[] = [
+    { key: "orphans", label: "Tệp không còn nơi nào dùng", what: "Ảnh, video đã tải lên nhưng không gửi, của yêu cầu đã rút, hoặc của tính năng đã bỏ (nhật ký vườn cũ). Không màn hình nào còn hiển thị chúng.", count: orphans.length, bytes: orphans.reduce((s, f) => s + f.size, 0), examples: orphans.slice(0, 5).map((f) => f.pathname), available: configured },
+    { key: "evidence", label: `Ảnh, video bằng chứng của yêu cầu hoàn tiền đã xử lý quá ${EVIDENCE_KEEP_DAYS} ngày`, what: "Chỉ xoá tệp ảnh và video. Yêu cầu, lý do, kết quả xử lý và số tiền vẫn giữ nguyên để xem lại.", count: evidence.length, bytes: evidenceUrls.reduce((s, u) => s + (sizeOf.get(u) ?? 0), 0), examples: evidence.slice(0, 5).map((r) => `Đơn #${r.order_id.slice(0, 8).toUpperCase()}`), available: true },
+    { key: "requests", label: `Yêu cầu đổi thông tin của nông hộ đã xử lý quá ${REQUEST_KEEP_DAYS} ngày`, what: "Thay đổi đã duyệt vẫn có hiệu lực. Chỉ xoá bản ghi yêu cầu cũ (kèm ảnh rau củ đính trong yêu cầu).", count: requests.length, bytes: null, examples: requests.slice(0, 5).map((r) => `${kindLabel[r.kind] ?? r.kind} · ${r.status === "approved" ? "đã duyệt" : "đã từ chối"}`), available: true },
+    { key: "broadcasts", label: `Thông báo quản trị đã gửi quá ${BROADCAST_KEEP_DAYS} ngày`, what: "Thông báo đã tới người nhận từ lâu; bản lưu chỉ dùng để phát lại cho máy chưa đăng ký đẩy trong 24 giờ đầu.", count: sent.length, bytes: null, examples: sent.slice(0, 5).map((b) => b.title), available: true },
+  ];
+  return { files: { configured, count: files.length, bytes: files.reduce((s, f) => s + f.size, 0), limit: FILE_LIMIT_BYTES }, items };
+}
+
+export interface CleanupResult { key: CleanupKey; removed: number; bytes: number }
+
+/** Removes the chosen kinds of leftover data. Order matters: evidence first, so its files count as unused. */
+export async function runCleanup(keys: CleanupKey[]): Promise<CleanupResult[]> {
+  const out: CleanupResult[] = [];
+  if (keys.includes("evidence")) {
+    const rows = await oldEvidence();
+    for (const r of rows) await db.update(refund_requests).set({ photos: [], video_url: null }).where(eq(refund_requests.id, r.id));
+    // The files go right away when the store is reachable; otherwise the next "orphans" pass takes them.
+    const freed = await removeFiles(rows.flatMap((r) => [...r.photos, r.video_url]));
+    out.push({ key: "evidence", removed: rows.length, bytes: freed });
+  }
+  if (keys.includes("requests")) out.push({ key: "requests", removed: (await db.delete(change_requests).where(oldRequests()).returning({ id: change_requests.id })).length, bytes: 0 });
+  if (keys.includes("broadcasts")) out.push({ key: "broadcasts", removed: (await db.delete(broadcasts).where(oldBroadcasts()).returning({ id: broadcasts.id })).length, bytes: 0 });
+  if (keys.includes("orphans") && token()) {
+    const [files, used] = await Promise.all([allFiles(), referenced()]);
+    const doomed = files.filter((f) => !used.has(f.url) && Date.now() - f.uploadedAt.getTime() > ORPHAN_AFTER_MS);
+    for (let i = 0; i < doomed.length; i += 100) await del(doomed.slice(i, i + 100).map((f) => f.url), { token: token() });
+    out.push({ key: "orphans", removed: doomed.length, bytes: doomed.reduce((s, f) => s + f.size, 0) });
+  }
+  return out;
+}
+
+/** The daily clean-up that rides along with the cut-off. */
+export const sweepStorage = () => runCleanup(["evidence", "requests", "broadcasts", "orphans"]);

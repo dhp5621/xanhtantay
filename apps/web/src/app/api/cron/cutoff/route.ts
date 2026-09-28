@@ -10,12 +10,12 @@ export async function GET(req: Request) {
   if (!process.env.CRON_SECRET || req.headers.get("authorization") !== `Bearer ${process.env.CRON_SECRET}`) return NextResponse.json({ error: "Không có quyền" }, { status: 401 });
   const deliveryDate = addDays(todayVN(), 1);
   // Housekeeping rides along with the daily cut-off and never blocks it.
-  const storage = await sweepStorage().catch(() => null);
+  const cleaned = await sweepStorage().catch(() => null);
   try {
     const result = await runCutoff(deliveryDate);
     await notifyCommands(result.run_id);
-    return NextResponse.json({ ...result, storage });
+    return NextResponse.json({ ...result, cleaned });
   } catch (e) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : "Lỗi", storage }, { status: 400 });
+    return NextResponse.json({ error: e instanceof Error ? e.message : "Lỗi", cleaned }, { status: 400 });
   }
 }
