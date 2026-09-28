@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { Icon } from "@/components/ui/Icon";
 import { SmartImage } from "@/components/ui/SmartImage";
-import { BoxCard } from "@/components/box/BoxCard";
+import { MixCard } from "@/components/box/MixCard";
 import { CutoffBanner } from "@/components/ui/CutoffBanner";
 import { ORDER_TIMELINE } from "@xanhtantay/types";
 import { formatYMD, PILOT_CITY, SOURCE_PROVINCES } from "@/lib/commerce";
-import type { BoxView } from "@/lib/queries";
+import { groupMixes, type BoxView } from "@/lib/queries";
 
 interface FarmCard { id: string; name: string; slug: string; location: string; province: string; cover_url: string | null; farmer: string | null }
 
@@ -74,8 +74,8 @@ export function Landing({ boxes, farms, stats, deliveryDate, cutoffAt }: { boxes
       </section>
 
       <section>
-        <div className="m3-section-head"><div><p className="m3-eyebrow">Hộp mùa này</p><h2 className="headline-lg text-on-surface">Chọn cỡ hộp cho nhà bạn</h2></div><Link href="/hop-rau" className="m3-btn m3-btn-text m3-btn-sm"><span>Xem chi tiết</span><Icon name="arrow_forward" size={18} /></Link></div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 stagger">{boxes.map((b) => <BoxCard key={b.id} box={b} />)}</div>
+        <div className="m3-section-head"><div><p className="m3-eyebrow">Hộp mùa này</p><h2 className="headline-lg text-on-surface">Chọn mix, chọn size cho nhà bạn</h2></div><Link href="/hop-rau" className="m3-btn m3-btn-text m3-btn-sm"><span>Xem chi tiết</span><Icon name="arrow_forward" size={18} /></Link></div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 stagger">{groupMixes(boxes).map((m) => <MixCard key={m.mix} mix={m} />)}</div>
       </section>
 
       <section>

@@ -17,10 +17,10 @@ const U = (p: string) => `https://images.unsplash.com/${p}?w=1000&q=70&auto=form
 async function seed() {
   const { db } = await import("./index");
   const s = await import("./schema");
-  const { MENU_S, MENU_M, MENU_L } = await import("./menu");
+  const { MENU_ME_GUI, MENU_VUNG_CAO, MENU_CU_QUA } = await import("./menu");
   const { addDays, todayVN, nextDeliveryDate, careMessageFor, vnInstant, SHIP_FEE } = await import("../lib/commerce");
   const { runCutoff, advanceRun } = await import("../lib/brain");
-  const { sql } = await import("drizzle-orm");
+  const { sql, inArray } = await import("drizzle-orm");
 
   console.log("Seeding…");
   // Transactional data is rebuilt from scratch.
@@ -65,33 +65,73 @@ async function seed() {
     { id: "pr-su-su", name: "Su su", category: "cu_qua", image_url: C("Chayote 1.jpg") },
     { id: "pr-khoai-tay", name: "Khoai tây", category: "cu_qua", image_url: C("Patates.jpg") },
     { id: "pr-ca-chua", name: "Cà chua", category: "cu_qua", image_url: C("Fresh red tomatoes.jpg") },
+    { id: "pr-cu-cai", name: "Củ cải trắng", category: "cu_qua", image_url: C("Daikon 20220423 083159.jpg") },
+    { id: "pr-dau-co-ve", name: "Đậu cô ve", category: "cu_qua", image_url: C("Des haricots verts.jpg") },
+    { id: "pr-sup-lo", name: "Súp lơ xanh", category: "rau_la", image_url: C("Fire-Tuscarora Organic Growers - Broccoli head.jpg") },
   ]).onConflictDoUpdate({ target: s.produce.id, set: { name: sql`excluded.name`, image_url: sql`excluded.image_url`, category: sql`excluded.category` } });
 
   const cap = (farm: string, list: [string, number][]) => list.map(([p, kg]) => ({ id: `cap-${farm}-${p}`, farm_id: `farm-${farm}`, produce_id: `pr-${p}`, daily_kg: kg }));
   await db.insert(s.farm_capacity).values([
-    ...cap("bac-ba", [["ca-rot", 40], ["bap-cai", 60], ["su-hao", 30], ["khoai-tay", 40]]),
-    ...cap("co-tu", [["cai-meo", 25], ["cai-ngot", 30], ["su-su", 40], ["ca-chua", 20]]),
-    ...cap("u-tham", [["bi-do", 60], ["ca-chua", 30], ["bap-cai", 40], ["ca-rot", 25]]),
-    ...cap("bac-tu", [["su-su", 30], ["cai-meo", 20], ["khoai-tay", 50], ["bi-do", 40], ["su-hao", 20]]),
+    ...cap("bac-ba", [["ca-rot", 40], ["bap-cai", 60], ["su-hao", 30], ["khoai-tay", 40], ["cu-cai", 30]]),
+    ...cap("co-tu", [["cai-meo", 25], ["cai-ngot", 30], ["su-su", 40], ["ca-chua", 20], ["dau-co-ve", 20], ["sup-lo", 20]]),
+    ...cap("u-tham", [["bi-do", 60], ["ca-chua", 30], ["bap-cai", 40], ["ca-rot", 25], ["dau-co-ve", 20]]),
+    ...cap("bac-tu", [["su-su", 30], ["cai-meo", 20], ["khoai-tay", 50], ["bi-do", 40], ["su-hao", 20], ["cu-cai", 25], ["sup-lo", 15]]),
   ]).onConflictDoUpdate({ target: s.farm_capacity.id, set: { daily_kg: sql`excluded.daily_kg` } });
 
-  await db.insert(s.boxes).values([
-    { id: "box-s", slug: "hop-nho", name: "Thùng rau mẹ gửi · Nhỏ", size: "S", weight_kg: "3", price: 119000, season: "Thu 2026", servings: 2, days: 3, image_url: C("Vegetable box 4.jpg"), meal_plan: MENU_S, description: "3 kg rau củ mùa thu cho nhà hai người, đủ nấu 3 ngày. Rau lá ăn trước, củ để sau." },
-    { id: "box-m", slug: "hop-vua", name: "Thùng rau mẹ gửi · Vừa", size: "M", weight_kg: "5", price: 179000, season: "Thu 2026", servings: 4, days: 4, image_url: C("June 19th Organic Vegetable Box.jpg"), meal_plan: MENU_M, description: "5 kg cho gia đình 3–4 người, đủ 4 ngày. Có cả rau lá vùng cao và củ quả để hầm." },
-    { id: "box-l", slug: "hop-lon", name: "Thùng rau mẹ gửi · Lớn", size: "L", weight_kg: "8", price: 269000, season: "Thu 2026", servings: 6, days: 5, image_url: C("Organic Vegetable Boxes - 3085908608.jpg"), meal_plan: MENU_L, description: "8 kg cho nhà đông người hoặc hai nhà chung nhau, đủ 5 ngày với 9 loại rau củ." },
-  ]).onConflictDoUpdate({ target: s.boxes.id, set: { name: sql`excluded.name`, slug: sql`excluded.slug`, price: sql`excluded.price`, weight_kg: sql`excluded.weight_kg`, season: sql`excluded.season`, servings: sql`excluded.servings`, days: sql`excluded.days`, image_url: sql`excluded.image_url`, meal_plan: sql`excluded.meal_plan`, description: sql`excluded.description`, active: sql`true` } });
+  // Three mixes a season, each in three sizes (like clothing). Every box feeds its household for 7 days.
+  const SIZES = { S: { label: "Nhỏ", slug: "nho", kg: 4, servings: 2, who: "nhà 1–2 người" }, M: { label: "Vừa", slug: "vua", kg: 7, servings: 4, who: "gia đình 3–4 người" }, L: { label: "Lớn", slug: "lon", kg: 10, servings: 6, who: "nhà 5–6 người hoặc hai nhà chung nhau" } } as const;
+  type Size = keyof typeof SIZES;
+  const MIXES: { mix: string; name: string; idPrefix: string; slugPrefix: string; image: string; menu: typeof MENU_ME_GUI; blurb: string; price: Record<Size, number>; items: Record<Size, [string, number][]> }[] = [
+    {
+      mix: "me-gui", name: "Thùng rau mẹ gửi", idPrefix: "box", slugPrefix: "hop", image: C("June 19th Organic Vegetable Box.jpg"), menu: MENU_ME_GUI,
+      blurb: "Mix cân bằng giữa rau lá và củ quả, như thùng rau mẹ gửi từ quê lên.",
+      price: { S: 159000, M: 259000, L: 359000 },
+      items: {
+        S: [["bap-cai", 1], ["ca-rot", 0.5], ["ca-chua", 0.5], ["cai-ngot", 0.5], ["su-su", 0.5], ["khoai-tay", 0.5], ["bi-do", 0.5]],
+        M: [["bap-cai", 1.5], ["ca-rot", 1], ["ca-chua", 1], ["cai-ngot", 0.5], ["su-su", 1], ["khoai-tay", 1], ["bi-do", 1]],
+        L: [["bap-cai", 2], ["ca-rot", 1.5], ["ca-chua", 1.5], ["cai-ngot", 1], ["su-su", 1.5], ["khoai-tay", 1.5], ["bi-do", 1]],
+      },
+    },
+    {
+      mix: "vung-cao", name: "Nương rau vùng cao", idPrefix: "box-vc", slugPrefix: "vung-cao", image: C("Vegetable box 4.jpg"), menu: MENU_VUNG_CAO,
+      blurb: "Nhiều rau xanh: cải mèo, cải ngọt, súp lơ, đậu cô ve hái trên nương.",
+      price: { S: 169000, M: 279000, L: 379000 },
+      items: {
+        S: [["bap-cai", 1], ["cai-meo", 0.5], ["cai-ngot", 0.5], ["sup-lo", 0.5], ["dau-co-ve", 0.5], ["su-su", 0.5], ["ca-chua", 0.5]],
+        M: [["bap-cai", 1.5], ["cai-meo", 1], ["cai-ngot", 1], ["sup-lo", 1], ["dau-co-ve", 1], ["su-su", 1], ["ca-chua", 0.5]],
+        L: [["bap-cai", 2], ["cai-meo", 1.5], ["cai-ngot", 1.5], ["sup-lo", 1.5], ["dau-co-ve", 1.5], ["su-su", 1], ["ca-chua", 1]],
+      },
+    },
+    {
+      mix: "cu-qua", name: "Củ quả hầm canh", idPrefix: "box-cq", slugPrefix: "cu-qua", image: C("Organic Vegetable Boxes - 3085908608.jpg"), menu: MENU_CU_QUA,
+      blurb: "Củ quả chắc tay để hầm, kho, nấu canh; để được lâu nhất trong ba mix.",
+      price: { S: 149000, M: 249000, L: 339000 },
+      items: {
+        S: [["bi-do", 1], ["ca-rot", 0.5], ["khoai-tay", 0.5], ["su-hao", 0.5], ["cu-cai", 0.5], ["ca-chua", 0.5], ["bap-cai", 0.5]],
+        M: [["bi-do", 1.5], ["ca-rot", 1], ["khoai-tay", 1], ["su-hao", 1], ["cu-cai", 1], ["bap-cai", 1], ["ca-chua", 0.5]],
+        L: [["bi-do", 2], ["ca-rot", 1.5], ["khoai-tay", 1.5], ["su-hao", 1.5], ["cu-cai", 1.5], ["bap-cai", 1], ["ca-chua", 1]],
+      },
+    },
+  ];
+  const sizes = Object.keys(SIZES) as Size[];
+  const boxId = (m: (typeof MIXES)[number], z: Size) => `${m.idPrefix}-${z.toLowerCase()}`;
+  await db.insert(s.boxes).values(MIXES.flatMap((m) => sizes.map((z) => ({
+    id: boxId(m, z), slug: `${m.slugPrefix}-${SIZES[z].slug}`, name: `${m.name} · ${SIZES[z].label}`, mix: m.mix, mix_name: m.name, size: z,
+    weight_kg: String(SIZES[z].kg), price: m.price[z], season: "Thu 2026", servings: SIZES[z].servings, days: 7, image_url: m.image, meal_plan: m.menu,
+    description: `${m.blurb} ${SIZES[z].kg} kg cho ${SIZES[z].who}, đủ nấu 7 ngày, mỗi ngày hai bữa. Rau lá ăn trước, củ quả để sau.`,
+  })))).onConflictDoUpdate({ target: s.boxes.id, set: { name: sql`excluded.name`, slug: sql`excluded.slug`, mix: sql`excluded.mix`, mix_name: sql`excluded.mix_name`, size: sql`excluded.size`, price: sql`excluded.price`, weight_kg: sql`excluded.weight_kg`, season: sql`excluded.season`, servings: sql`excluded.servings`, days: sql`excluded.days`, image_url: sql`excluded.image_url`, meal_plan: sql`excluded.meal_plan`, description: sql`excluded.description`, active: sql`true` } });
 
-  await db.execute(sql`DELETE FROM box_items WHERE box_id IN ('box-s','box-m','box-l')`);
-  const bi = (box: string, list: [string, number][]) => list.map(([p, kg]) => ({ id: `bi-${box}-${p}`, box_id: `box-${box}`, produce_id: `pr-${p}`, quantity_kg: String(kg) }));
-  await db.insert(s.box_items).values([
-    ...bi("s", [["bap-cai", 1], ["ca-rot", 0.5], ["su-su", 0.5], ["cai-ngot", 0.5], ["ca-chua", 0.5]]),
-    ...bi("m", [["bap-cai", 1], ["ca-rot", 1], ["su-hao", 0.5], ["cai-meo", 0.5], ["bi-do", 1], ["ca-chua", 0.5], ["khoai-tay", 0.5]]),
-    ...bi("l", [["bap-cai", 1.5], ["ca-rot", 1], ["su-hao", 1], ["cai-meo", 0.5], ["cai-ngot", 0.5], ["bi-do", 1.5], ["su-su", 0.5], ["khoai-tay", 1], ["ca-chua", 0.5]]),
-  ]);
+  const seeded = MIXES.flatMap((m) => sizes.map((z) => boxId(m, z)));
+  await db.delete(s.box_items).where(inArray(s.box_items.box_id, seeded));
+  await db.insert(s.box_items).values(MIXES.flatMap((m) => sizes.flatMap((z) => m.items[z].map(([p, kg]) => ({ id: `bi-${boxId(m, z)}-${p}`, box_id: boxId(m, z), produce_id: `pr-${p}`, quantity_kg: String(kg) })))));
+  for (const m of MIXES) for (const z of sizes) {
+    const kg = m.items[z].reduce((t, [, k]) => t + k, 0);
+    if (kg !== SIZES[z].kg) throw new Error(`${boxId(m, z)}: contents weigh ${kg} kg, box says ${SIZES[z].kg} kg`);
+  }
 
   // ── Demo activity, relative to today ───────────────────────────────────────
   const today = todayVN();
-  const price = { "box-s": 119000, "box-m": 179000, "box-l": 269000 } as Record<string, number>;
+  const price = Object.fromEntries(MIXES.flatMap((m) => sizes.map((z) => [boxId(m, z), m.price[z]]))) as Record<string, number>;
   const who = { "customer-demo": ["cl-times-city", "T5 · căn 1208"], "customer-minh": ["cl-times-city", "T8 · căn 0915"], "customer-hoa": ["cl-royal-city", "R2 · căn 2104"], "customer-quan": ["cl-smart-city", "S2.05 · căn 1611"], "customer-mai": ["cl-times-city", "T2 · căn 0707"], "customer-son": ["cl-goldmark", "Ruby 2 · căn 1803"] } as Record<string, [string, string]>;
   const order = (id: string, user: string, box: string, qty: number, date: string, type: "single" | "subscription" | "group" = "single", extra: Partial<typeof s.orders.$inferInsert> = {}) => {
     const subtotal = price[box] * qty, ship = type === "single" ? SHIP_FEE : 0;
@@ -109,7 +149,7 @@ async function seed() {
   const dA = addDays(today, -3);
   await db.insert(s.orders).values([
     order("o-a1", "customer-minh", "box-s", 1, dA, "single", { created_at: vnInstant(addDays(dA, -1), "10:20") }),
-    order("o-a2", "customer-quan", "box-l", 1, dA, "single", { created_at: vnInstant(addDays(dA, -1), "15:05") }),
+    order("o-a2", "customer-quan", "box-cq-l", 1, dA, "single", { created_at: vnInstant(addDays(dA, -1), "15:05") }),
   ]);
   const a = await runCutoff(dA); // also materialises Lan's subscription order for that day
   await db.execute(sql`UPDATE harvest_runs SET cutoff_at = ${vnInstant(addDays(dA, -1), "18:00").toISOString()} WHERE id = ${a.run_id}`);
@@ -122,7 +162,7 @@ async function seed() {
   const dB = today;
   await db.insert(s.orders).values([
     order("o-b1", "customer-demo", "box-s", 1, dB, "single", { created_at: vnInstant(addDays(dB, -1), "9:12"), note: "Gửi lễ tân giúp em" }),
-    order("o-b2", "customer-mai", "box-m", 1, dB, "single", { created_at: vnInstant(addDays(dB, -1), "11:40") }),
+    order("o-b2", "customer-mai", "box-vc-s", 1, dB, "single", { created_at: vnInstant(addDays(dB, -1), "11:40") }),
     order("o-b3", "customer-son", "box-m", 2, dB, "single", { created_at: vnInstant(addDays(dB, -1), "16:30") }),
   ]);
   const b = await runCutoff(dB);
@@ -143,8 +183,8 @@ async function seed() {
     order("o-c1", "customer-demo", "box-m", 1, dC, "group", { group_order_id: "g-times", ship_fee: SHIP_FEE, total: price["box-m"] + SHIP_FEE }),
     order("o-c2", "customer-minh", "box-m", 1, dC, "group", { group_order_id: "g-times", ship_fee: SHIP_FEE, total: price["box-m"] + SHIP_FEE }),
     order("o-c3", "customer-mai", "box-m", 2, dC, "group", { group_order_id: "g-times", ship_fee: SHIP_FEE, total: price["box-m"] * 2 + SHIP_FEE }),
-    order("o-c4", "customer-quan", "box-l", 1, dC, "single"),
-    order("o-c5", "customer-son", "box-s", 2, dC, "single"),
+    order("o-c4", "customer-quan", "box-vc-m", 1, dC, "single"),
+    order("o-c5", "customer-son", "box-cq-s", 2, dC, "single"),
     order("o-c6", "customer-hoa", "box-s", 1, addDays(dC, 1), "group", { group_order_id: "g-royal", ship_fee: SHIP_FEE, total: price["box-s"] + SHIP_FEE }),
     order("o-c7", "customer-quan", "box-l", 1, addDays(dC, 2), "group", { group_order_id: "g-smart", ship_fee: SHIP_FEE, total: price["box-l"] + SHIP_FEE }),
   ]);

@@ -1,7 +1,7 @@
 # Xanh Tận Tay — product pivot (28/9) and API contract
 
 ## Product in one paragraph
-PULL model. Customers in **Hà Nội apartment clusters** pre-order seasonal **boxes** ("Thùng rau mẹ gửi", sizes S/M/L, mixed from several farms in **Bắc Kạn** and **Tuyên Quang**). Every day at **18:00** the book closes; the brain aggregates demand and sends each farmer exactly one **harvest command** sized to their registered capacity (0 % surplus). Farmers cut at **4:00**, the cold truck loads at **6:00**, boxes reach the building lobby at **16:00**. Order before 18:00 → delivered tomorrow.
+PULL model. Customers in **Hà Nội apartment clusters** pre-order seasonal **boxes** (three mixes a season such as "Thùng rau mẹ gửi", each in sizes S/M/L and lasting 7 days, mixed from several farms in **Bắc Kạn** and **Tuyên Quang**). Every day at **18:00** the book closes; the brain aggregates demand and sends each farmer exactly one **harvest command** sized to their registered capacity (0 % surplus). Farmers cut at **4:00**, the cold truck loads at **6:00**, boxes reach the building lobby at **16:00**. Order before 18:00 → delivered tomorrow.
 
 Removed for good: buying single vegetables, cart, product catalog, recipes/AI kitchen, meal-plan generator, farm diary, livestream, loyalty points/tree, farmer product/stock/diary management, ads.
 Kept: subscription, group buying (per cluster), emotional order tracking, QR traceability, avatars, push notifications, light/dark theme, the Material 3 Expressive design.
@@ -25,9 +25,10 @@ Emotional tracking copy (use `ORDER_TIMELINE`):
 
 ### Catalog
 - `GET /boxes` → `{ boxes: Box[], delivery_date, cutoff_at, ship_fee }`.
-  `Box = { id, slug, name, size: "S"|"M"|"L", weight_kg: number, price, season, servings, days, description, image_url, active, meal_plan: BoxMealDay[], items: BoxItem[] }`
+  `Box = { id, slug, name, mix, mix_name, size: "S"|"M"|"L", weight_kg: number, price, season, servings, days, description, image_url, active, meal_plan: BoxMealDay[], items: BoxItem[] }`
   `BoxItem = { produce_id, name, image_url, category, quantity_kg, farms: { id, name, slug, province, location }[] }`
   `BoxMealDay = { day, meals: { time: "Trưa"|"Tối", title, uses: string[], note?, recipe: { minutes?, ingredients: string[], steps: string[] } }[] }`
+  A season has about three **mixes** (`mix` is the key, `mix_name` the title, e.g. "Nương rau vùng cao"); each mix comes in sizes S, M, L like clothing, and every box lasts 7 days. `name` is `"{mix_name} · Nhỏ|Vừa|Lớn"`. `boxes` is ordered by mix, then price. Clients show one card per mix with its sizes, and a size switcher on the box screen (sizes of a mix = boxes with the same `mix`).
 - `GET /boxes/{slug-or-id}` → `Box`
 - `GET /clusters` → `Cluster[]` = `{ id, name, address, district }`
 - `GET /farms` → `Farm[]` with `farmer`, `farmer_avatar`, `grows: { produce_id, name, image_url, daily_kg }[]`; `GET /farms/{id-or-slug}`; `GET /farms/mine` (farmer)

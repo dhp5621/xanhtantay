@@ -7,7 +7,7 @@ export type BoxView = Omit<typeof boxes.$inferSelect, "weight_kg"> & { weight_kg
 
 /** Boxes with their contents and, for each produce, the farms registered to grow it. */
 export async function getBoxes(opts?: { slug?: string; includeInactive?: boolean }): Promise<BoxView[]> {
-  const rows = await db.select().from(boxes).where(opts?.slug ? eq(boxes.slug, opts.slug) : opts?.includeInactive ? undefined : eq(boxes.active, true)).orderBy(asc(boxes.price));
+  const rows = await db.select().from(boxes).where(opts?.slug ? eq(boxes.slug, opts.slug) : opts?.includeInactive ? undefined : eq(boxes.active, true)).orderBy(asc(boxes.mix), asc(boxes.price));
   if (!rows.length) return [];
   const [items, growers] = await Promise.all([
     db.select({ it: box_items, p: produce }).from(box_items).innerJoin(produce, eq(box_items.produce_id, produce.id)).where(inArray(box_items.box_id, rows.map((b) => b.id))),
@@ -18,6 +18,19 @@ export async function getBoxes(opts?: { slug?: string; includeInactive?: boolean
     weight_kg: Number(b.weight_kg),
     items: items.filter((x) => x.it.box_id === b.id).map((x) => ({ produce_id: x.p.id, name: x.p.name, image_url: x.p.image_url, category: x.p.category, quantity_kg: Number(x.it.quantity_kg), farms: growers.filter((g) => g.produce_id === x.p.id).map((g) => g.farm) })).sort((a, c) => c.quantity_kg - a.quantity_kg),
   }));
+}
+export type MixView = { mix: string; name: string; season: string; image_url: string | null; items: BoxItemView[]; sizes: BoxView[] };
+/** One entry per mix, each with its sizes from small to large. "Thùng rau mẹ gửi" leads. */
+export function groupMixes(list: BoxView[]): MixView[] {
+  const out = new Map<string, MixView>();
+  for (const b of list) {
+    const m = out.get(b.mix) ?? { mix: b.mix, name: b.mix_name, season: b.season, image_url: b.image_url, items: b.items, sizes: [] };
+    m.sizes.push(b);
+    out.set(b.mix, m);
+  }
+  const mixes = [...out.values()];
+  mixes.forEach((m) => m.sizes.sort((a, c) => a.weight_kg - c.weight_kg));
+  return mixes.sort((a, c) => Number(c.mix === "me-gui") - Number(a.mix === "me-gui") || a.name.localeCompare(c.name, "vi"));
 }
 export const getBox = async (slugOrId: string) => {
   const [bySlug] = await getBoxes({ slug: slugOrId, includeInactive: true });

@@ -9,7 +9,8 @@ import { SmartImage } from "@/components/ui/SmartImage";
 import { BoxContents } from "@/components/box/BoxContents";
 import { BoxMenu } from "@/components/box/BoxMenu";
 import { OrderPanel } from "@/components/box/OrderPanel";
-import { getBox, getClusters, getGroups } from "@/lib/queries";
+import { SizePicker } from "@/components/box/SizePicker";
+import { getBox, getBoxes, getClusters, getGroups } from "@/lib/queries";
 import { getSessionUser } from "@/lib/session";
 import { cutoffInstant, nextDeliveryDate, SIZE_LABELS, formatKg } from "@/lib/commerce";
 import { formatVND } from "@/lib/format";
@@ -24,11 +25,13 @@ export default async function BoxPage({ params }: { params: Promise<{ slug: stri
   const box = await getBox(slug);
   if (!box) notFound();
   const user = await getSessionUser();
-  const [clusters, groups, [me]] = await Promise.all([
+  const [all, clusters, groups, [me]] = await Promise.all([
+    getBoxes(),
     getClusters(),
     getGroups({ onlyOpen: true }),
     user ? db.select({ cluster_id: users.cluster_id, address: users.address }).from(users).where(eq(users.id, user.id)) : Promise.resolve([]),
   ]);
+  const sizes = all.filter((b) => b.mix === box.mix).sort((a, c) => a.weight_kg - c.weight_kg);
   const deliveryDate = nextDeliveryDate();
   const provinces = Array.from(new Set(box.items.flatMap((i) => i.farms.map((f) => f.province))));
 
@@ -41,7 +44,7 @@ export default async function BoxPage({ params }: { params: Promise<{ slug: stri
             {box.image_url && <SmartImage src={box.image_url} alt={box.name} style={{ position: "absolute", inset: 0 }} priority />}
             <div style={{ position: "absolute", bottom: 24, left: 24, right: 24, zIndex: 1, color: "#fff" }}>
               <p className="label-md" style={{ opacity: 0.9, marginBottom: 6 }}>{box.season} · {SIZE_LABELS[box.size]} · {formatKg(box.weight_kg)}</p>
-              <h1 className="display-sm" style={{ color: "#fff" }}>{box.name}</h1>
+              <h1 className="display-sm" style={{ color: "#fff" }}>{box.mix_name}</h1>
             </div>
           </div>
           <div className="flex flex-wrap gap-2 anim-in delay-1">
@@ -54,7 +57,8 @@ export default async function BoxPage({ params }: { params: Promise<{ slug: stri
           <BoxContents items={box.items} hint={`${box.items.length} loại · mix từ ${new Set(box.items.flatMap((i) => i.farms.map((f) => f.id))).size} vườn`} />
           <BoxMenu plan={box.meal_plan} title="Thực đơn kèm hộp" />
         </div>
-        <div className="m3-box-side anim-in delay-2">
+        <div className="m3-box-side anim-in delay-2 flex flex-col gap-4">
+          <SizePicker sizes={sizes} current={box.id} />
           <OrderPanel
             box={{ id: box.id, slug: box.slug, name: box.name, price: box.price, weight_kg: box.weight_kg, days: box.days }}
             clusters={clusters}

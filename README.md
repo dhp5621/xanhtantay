@@ -69,7 +69,7 @@ Trang đăng nhập có nút một chạm cho cả hai. Quản trị: `/admin/lo
 |---|---|
 | `clusters` | Cụm chung cư nhận hàng (Times City, Royal City, Smart City, Goldmark, Linh Đàm) |
 | `farms`, `produce`, `farm_capacity` | Nông hộ, loại rau, năng suất đăng ký theo ngày (kg) của từng hộ cho từng loại |
-| `boxes`, `box_items` | Hộp rau theo mùa (nhỏ 3 kg, vừa 5 kg, lớn 8 kg), thành phần theo kg, **thực đơn theo ngày** nằm sẵn trong hộp |
+| `boxes`, `box_items` | Hộp rau theo mùa: mỗi mùa khoảng 3 **mix**, mỗi mix 3 size S / M / L (4, 7, 10 kg), hộp nào cũng đủ ăn 7 ngày; thành phần theo kg, **thực đơn theo ngày** nằm sẵn trong hộp |
 | `orders` | Một đơn = một loại hộp × số lượng, có ngày giao, cụm nhận, lời nhắn từ quê |
 | `subscriptions` | Gói định kỳ tuần / hai tuần / tháng |
 | `group_orders` | Nhóm gom đơn theo toà nhà, đủ nhóm thì miễn phí giao |
@@ -78,7 +78,7 @@ Trang đăng nhập có nút một chạm cho cả hai. Quản trị: `/admin/lo
 ## Tính năng
 
 ### Khách hàng
-- **Hộp rau** (`/hop-rau`): bán theo hộp, không bán lẻ. Mỗi hộp ghi rõ thành phần, rau từ vườn nào, và thực đơn chia theo ngày (trưa, tối) kèm cách làm.
+- **Hộp rau** (`/hop-rau`): bán theo hộp, không bán lẻ. Chọn mix (Thùng rau mẹ gửi, Nương rau vùng cao, Củ quả hầm canh) rồi chọn size S / M / L như chọn cỡ áo. Mỗi hộp ghi rõ thành phần, rau từ vườn nào, và thực đơn chia theo ngày (trưa, tối) kèm cách làm.
 - **Ba cách nhận**: gói định kỳ (miễn phí giao), gom đơn cùng toà nhà (đủ nhóm miễn ship), mua một lần (phí 15.000₫).
 - **Đặt trước 18h00, giao hôm sau**: băng đếm ngược tới giờ chốt sổ; sau 18h00 đơn tính cho chuyến kế tiếp. Huỷ miễn phí trước giờ chốt.
 - **Sau khi đặt**: lời nhắn quan tâm từ quê và thông điệp tác động (tiền về tay nông hộ, số kg, số bữa).

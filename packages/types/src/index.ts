@@ -23,7 +23,10 @@ export interface BoxItem { produce_id: string; name: string; image_url: string |
 export type BoxSize = "S" | "M" | "L";
 
 export interface Box {
-  id: string; slug: string; name: string; size: BoxSize; weight_kg: number; price: number; season: string;
+  id: string; slug: string; name: string;
+  /** Boxes sharing a `mix` are the same recipe of vegetables in different sizes. */
+  mix: string; mix_name: string;
+  size: BoxSize; weight_kg: number; price: number; season: string;
   servings: number; days: number; description: string | null; image_url: string | null;
   meal_plan: BoxMealDay[]; items: BoxItem[]; active: boolean;
 }

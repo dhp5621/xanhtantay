@@ -39,7 +39,7 @@ const CREATE = [
   `CREATE TABLE IF NOT EXISTS produce (id text PRIMARY KEY, name text NOT NULL, unit text NOT NULL DEFAULT 'kg', category text NOT NULL, image_url text, created_at timestamp NOT NULL DEFAULT now())`,
   `CREATE TABLE IF NOT EXISTS farm_capacity (id text PRIMARY KEY, farm_id text NOT NULL REFERENCES farms(id) ON DELETE CASCADE, produce_id text NOT NULL REFERENCES produce(id) ON DELETE CASCADE, daily_kg integer NOT NULL)`,
   `CREATE UNIQUE INDEX IF NOT EXISTS farm_capacity_farm_produce ON farm_capacity(farm_id, produce_id)`,
-  `CREATE TABLE IF NOT EXISTS boxes (id text PRIMARY KEY, slug text NOT NULL UNIQUE, name text NOT NULL, size text NOT NULL, weight_kg numeric NOT NULL, price integer NOT NULL, season text NOT NULL, servings integer NOT NULL, days integer NOT NULL, description text, image_url text, meal_plan jsonb NOT NULL DEFAULT '[]', active boolean NOT NULL DEFAULT true, created_at timestamp NOT NULL DEFAULT now())`,
+  `CREATE TABLE IF NOT EXISTS boxes (id text PRIMARY KEY, slug text NOT NULL UNIQUE, name text NOT NULL, mix text NOT NULL DEFAULT 'me-gui', mix_name text NOT NULL DEFAULT 'Thùng rau mẹ gửi', size text NOT NULL, weight_kg numeric NOT NULL, price integer NOT NULL, season text NOT NULL, servings integer NOT NULL, days integer NOT NULL, description text, image_url text, meal_plan jsonb NOT NULL DEFAULT '[]', active boolean NOT NULL DEFAULT true, created_at timestamp NOT NULL DEFAULT now())`,
   `CREATE TABLE IF NOT EXISTS box_items (id text PRIMARY KEY, box_id text NOT NULL REFERENCES boxes(id) ON DELETE CASCADE, produce_id text NOT NULL REFERENCES produce(id), quantity_kg numeric NOT NULL)`,
   `CREATE TABLE IF NOT EXISTS subscriptions (id text PRIMARY KEY, user_id text NOT NULL REFERENCES users(id), box_id text NOT NULL REFERENCES boxes(id), quantity integer NOT NULL DEFAULT 1, frequency subscription_frequency NOT NULL DEFAULT 'weekly', next_delivery date NOT NULL, cluster_id text REFERENCES clusters(id) ON DELETE SET NULL, address text, active boolean NOT NULL DEFAULT true, created_at timestamp NOT NULL DEFAULT now())`,
   `CREATE TABLE IF NOT EXISTS group_orders (id text PRIMARY KEY, cluster_id text NOT NULL REFERENCES clusters(id), box_id text NOT NULL REFERENCES boxes(id), title text NOT NULL, min_members integer NOT NULL, current_members integer NOT NULL DEFAULT 0, delivery_date date NOT NULL, status group_order_status NOT NULL DEFAULT 'open', created_by text REFERENCES users(id) ON DELETE SET NULL, created_at timestamp NOT NULL DEFAULT now())`,
@@ -49,6 +49,9 @@ const CREATE = [
   `CREATE INDEX IF NOT EXISTS orders_delivery_idx ON orders(delivery_date, status)`,
   `CREATE INDEX IF NOT EXISTS orders_user_idx ON orders(user_id, created_at DESC)`,
   `CREATE TABLE IF NOT EXISTS push_devices (id text PRIMARY KEY, platform text NOT NULL, token text NOT NULL UNIQUE, subscription jsonb, user_id text REFERENCES users(id) ON DELETE SET NULL, created_at timestamp NOT NULL DEFAULT now(), updated_at timestamp NOT NULL DEFAULT now())`,
+  // Columns added after the first release: existing databases are upgraded in place.
+  `ALTER TABLE boxes ADD COLUMN IF NOT EXISTS mix text NOT NULL DEFAULT 'me-gui'`,
+  `ALTER TABLE boxes ADD COLUMN IF NOT EXISTS mix_name text NOT NULL DEFAULT 'Thùng rau mẹ gửi'`,
 ];
 
 async function main() {

@@ -7,10 +7,10 @@ import { Icon } from "@/components/ui/Icon";
 import { SmartImage } from "@/components/ui/SmartImage";
 import { getSessionUser } from "@/lib/session";
 import { Landing } from "@/components/landing/Landing";
-import { BoxCard } from "@/components/box/BoxCard";
+import { MixCard } from "@/components/box/MixCard";
 import { CutoffBanner } from "@/components/ui/CutoffBanner";
 import { OrderTimeline } from "@/components/order/OrderTimeline";
-import { getBoxes, getFarms, getGroups, getOrdersForUser } from "@/lib/queries";
+import { getBoxes, getFarms, getGroups, getOrdersForUser, groupMixes } from "@/lib/queries";
 import { cutoffInstant, formatYMD, nextDeliveryDate, addressFarmer } from "@/lib/commerce";
 
 export default async function HomePage() {
@@ -68,7 +68,7 @@ export default async function HomePage() {
 
       <section>
         <div className="m3-section-head"><h2 className="headline-sm text-on-surface"><Icon name="inventory_2" filled /> Hộp mùa này</h2><Link href="/hop-rau" className="m3-btn m3-btn-text m3-btn-sm"><span>Xem tất cả</span><Icon name="arrow_forward" size={18} /></Link></div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 stagger">{boxList.map((b) => <BoxCard key={b.id} box={b} />)}</div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 stagger">{groupMixes(boxList).map((m) => <MixCard key={m.mix} mix={m} />)}</div>
       </section>
 
       {shown.length > 0 && (

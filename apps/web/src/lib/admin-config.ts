@@ -51,6 +51,8 @@ export const SECTIONS: Section[] = [
     fields: [
       { key: "name", label: "Tên hộp", type: "text", required: true },
       { key: "slug", label: "Slug (đường dẫn)", type: "text", required: true },
+      { key: "mix", label: "Mã mix (các cỡ cùng mix dùng chung)", type: "text", required: true },
+      { key: "mix_name", label: "Tên mix", type: "text", required: true },
       { key: "size", label: "Cỡ", type: "select", options: SIZES },
       { key: "weight_kg", label: "Khối lượng (kg)", type: "decimal", required: true, min: 0 },
       { key: "price", label: "Giá (₫)", type: "number", required: true, min: 0 },

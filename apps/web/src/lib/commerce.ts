@@ -46,7 +46,9 @@ export const formatYMD = (ymd: string, opts: Intl.DateTimeFormatOptions = { week
 
 export const FREQUENCY_DAYS: Record<string, number> = { weekly: 7, biweekly: 14, monthly: 28 };
 export const FREQUENCY_LABELS: Record<string, string> = { weekly: "Mỗi tuần", biweekly: "Hai tuần một lần", monthly: "Mỗi tháng" };
-export const SIZE_LABELS: Record<string, string> = { S: "Hộp nhỏ", M: "Hộp vừa", L: "Hộp lớn" };
+export const SIZE_LABELS: Record<string, string> = { S: "Size S", M: "Size M", L: "Size L" };
+export const SIZE_NAMES: Record<string, string> = { S: "Nhỏ", M: "Vừa", L: "Lớn" };
+export const SIZE_ORDER = ["S", "M", "L"];
 
 export function shipFeeFor(type: "single" | "subscription" | "group") {
   return type === "subscription" ? 0 : SHIP_FEE;

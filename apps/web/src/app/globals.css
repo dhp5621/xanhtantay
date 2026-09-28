@@ -2011,3 +2011,23 @@ input[type="number"].tabular::-webkit-inner-spin-button { -webkit-appearance: no
 /* ─── Box detail: content + sticky order panel ───────────────── */
 .m3-box-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px; align-items: start; }
 @media (min-width: 1024px) { .m3-box-layout { grid-template-columns: minmax(0, 1fr) 380px; } .m3-box-side { position: sticky; top: 84px; } }
+
+/* Box sizes: one mix, three sizes, picked like clothing sizes */
+.m3-size-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.m3-size {
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 10px 6px; text-align: center; text-decoration: none;
+  border-radius: var(--shape-lg); background: var(--md-surface-container-high); color: var(--md-on-surface);
+  outline: 1px solid var(--md-outline-variant); outline-offset: -1px;
+  transition: border-radius var(--dur-short-4) var(--ease-standard), background var(--dur-short-3) var(--ease-standard), transform var(--dur-short-3) var(--ease-standard);
+}
+.m3-size-letter { font-size: 20px; line-height: 24px; font-weight: 700; letter-spacing: 0.02em; }
+@media (hover: hover) { .m3-size:hover { background: var(--md-surface-container-highest); border-radius: var(--shape-xl); } }
+.m3-size:active { transform: scale(0.97); }
+.m3-size:focus-visible { outline: 2px solid var(--md-primary); outline-offset: 2px; }
+.m3-size.selected { background: var(--md-primary-container); color: var(--md-on-primary-container); outline: 2px solid var(--md-primary); border-radius: var(--shape-xl); }
+.m3-size { min-width: 0; }
+.m3-size .body-sm { font-size: 12px; line-height: 16px; }
+.m3-size.selected .text-on-surface-variant { color: inherit; opacity: 0.8; }
+.m3-size-price { font-size: 13px; line-height: 18px; font-weight: 600; margin-top: 2px; white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) { .m3-size { transition: none; } }

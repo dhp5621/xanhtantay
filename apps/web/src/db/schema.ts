@@ -78,6 +78,9 @@ export const boxes = pgTable("boxes", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   slug: text("slug").unique().notNull(),
   name: text("name").notNull(),
+  /** The mix this box belongs to ("me-gui"). One mix comes in three sizes, like clothing. */
+  mix: text("mix").notNull().default("me-gui"),
+  mix_name: text("mix_name").notNull().default("Thùng rau mẹ gửi"),
   /** "S" | "M" | "L" */
   size: text("size").notNull(),
   weight_kg: numeric("weight_kg").notNull(),
