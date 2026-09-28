@@ -6,7 +6,7 @@ import { getSessionUser } from "@/lib/session";
 import { COMMAND_CATEGORY } from "@/lib/commands";
 import { recentDecisions } from "@/lib/requests";
 import { recentRefundDecisions } from "@/lib/refunds";
-import { addDays, todayVN } from "@/lib/commerce";
+import { addDays, commandMessage, todayVN } from "@/lib/commerce";
 import { decisionNotice, orderNotice, refundNotice } from "@/lib/messages";
 
 export const dynamic = "force-dynamic";
@@ -33,7 +33,7 @@ export async function GET(req: Request) {
   const [me] = await db.select({ name: callName }).from(users).where(eq(users.id, user.id));
   if (user.role === "farmer") {
     const rows = await db
-      .select({ c: harvest_commands })
+      .select({ c: harvest_commands, date: harvest_runs.delivery_date })
       .from(harvest_commands)
       .innerJoin(farms, eq(farms.id, harvest_commands.farm_id))
       .innerJoin(harvest_runs, eq(harvest_runs.id, harvest_commands.run_id))
@@ -43,7 +43,7 @@ export async function GET(req: Request) {
     for (const { r } of await recentDecisions(user.id)) {
       out.push({ id: `req-${r.id}-${r.status}`, ...decisionNotice({ name: me?.name ?? "bạn", role: "farmer" }, r.kind, r.status === "approved", r.note), url: r.kind === "farm" ? "/farmer/vuon" : "/farmer/nang-suat" });
     }
-    for (const { c } of rows) out.push({ id: `cmd-${c.id}`, title: "Lệnh thu hoạch mới", body: c.message, url: "/farmer", category: COMMAND_CATEGORY, data: { commandId: c.id } });
+    for (const { c, date } of rows) out.push({ id: `cmd-${c.id}`, title: "Lệnh thu hoạch mới", body: me ? commandMessage(me.name, date, c.items) : c.message, url: "/farmer", category: COMMAND_CATEGORY, data: { commandId: c.id } });
   } else {
     const rows = await db
       .select()

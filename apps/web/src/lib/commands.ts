@@ -1,6 +1,7 @@
 import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
-import { callName, farms, harvest_commands, users } from "@/db/schema";
+import { callName, farms, harvest_commands, harvest_runs, users } from "@/db/schema";
+import { commandMessage } from "./commerce";
 import { answerNotice, commandNotice } from "./messages";
 import { pushToUsers } from "./push";
 
@@ -27,6 +28,6 @@ export async function answerCommand(id: string, userId: string, answer: "confirm
 
 /** After a cut-off: each farmer gets their own command as the notification text, with Có / Không buttons. */
 export async function notifyCommands(runId: string) {
-  const rows = await db.select({ c: harvest_commands, owner: farms.owner_id }).from(harvest_commands).innerJoin(farms, eq(harvest_commands.farm_id, farms.id)).where(and(eq(harvest_commands.run_id, runId), eq(harvest_commands.status, "sent")));
-  await Promise.all(rows.map((r) => pushToUsers([r.owner], { ...commandNotice(r.c.message), url: "/farmer", category: COMMAND_CATEGORY, data: { commandId: r.c.id } })));
+  const rows = await db.select({ c: harvest_commands, owner: farms.owner_id, farmer: callName, date: harvest_runs.delivery_date }).from(harvest_commands).innerJoin(farms, eq(harvest_commands.farm_id, farms.id)).innerJoin(harvest_runs, eq(harvest_commands.run_id, harvest_runs.id)).leftJoin(users, eq(farms.owner_id, users.id)).where(and(eq(harvest_commands.run_id, runId), eq(harvest_commands.status, "sent")));
+  await Promise.all(rows.map((r) => pushToUsers([r.owner], { ...commandNotice(r.farmer ? commandMessage(r.farmer, r.date, r.c.items) : r.c.message), url: "/farmer", category: COMMAND_CATEGORY, data: { commandId: r.c.id } })));
 }

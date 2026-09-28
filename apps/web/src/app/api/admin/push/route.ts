@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { isAdmin } from "@/lib/admin-session";
 import { desc, eq, lt } from "drizzle-orm";
 import { db } from "@/db";
-import { broadcasts, farms, harvest_commands, users } from "@/db/schema";
+import { broadcasts, callName, farms, harvest_commands, harvest_runs, users } from "@/db/schema";
+import { commandMessage } from "@/lib/commerce";
 import { COMMAND_CATEGORY } from "@/lib/commands";
 import { PUSH_TEMPLATES } from "@/lib/push-templates";
 import { broadcastPush, type PushTarget } from "@/lib/push";
@@ -11,11 +12,11 @@ const TARGETS = new Set<PushTarget>(["mobile", "web", "all"]);
 
 /** The demo farmer's latest command, put back to "sent" so Có / Không can be tried again. */
 async function commandForTest() {
-  const [row] = await db.select({ c: harvest_commands }).from(harvest_commands).innerJoin(farms, eq(harvest_commands.farm_id, farms.id)).innerJoin(users, eq(farms.owner_id, users.id)).where(eq(users.email, "bacba@xanhtantay.vn")).orderBy(desc(harvest_commands.created_at)).limit(1);
-  const [any] = row ? [row] : await db.select({ c: harvest_commands }).from(harvest_commands).orderBy(desc(harvest_commands.created_at)).limit(1);
+  const [row] = await db.select({ c: harvest_commands, farmer: callName, date: harvest_runs.delivery_date }).from(harvest_commands).innerJoin(harvest_runs, eq(harvest_commands.run_id, harvest_runs.id)).innerJoin(farms, eq(harvest_commands.farm_id, farms.id)).innerJoin(users, eq(farms.owner_id, users.id)).where(eq(users.email, "bacba@xanhtantay.vn")).orderBy(desc(harvest_commands.created_at)).limit(1);
+  const [any] = row ? [row] : await db.select({ c: harvest_commands, farmer: callName, date: harvest_runs.delivery_date }).from(harvest_commands).innerJoin(harvest_runs, eq(harvest_commands.run_id, harvest_runs.id)).innerJoin(farms, eq(harvest_commands.farm_id, farms.id)).innerJoin(users, eq(farms.owner_id, users.id)).orderBy(desc(harvest_commands.created_at)).limit(1);
   if (!any) return null;
   await db.update(harvest_commands).set({ status: "sent", confirmed_at: null, declined_at: null }).where(eq(harvest_commands.id, any.c.id));
-  return any.c;
+  return { ...any.c, message: commandMessage(any.farmer, any.date, any.c.items) };
 }
 
 /** Admin broadcast: { title, body, target: "mobile" | "web" | "all", url? } or { template, target } for a test message. */

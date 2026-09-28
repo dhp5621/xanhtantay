@@ -1,4 +1,5 @@
 import { and, desc, eq, inArray, ne, sql, asc } from "drizzle-orm";
+import { commandMessage } from "./commerce";
 import { db } from "@/db";
 import { boxes, box_items, clusters, farm_capacity, farms, group_orders, harvest_commands, harvest_runs, orders, produce, subscriptions, users, callName } from "@/db/schema";
 
@@ -119,5 +120,7 @@ export async function getCommandsForFarmer(userId: string, limit = 12) {
   const [farm] = await db.select().from(farms).where(eq(farms.owner_id, userId));
   if (!farm) return { farm: null, commands: [] };
   const rows = await db.select({ c: harvest_commands, run: { delivery_date: harvest_runs.delivery_date, status: harvest_runs.status } }).from(harvest_commands).innerJoin(harvest_runs, eq(harvest_commands.run_id, harvest_runs.id)).where(eq(harvest_commands.farm_id, farm.id)).orderBy(desc(harvest_runs.delivery_date)).limit(limit);
-  return { farm, commands: rows.map((r) => ({ ...r.c, total_kg: Number(r.c.total_kg), delivery_date: r.run.delivery_date, run_status: r.run.status })) };
+  // Worded afresh each time, so a farmer who changes how they are addressed sees it at once.
+  const [owner] = await db.select({ name: callName }).from(users).where(eq(users.id, userId));
+  return { farm, commands: rows.map((r) => ({ ...r.c, message: owner ? commandMessage(owner.name, r.run.delivery_date, r.c.items) : r.c.message, total_kg: Number(r.c.total_kg), delivery_date: r.run.delivery_date, run_status: r.run.status })) };
 }
