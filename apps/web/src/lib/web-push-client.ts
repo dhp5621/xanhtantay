@@ -44,8 +44,12 @@ export async function webPushState(): Promise<WebPushState> {
 /** The push service refused this browser; explain what the person can actually do about it. */
 function explain(e: unknown) {
   const msg = e instanceof Error ? e.message : String(e);
-  if (/push service error|push service not available|AbortError/i.test(msg))
+  if (/push service error|push service not available|AbortError/i.test(msg)) {
+    // Brave ships with Google's push service switched off; the person has to turn it on themselves.
+    if ("brave" in navigator)
+      return new Error("Brave đang tắt dịch vụ đẩy. Mở brave://settings/privacy, bật \"Use Google services for push messaging\", khởi động lại Brave rồi bấm lại nút này. Trong lúc đó thông báo vẫn hiện khi bạn đang mở trang.");
     return new Error("Trình duyệt này không kết nối được dịch vụ đẩy (Brave, trình duyệt trong app, hoặc mạng chặn Google). Thông báo vẫn hiện khi bạn đang mở trang; muốn nhận cả khi đóng trang, hãy dùng Chrome, Edge hoặc Firefox.");
+  }
   return new Error(msg || "Không bật được thông báo");
 }
 
