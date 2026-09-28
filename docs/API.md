@@ -99,3 +99,13 @@ Emotional tracking copy (use `ORDER_TIMELINE`):
 ## Farmer: farm profile
 
 - `PATCH /farms/mine` with any of `{ name, location, province, description }` → the farm (same shape as `GET /farms/mine`). `name` max 80, `location` max 120 (e.g. "Ba Bể, Bắc Kạn"), `province` max 40, each at least 2 characters; `description` max 1200, empty clears it. The slug never changes. Errors: `{ error }` with 400 / 401 / 403 / 404.
+
+## Farmer changes need the operator's approval
+
+Changes to the farm profile and to the registered supply are **requests**. Nothing changes until the operator approves it in `/admin`.
+
+- `PATCH /farms/mine` and `PUT /farmer/capacity` now answer **202** and file a request. A new request replaces the farm's open one of the same kind. `400 { error }` when nothing differs from what is in force.
+- `DELETE /farms/mine` and `DELETE /farmer/capacity` withdraw the open request (200, same shape as GET).
+- `GET /farms/mine` adds `pending: { id, payload: { name?, location?, province?, description? }, created_at } | null` and `rejected: { note: string | null, reviewed_at } | null` (the last request was turned down within 7 days and nothing is pending). The farm's own fields are always the values in force.
+- `GET /farmer/capacity` adds the same `pending` / `rejected` (payload: `[{ produce_id, name, from_kg, to_kg }]`), and each item has `pending_kg: number | null` = the value asked for. `daily_kg` and `total_kg` are always what is in force.
+- The farmer is notified of the decision: push, and `GET /notifications` items with id `req-{id}-{approved|rejected}` and url `/farmer/vuon` or `/farmer/nang-suat`.

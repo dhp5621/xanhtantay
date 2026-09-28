@@ -9,7 +9,7 @@ import { apiFetch, ApiError } from "../../constants/api";
 import { colors, shape, type, useStyles } from "../../constants/theme";
 import { makeAvatarDataUrl } from "../../constants/media";
 import { formatKg } from "../../constants/format";
-import type { FarmerCommands, FarmProfile, Me } from "../../constants/types";
+import type { FarmerCapacity, FarmerCommands, FarmProfile, Me } from "../../constants/types";
 import { useSession } from "../../hooks/useSession";
 import { useTheme } from "../../hooks/useTheme";
 import { useLiveRefresh } from "../../hooks/useLive";
@@ -51,6 +51,8 @@ export default function TaiKhoanScreen() {
   const [farmState, setFarmState] = useState<LoadState>("loading");
   const [commands, setCommands] = useState<FarmerCommands | null>(null);
   const [commandsState, setCommandsState] = useState<LoadState>("loading");
+  // Only feeds the "Chờ duyệt" chip of "Rau củ đăng ký".
+  const [capacityPending, setCapacityPending] = useState(false);
   const [clusters, setClusters] = useState<Cluster[]>([]);
   const [form, setForm] = useState<{ name: string; phone: string; cluster_id: string | null; address: string } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -103,6 +105,9 @@ export default function TaiKhoanScreen() {
           setCommandsState("ready");
         })
         .catch(() => setCommandsState(keep)),
+      apiFetch("/farmer/capacity")
+        .then((c: FarmerCapacity) => setCapacityPending(!!c?.pending))
+        .catch(() => {}),
     ]);
   }, [user]);
 
@@ -118,6 +123,7 @@ export default function TaiKhoanScreen() {
     setMe(null);
     setFarm(null);
     setCommands(null);
+    setCapacityPending(false);
     setMeState("loading");
     setFarmState("loading");
     setCommandsState("loading");
@@ -366,7 +372,20 @@ export default function TaiKhoanScreen() {
               <View>
                 {FARMER_MENU.filter((m) => m.href !== "farm-page" || farm).map((m, i) => (
                   <AnimIn key={m.href} index={i} delay={120}>
-                    <ListItem icon={m.icon} title={m.label} desc={m.desc} onPress={() => router.push((m.href === "farm-page" ? `/farms/${farm?.slug}` : m.href) as never)} />
+                    <ListItem
+                      icon={m.icon}
+                      title={m.label}
+                      desc={m.desc}
+                      trailing={
+                        (m.href === "/farmer/nang-suat" && capacityPending) || (m.href === "/farmer/vuon" && farm?.pending) ? (
+                          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                            <Chip label="Chờ duyệt" icon="hourglass_empty" tone="tertiary" small />
+                            <Icon name="chevron_right" size={24} color={colors.onSurfaceVariant} />
+                          </View>
+                        ) : undefined
+                      }
+                      onPress={() => router.push((m.href === "farm-page" ? `/farms/${farm?.slug}` : m.href) as never)}
+                    />
                   </AnimIn>
                 ))}
               </View>

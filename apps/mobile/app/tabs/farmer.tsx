@@ -6,9 +6,10 @@ import type { HarvestCommand } from "@xanhtantay/types";
 import { apiFetch, ApiError } from "../../constants/api";
 import { colors, shape, type, elevation, useStyles, type Colors } from "../../constants/theme";
 import { formatClock, formatClockDay, formatDay, formatKg } from "../../constants/format";
-import type { FarmerCapacity, FarmerCommands } from "../../constants/types";
+import type { FarmerCapacity, FarmerCommands, FarmProfile } from "../../constants/types";
 import { useLiveRefresh } from "../../hooks/useLive";
 import { AnimIn, AnimInScale, PressableScale, Skeleton } from "../../components/motion";
+import { Chip } from "../../components/ui";
 import { useDialog } from "../../components/Dialog";
 import { Loader } from "../../components/Loader";
 import { Icon } from "../../components/Icon";
@@ -25,11 +26,16 @@ export default function FarmerScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [busy, setBusy] = useState<"confirm" | "decline" | null>(null);
   const [capacity, setCapacity] = useState<FarmerCapacity | null>(null);
+  const [farmPending, setFarmPending] = useState(false);
 
   const load = useCallback(async () => {
     // Only feeds the subtitle of "Rau củ đăng ký"; the row works without it.
     apiFetch("/farmer/capacity")
       .then(setCapacity)
+      .catch(() => {});
+    // Only feeds the "Chờ duyệt" chip of "Thông tin vườn".
+    apiFetch("/farms/mine")
+      .then((f: FarmProfile) => setFarmPending(!!f?.pending))
       .catch(() => {});
     try {
       setData(await apiFetch("/farmer/commands"));
@@ -71,8 +77,8 @@ export default function FarmerScreen() {
   const declined = current?.status === "declined";
   const supplied = capacity?.items.filter((i) => Number(i.daily_kg) > 0) ?? [];
   const links = [
-    { href: "/farmer/nang-suat", icon: "scale", title: "Rau củ đăng ký", desc: capacity ? `${supplied.length} loại · ${formatKg(supplied.reduce((s, i) => s + Number(i.daily_kg), 0))} mỗi ngày` : "Mỗi ngày bác cắt được bao nhiêu ký" },
-    { href: "/farmer/vuon", icon: "potted_plant", title: "Thông tin vườn", desc: "Tên, địa chỉ, lời giới thiệu" },
+    { href: "/farmer/nang-suat", icon: "scale", title: "Rau củ đăng ký", desc: capacity ? `${supplied.length} loại · ${formatKg(supplied.reduce((s, i) => s + Number(i.daily_kg), 0))} mỗi ngày` : "Mỗi ngày bác cắt được bao nhiêu ký", pending: !!capacity?.pending },
+    { href: "/farmer/vuon", icon: "potted_plant", title: "Thông tin vườn", desc: "Tên, địa chỉ, lời giới thiệu", pending: farmPending },
   ];
 
   return (
@@ -224,13 +230,14 @@ export default function FarmerScreen() {
         <View style={{ gap: 10 }}>
           <Text style={styles.sectionTitle}>Vườn của bác</Text>
           {links.map((l) => (
-            <PressableScale key={l.href} haptic scaleTo={0.98} style={styles.link} onPress={() => router.push(l.href as never)} accessibilityRole="button" accessibilityLabel={l.title}>
+            <PressableScale key={l.href} haptic scaleTo={0.98} style={styles.link} onPress={() => router.push(l.href as never)} accessibilityRole="button" accessibilityLabel={l.pending ? `${l.title}, đang chờ duyệt` : l.title}>
               <View style={styles.linkIcon}>
                 <Icon name={l.icon} size={28} filled color={colors.onPrimaryContainer} />
               </View>
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Text style={styles.linkTitle}>{l.title}</Text>
                 <Text style={styles.linkDesc}>{l.desc}</Text>
+                {l.pending ? <Chip label="Chờ duyệt" icon="hourglass_empty" tone="tertiary" small style={{ marginTop: 6 }} /> : null}
               </View>
               <Icon name="chevron_right" size={28} color={colors.onSurfaceVariant} />
             </PressableScale>

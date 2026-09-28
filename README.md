@@ -93,8 +93,7 @@ Trang đăng nhập có nút một chạm cho cả hai. Quản trị: `/admin/lo
 - Một màn hình duy nhất, chữ to: *"Bác Ba ơi, 4h sáng mai bác cắt đúng 15 kg cà rốt và 20 kg bắp cải nhé. Xe tải lạnh sẽ qua lấy lúc 6h."*
 - Trả lời bằng **Có** (Đã hiểu & Xác nhận) hoặc **Không** (không cắt được), bấm được ngay trên thông báo (Android, iOS, trình duyệt) mà không cần mở app. Bộ não thấy hộ nào báo không cắt được.
 - Bên dưới là các lần thu hoạch trước.
-- **Rau củ đăng ký** (`/farmer/nang-suat`): nông dân tự đổi mỗi ngày cắt được bao nhiêu ký mỗi loại, thêm hoặc ngừng cung cấp; áp dụng từ lần chốt sổ kế tiếp.
-- **Thông tin vườn** (`/farmer/vuon`): đổi tên, địa chỉ, lời giới thiệu vườn.
+- **Rau củ đăng ký** (`/farmer/nang-suat`) và **Thông tin vườn** (`/farmer/vuon`): nông dân gửi yêu cầu đổi sản lượng mỗi ngày, thêm hoặc ngừng cung cấp, đổi tên, địa chỉ, lời giới thiệu vườn. **Mọi thay đổi phải được quản trị duyệt** mới có hiệu lực; nông dân thấy yêu cầu đang chờ, rút lại được, và được báo kết quả kèm lý do nếu bị từ chối.
 
 ### Bộ não trung tâm (`/admin`)
 - Gom đơn đặt trước, gói định kỳ tới hạn và nhóm gom đơn của chuyến sắp chốt; so nhu cầu với năng suất từng loại rau.
@@ -102,6 +101,7 @@ Trang đăng nhập có nút một chạm cho cả hai. Quản trị: `/admin/lo
 - **Chốt sổ & gửi lệnh**: cộng tổng nhu cầu, chia cho từng nông hộ theo tỷ lệ năng suất đăng ký (bước 0,5 kg, không vượt năng suất), ghi lệnh và gửi thông báo. Tự chạy lúc 18h00 qua cron, quản trị có thể bấm tay.
 - Theo dõi chuyến: nông hộ nào đã xác nhận, chuyển trạng thái thu hoạch → lên xe lạnh → tới sảnh (khách nhận thông báo).
 - Quản lý mọi bảng: đơn, hộp rau, thành phần hộp, loại rau, năng suất, nông hộ, lệnh thu hoạch, gói định kỳ, gom đơn, cụm chung cư, người dùng. Xem được trên điện thoại.
+- **Yêu cầu chờ duyệt**: mỗi thay đổi nông hộ xin được hiện dạng cũ → mới, duyệt hoặc từ chối kèm lý do.
 - Gửi thông báo đẩy tới điện thoại và trình duyệt, kèm **mẫu gửi thử** cho từng loại thông báo (lệnh thu hoạch có nút Có / Không, đơn mới, các bước hành trình, nhắc chốt sổ, nhóm đủ nhà, thực đơn).
 
 ### Giao diện & nền tảng

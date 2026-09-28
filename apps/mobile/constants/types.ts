@@ -9,11 +9,37 @@ export interface BoxesResponse {
   ship_fee: number;
 }
 
-/** `GET /farms`, `GET /farms/{id-or-slug}`, `GET /farms/mine`. */
+/** A farmer's change waiting for the operator: nothing is in force until it is approved. */
+export interface PendingRequest<P> {
+  id: string;
+  payload: P;
+  created_at: string;
+}
+/** The last request was turned down recently and nothing is pending. */
+export interface RejectedRequest {
+  note: string | null;
+  reviewed_at: string;
+}
+export interface FarmChange {
+  name?: string;
+  location?: string;
+  province?: string;
+  description?: string | null;
+}
+export interface CapacityChangeItem {
+  produce_id: string;
+  name: string;
+  from_kg: number;
+  to_kg: number;
+}
+
+/** `GET /farms`, `GET /farms/{id-or-slug}`, `GET /farms/mine` (only the last one has `pending` / `rejected`). */
 export type FarmProfile = Farm & {
   farmer?: string | null;
   farmer_avatar?: string | null;
   grows?: FarmCapacity[];
+  pending?: PendingRequest<FarmChange> | null;
+  rejected?: RejectedRequest | null;
 };
 
 /** One farm's share of an order, as listed on `GET /orders`. */
@@ -120,18 +146,24 @@ export interface FarmerCommands {
   commands: HarvestCommand[];
 }
 
-/** `GET /farmer/capacity`, `PUT /farmer/capacity`: every produce on the platform; `daily_kg` 0 = not supplied. */
+/**
+ * `GET /farmer/capacity`, and `PUT` / `DELETE` which file / withdraw a request: every produce on the
+ * platform. `daily_kg` is what is in force (0 = not supplied); `pending_kg` is what was asked for.
+ */
 export interface FarmerCapacityItem {
   produce_id: string;
   name: string;
   category: string;
   image_url: string | null;
   daily_kg: number;
+  pending_kg?: number | null;
 }
 export interface FarmerCapacity {
   farm: { id: string; name: string; location: string; slug: string };
   items: FarmerCapacityItem[];
   total_kg: number;
+  pending?: PendingRequest<CapacityChangeItem[]> | null;
+  rejected?: RejectedRequest | null;
 }
 
 /** Where a changed menu belongs: saved on an order, or only on screen for a box not bought yet. */

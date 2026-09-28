@@ -2059,3 +2059,14 @@ input[type="number"].tabular::-webkit-inner-spin-button { -webkit-appearance: no
 .m3-stepper-input { width: 64px; height: 40px; text-align: center; border: none; background: transparent; color: inherit; font: inherit; font-size: 18px; font-weight: 700; -moz-appearance: textfield; appearance: textfield; }
 .m3-stepper-input::-webkit-outer-spin-button, .m3-stepper-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .m3-stepper-input:focus-visible { outline: 2px solid var(--md-primary); border-radius: var(--shape-sm); }
+
+/* Change requests: waiting for approval / turned down */
+.m3-request { display: flex; gap: 14px; align-items: flex-start; padding: 16px 18px; border-radius: var(--shape-xl); }
+.m3-request.pending { background: var(--md-tertiary-container); color: var(--md-on-tertiary-container); }
+.m3-request.rejected { background: var(--md-error-container); color: var(--md-on-error-container); }
+.m3-request-list { margin: 8px 0 0; padding-left: 18px; font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+.m3-diff { display: grid; grid-template-columns: minmax(90px, 140px) 1fr; gap: 4px 12px; font-size: 14px; line-height: 1.5; }
+.m3-diff dt { color: var(--md-on-surface-variant); }
+.m3-diff dd { margin: 0; overflow-wrap: anywhere; }
+.m3-diff del { color: var(--md-on-surface-variant); }
+.m3-diff ins { text-decoration: none; font-weight: 600; color: var(--md-primary); }

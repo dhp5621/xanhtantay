@@ -210,6 +210,26 @@ export const push_devices = pgTable("push_devices", {
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
 });
+export type FarmChange = { name?: string; location?: string; province?: string; description?: string | null };
+export type CapacityChange = { produce_id: string; name: string; from_kg: number; to_kg: number }[];
+/**
+ * What a farmer asked to change. Nothing about a farm or its supply changes until the
+ * operator approves it. At most one pending request per farm and kind; a new one replaces it.
+ */
+export const change_requests = pgTable("change_requests", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  farm_id: text("farm_id").notNull().references(() => farms.id, { onDelete: "cascade" }),
+  /** "farm" (name, address, description) | "capacity" (kg per day per produce) */
+  kind: text("kind").notNull(),
+  payload: jsonb("payload").$type<FarmChange | CapacityChange>().notNull(),
+  /** "pending" | "approved" | "rejected" */
+  status: text("status").notNull().default("pending"),
+  /** The operator's reason, shown to the farmer. */
+  note: text("note"),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  reviewed_at: timestamp("reviewed_at"),
+});
+
 /** Admin broadcasts, kept so clients without a push service can still pick them up by polling. */
 export const broadcasts = pgTable("broadcasts", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),

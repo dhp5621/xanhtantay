@@ -21,7 +21,7 @@ const DROP = [
   // pre-pivot tables
   "user_recipes", "meal_plans", "recipes", "order_items", "farm_diary", "products", "group_order_members",
   // current tables (children first)
-  "harvest_commands", "orders", "harvest_runs", "group_orders", "subscriptions", "box_items", "boxes", "farm_capacity", "produce", "farms", "push_devices", "broadcasts", "users", "clusters",
+  "harvest_commands", "orders", "harvest_runs", "group_orders", "subscriptions", "box_items", "boxes", "farm_capacity", "produce", "farms", "push_devices", "broadcasts", "change_requests", "users", "clusters",
 ];
 const DROP_TYPES = ["order_status", "order_type", "subscription_frequency", "group_order_status", "run_status", "command_status", "user_role", "fulfillment"];
 
@@ -50,6 +50,7 @@ const CREATE = [
   `CREATE INDEX IF NOT EXISTS orders_user_idx ON orders(user_id, created_at DESC)`,
   `CREATE TABLE IF NOT EXISTS push_devices (id text PRIMARY KEY, platform text NOT NULL, token text NOT NULL UNIQUE, subscription jsonb, user_id text REFERENCES users(id) ON DELETE SET NULL, created_at timestamp NOT NULL DEFAULT now(), updated_at timestamp NOT NULL DEFAULT now())`,
   `CREATE TABLE IF NOT EXISTS broadcasts (id text PRIMARY KEY, title text NOT NULL, body text NOT NULL, url text, target text NOT NULL DEFAULT 'all', category text, data jsonb, created_at timestamp NOT NULL DEFAULT now())`,
+  `CREATE TABLE IF NOT EXISTS change_requests (id text PRIMARY KEY, farm_id text NOT NULL REFERENCES farms(id) ON DELETE CASCADE, kind text NOT NULL, payload jsonb NOT NULL, status text NOT NULL DEFAULT 'pending', note text, created_at timestamp NOT NULL DEFAULT now(), reviewed_at timestamp)`,
   // Columns added after the first release: existing databases are upgraded in place.
   `ALTER TYPE command_status ADD VALUE IF NOT EXISTS 'declined'`,
   `ALTER TABLE harvest_commands ADD COLUMN IF NOT EXISTS declined_at timestamp`,

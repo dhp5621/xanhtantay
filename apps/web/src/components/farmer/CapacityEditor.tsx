@@ -6,34 +6,40 @@ import { Icon } from "@/components/ui/Icon";
 import { SmartImage } from "@/components/ui/SmartImage";
 import { useSnackbar } from "@/components/ui/Snackbar";
 import { formatKg } from "@/lib/commerce";
+import { RequestBanner, type RequestInfo } from "./RequestBanner";
 
-export interface CapacityItem { produce_id: string; name: string; category: string; image_url: string | null; daily_kg: number }
+export interface CapacityItem { produce_id: string; name: string; category: string; image_url: string | null; daily_kg: number; pending_kg: number | null }
+interface Data extends RequestInfo { items: CapacityItem[] }
 const MAX = 500, STEP = 5, START = 10;
+/** What the form starts from: the value asked for while a request is open, else the one in force. */
+const asked = (i: CapacityItem) => i.pending_kg ?? i.daily_kg;
+const describe = (i: CapacityItem) => (i.pending_kg === 0 ? `${i.name}: xin ngừng cung cấp` : i.daily_kg === 0 ? `${i.name}: xin đăng ký ${formatKg(i.pending_kg ?? 0)} mỗi ngày` : `${i.name}: ${formatKg(i.daily_kg)} → ${formatKg(i.pending_kg ?? 0)} mỗi ngày`);
 
-/** What the farm can cut per day, per produce. The brain never commands more than this. */
-export function CapacityEditor({ initial }: { initial: CapacityItem[] }) {
-  const [saved, setSaved] = useState(initial);
-  const [kg, setKg] = useState<Record<string, number>>(() => Object.fromEntries(initial.map((i) => [i.produce_id, i.daily_kg])));
+/** What the farm can cut per day, per produce. Changes are requests: the operator approves them first. */
+export function CapacityEditor({ initial }: { initial: Data }) {
+  const [data, setData] = useState(initial);
+  const [kg, setKg] = useState<Record<string, number>>(() => Object.fromEntries(initial.items.map((i) => [i.produce_id, asked(i)])));
   const [busy, setBusy] = useState(false);
   const router = useRouter();
   const { show } = useSnackbar();
 
   const set = (id: string, v: number) => setKg((k) => ({ ...k, [id]: Math.min(MAX, Math.max(0, Math.round(v) || 0)) }));
-  const changed = saved.filter((i) => kg[i.produce_id] !== i.daily_kg);
-  const supplied = saved.filter((i) => kg[i.produce_id] > 0);
-  const rest = saved.filter((i) => !(kg[i.produce_id] > 0));
-  const total = supplied.reduce((s, i) => s + kg[i.produce_id], 0);
+  const edited = data.items.filter((i) => kg[i.produce_id] !== asked(i));
+  // The request always lists every difference from what is in force, not only the last edits.
+  const wanted = data.items.filter((i) => kg[i.produce_id] !== i.daily_kg);
+  const supplied = data.items.filter((i) => i.daily_kg > 0 || kg[i.produce_id] > 0);
+  const rest = data.items.filter((i) => !(i.daily_kg > 0 || kg[i.produce_id] > 0));
+  const inForce = data.items.filter((i) => i.daily_kg > 0);
 
-  const save = async () => {
+  const apply = (next: Data) => { setData(next); setKg(Object.fromEntries(next.items.map((i) => [i.produce_id, asked(i)]))); router.refresh(); };
+  const call = async (method: "PUT" | "DELETE", done: string) => {
     setBusy(true);
     try {
-      const res = await fetch("/api/farmer/capacity", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ items: changed.map((i) => ({ produce_id: i.produce_id, daily_kg: kg[i.produce_id] })) }) });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data?.error ?? "Chưa lưu được, bác thử lại nhé");
-      setSaved(data.items);
-      setKg(Object.fromEntries((data.items as CapacityItem[]).map((i) => [i.produce_id, i.daily_kg])));
-      show("Đã lưu. Áp dụng từ lần chốt sổ 18h00 kế tiếp.", { kind: "success" });
-      router.refresh();
+      const res = await fetch("/api/farmer/capacity", { method, headers: { "Content-Type": "application/json" }, body: method === "PUT" ? JSON.stringify({ items: wanted.map((i) => ({ produce_id: i.produce_id, daily_kg: kg[i.produce_id] })) }) : undefined });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json?.error ?? "Chưa gửi được, bác thử lại nhé");
+      apply(json);
+      show(done, { kind: "success", duration: 6000 });
     } catch (e) { show(e instanceof Error ? e.message : "Có lỗi", { kind: "error", duration: 6000 }); }
     finally { setBusy(false); }
   };
@@ -45,7 +51,8 @@ export function CapacityEditor({ initial }: { initial: CapacityItem[] }) {
         <span className="m3-capacity-photo">{i.image_url ? <SmartImage src={i.image_url} alt={i.name} style={{ position: "absolute", inset: 0 }} /> : <Icon name="eco" filled />}</span>
         <span className="m3-capacity-name">
           <span className="title-md" style={{ display: "block" }}>{i.name}</span>
-          <span className="body-sm text-on-surface-variant" style={{ fontWeight: 400 }}>{v > 0 ? `Tối đa ${formatKg(v)} mỗi ngày` : "Chưa đăng ký"}</span>
+          <span className="body-sm text-on-surface-variant" style={{ fontWeight: 400, display: "block" }}>{i.daily_kg > 0 ? `Đang có hiệu lực: ${formatKg(i.daily_kg)} mỗi ngày` : "Chưa đăng ký"}</span>
+          {i.pending_kg !== null && <span className="body-sm" style={{ display: "block", color: "var(--md-tertiary)", fontWeight: 600 }}>{i.pending_kg === 0 ? "Đã xin ngừng cung cấp, chờ duyệt" : i.daily_kg === 0 ? `Đã xin đăng ký ${formatKg(i.pending_kg)}, chờ duyệt` : `Đã xin đổi thành ${formatKg(i.pending_kg)}, chờ duyệt`}</span>}
         </span>
         {v > 0 ? (
           <span className="m3-capacity-ctrl">
@@ -57,7 +64,7 @@ export function CapacityEditor({ initial }: { initial: CapacityItem[] }) {
             <button type="button" className="m3-btn m3-btn-text m3-btn-sm" onClick={() => set(i.produce_id, 0)}>Ngừng cung cấp</button>
           </span>
         ) : (
-          <button type="button" className="m3-btn m3-btn-tonal-primary m3-btn-sm" onClick={() => set(i.produce_id, START)}><Icon name="add" size={18} /><span>Đăng ký</span></button>
+          <button type="button" className="m3-btn m3-btn-tonal-primary m3-btn-sm" onClick={() => set(i.produce_id, i.daily_kg || START)}><Icon name="add" size={18} /><span>{i.daily_kg > 0 ? "Cung cấp lại" : "Đăng ký"}</span></button>
         )}
       </div>
     );
@@ -65,11 +72,12 @@ export function CapacityEditor({ initial }: { initial: CapacityItem[] }) {
 
   return (
     <div className="flex flex-col gap-6">
+      <RequestBanner state={data} lines={data.items.filter((i) => i.pending_kg !== null).map(describe)} onWithdraw={() => call("DELETE", "Đã rút yêu cầu")} />
       <div className="m3-card-filled" style={{ padding: 20, borderRadius: "var(--shape-xl)", display: "flex", gap: 14, alignItems: "center" }}>
         <span className="m3-list-leading"><Icon name="scale" filled /></span>
         <div>
-          <p className="headline-sm text-on-surface tabular">{supplied.length} loại · {formatKg(total)} mỗi ngày</p>
-          <p className="body-sm text-on-surface-variant">Hệ thống không bao giờ gửi lệnh nhiều hơn số bác đăng ký.</p>
+          <p className="headline-sm text-on-surface tabular">{inForce.length} loại · {formatKg(inForce.reduce((s, i) => s + i.daily_kg, 0))} mỗi ngày</p>
+          <p className="body-sm text-on-surface-variant">Đây là số đang có hiệu lực. Hệ thống không bao giờ gửi lệnh nhiều hơn số này.</p>
         </div>
       </div>
       <section>
@@ -83,11 +91,11 @@ export function CapacityEditor({ initial }: { initial: CapacityItem[] }) {
         </section>
       )}
       <div className="m3-capacity-save">
-        <button type="button" className="m3-btn m3-btn-filled m3-command-btn" style={{ height: 64 }} onClick={save} disabled={busy || !changed.length}>
-          {busy ? <span className="m3-loader on-primary" style={{ width: 28, height: 28 }} /> : <Icon name="save" filled />}
-          <span>{changed.length ? `Lưu thay đổi (${changed.length})` : "Chưa có thay đổi"}</span>
+        <button type="button" className="m3-btn m3-btn-filled m3-command-btn" style={{ height: 64 }} onClick={() => call("PUT", "Đã gửi. Quản trị sẽ duyệt rồi thay đổi mới có hiệu lực.")} disabled={busy || !edited.length || !wanted.length}>
+          {busy ? <span className="m3-loader on-primary" style={{ width: 28, height: 28 }} /> : <Icon name="send" filled />}
+          <span>{edited.length ? `Gửi yêu cầu duyệt (${wanted.length})` : "Chưa có thay đổi"}</span>
         </button>
-        <p className="body-sm text-on-surface-variant" style={{ textAlign: "center", marginTop: 8 }}>Thay đổi áp dụng từ lần chốt sổ 18h00 kế tiếp. Lệnh đã gửi không đổi.</p>
+        <p className="body-sm text-on-surface-variant" style={{ textAlign: "center", marginTop: 8 }}>Thay đổi chỉ có hiệu lực sau khi quản trị duyệt. Lệnh đã gửi không đổi.{data.pending ? " Gửi lại sẽ thay cho yêu cầu đang chờ." : ""}</p>
       </div>
     </div>
   );

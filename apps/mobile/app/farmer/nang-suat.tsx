@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useFocusEffect } from "expo-router";
 import { apiFetch, ApiError } from "../../constants/api";
 import { colors, shape, type, useStyles, type Colors } from "../../constants/theme";
-import { formatKg } from "../../constants/format";
+import { formatDateTime, formatKg } from "../../constants/format";
 import type { FarmerCapacity, FarmerCapacityItem } from "../../constants/types";
 import { useSession } from "../../hooks/useSession";
 import { useLiveRefresh } from "../../hooks/useLive";
@@ -23,8 +23,9 @@ const STEP_KG = 5;
 const FIRST_KG = 10;
 
 /**
- * What the farm can cut each day, per produce. Rows stay in the group they were saved in while the
- * farmer edits, so nothing jumps around under their finger; one button saves every change.
+ * What the farm can cut each day, per produce. The farmer only asks: nothing changes until the
+ * operator approves it. Rows stay in the group they are in force in while the farmer edits, so
+ * nothing jumps around under their finger; one button sends every change as one request.
  */
 export default function FarmerCapacityScreen() {
   const styles = useStyles(makeStyles);
@@ -36,7 +37,8 @@ export default function FarmerCapacityScreen() {
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
-  // Only what the farmer changed on screen: produce_id → kg. Survives a reload of the saved values.
+  const [withdrawing, setWithdrawing] = useState(false);
+  // Only what the farmer changed on screen: produce_id → kg. Survives a reload of the server's values.
   const [draft, setDraft] = useState<Record<string, number>>({});
 
   const load = useCallback(async () => {
@@ -56,13 +58,19 @@ export default function FarmerCapacityScreen() {
     }, [load])
   );
 
-  const items = useMemo(() => (data?.items ?? []).map((i) => ({ ...i, daily_kg: Number(i.daily_kg) || 0 })), [data]);
-  const kgOf = (i: FarmerCapacityItem) => draft[i.produce_id] ?? i.daily_kg;
-  const changed = items.filter((i) => kgOf(i) !== i.daily_kg);
+  const items = useMemo(() => (data?.items ?? []).map((i) => ({ ...i, daily_kg: Number(i.daily_kg) || 0, pending_kg: i.pending_kg == null ? null : Number(i.pending_kg) || 0 })), [data]);
+  const pending = data?.pending ?? null;
+  const rejected = data?.rejected ?? null;
+  // Where a row starts from: what was asked for while a request is waiting, else what is in force.
+  const baseOf = (i: FarmerCapacityItem) => i.pending_kg ?? i.daily_kg;
+  const kgOf = (i: FarmerCapacityItem) => draft[i.produce_id] ?? baseOf(i);
+  // The button wakes up when the screen differs from the open request, or from what is in force when there is none.
+  const changed = items.filter((i) => kgOf(i) !== baseOf(i));
+  // A new request replaces the open one, so it carries every row that differs from what is in force.
+  const wanted = items.filter((i) => kgOf(i) !== i.daily_kg);
   const supplied = items.filter((i) => i.daily_kg > 0);
   const others = items.filter((i) => i.daily_kg === 0);
-  const count = items.filter((i) => kgOf(i) > 0).length;
-  const total = items.reduce((s, i) => s + kgOf(i), 0);
+  const total = Number(data?.total_kg) || 0;
 
   const setKg = (id: string, kg: number) => setDraft((d) => ({ ...d, [id]: kg }));
   const tap = (id: string, kg: number) => {
@@ -70,18 +78,43 @@ export default function FarmerCapacityScreen() {
     setKg(id, kg);
   };
 
+  const apply = (next: FarmerCapacity) => {
+    setData(next);
+    setDraft({});
+    setError(null);
+  };
+
+  const withdraw = async () => {
+    setWithdrawing(true);
+    try {
+      apply(await apiFetch("/farmer/capacity", { method: "DELETE" }));
+      if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    } catch (e) {
+      alert("Chưa rút được", e instanceof ApiError ? e.message : "Mạng đang yếu, bác bấm lại giúp nhé.");
+    } finally {
+      setWithdrawing(false);
+    }
+  };
+  const askWithdraw = (message = "Số ký đang có hiệu lực vẫn giữ nguyên.") =>
+    alert("Rút yêu cầu đang chờ duyệt?", message, [
+      { text: "Không", style: "cancel" },
+      { text: "Rút yêu cầu", style: "destructive", onPress: withdraw },
+    ]);
+
   const save = async () => {
     if (!changed.length) return;
+    // Back to what is in force: there is nothing to ask for, only the open request to take back.
+    if (!wanted.length) {
+      askWithdraw("Bác đã sửa lại giống số ký đang có hiệu lực, nên không còn gì để duyệt.");
+      return;
+    }
     setSaving(true);
     try {
-      const next: FarmerCapacity = await apiFetch("/farmer/capacity", { method: "PUT", body: JSON.stringify({ items: changed.map((i) => ({ produce_id: i.produce_id, daily_kg: kgOf(i) })) }) });
-      setData(next);
-      setDraft({});
-      setError(null);
+      apply(await apiFetch("/farmer/capacity", { method: "PUT", body: JSON.stringify({ items: wanted.map((i) => ({ produce_id: i.produce_id, daily_kg: kgOf(i) })) }) }));
       if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-      alert("Đã lưu thay đổi", "Số ký mới áp dụng từ lần chốt sổ 18h00 kế tiếp.", undefined, { icon: "check_circle" });
+      alert("Đã gửi", "Quản trị sẽ duyệt rồi thay đổi mới có hiệu lực.", undefined, { icon: "check_circle" });
     } catch (e) {
-      alert("Chưa lưu được", e instanceof ApiError ? e.message : "Mạng đang yếu, bác bấm lại giúp nhé.");
+      alert("Chưa gửi được", e instanceof ApiError ? e.message : "Mạng đang yếu, bác bấm lại giúp nhé.");
     } finally {
       setSaving(false);
     }
@@ -108,9 +141,10 @@ export default function FarmerCapacityScreen() {
   const row = (i: FarmerCapacityItem, index: number) => {
     const kg = kgOf(i);
     const wasSupplied = i.daily_kg > 0;
-    const edited = kg !== i.daily_kg;
+    const asked = i.pending_kg;
+    const edited = kg !== baseOf(i);
     // A row not registered yet only shows its one button until the farmer presses it.
-    const open = wasSupplied || i.produce_id in draft;
+    const open = wasSupplied || asked != null || i.produce_id in draft;
     return (
       <AnimIn key={i.produce_id} index={Math.min(index, 6)} delay={60}>
         <View style={[styles.row, edited && styles.rowEdited]}>
@@ -118,9 +152,17 @@ export default function FarmerCapacityScreen() {
             <SmartImage uri={i.image_url} style={styles.photo} loaderSize={22} />
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={styles.name}>{i.name}</Text>
-              <Text style={[styles.state, edited && { color: colors.tertiary }]}>
-                {edited ? (kg === 0 ? "Sẽ ngừng cung cấp · chưa lưu" : wasSupplied ? `Đang là ${formatKg(i.daily_kg)} · chưa lưu` : "Mới đăng ký · chưa lưu") : wasSupplied ? `${formatKg(i.daily_kg)} mỗi ngày` : "Chưa đăng ký"}
-              </Text>
+              {asked != null ? (
+                <>
+                  <Text style={styles.state}>{wasSupplied ? `Đang có hiệu lực: ${formatKg(i.daily_kg)}` : "Đang có hiệu lực: chưa đăng ký"}</Text>
+                  <Text style={styles.asked}>{asked === 0 ? "Đã xin ngừng cung cấp, chờ duyệt" : wasSupplied ? `Đã xin đổi thành: ${formatKg(asked)}, chờ duyệt` : `Đã xin đăng ký ${formatKg(asked)}, chờ duyệt`}</Text>
+                  {edited ? <Text style={[styles.state, { color: colors.tertiary }]}>{kg === i.daily_kg ? "Sẽ bỏ yêu cầu này · chưa gửi" : kg === 0 ? "Sẽ xin ngừng cung cấp · chưa gửi" : `Sẽ xin ${formatKg(kg)} · chưa gửi`}</Text> : null}
+                </>
+              ) : (
+                <Text style={[styles.state, edited && { color: colors.tertiary }]}>
+                  {edited ? (kg === 0 ? "Sẽ xin ngừng cung cấp · chưa gửi" : wasSupplied ? `Đang là ${formatKg(i.daily_kg)} · chưa gửi` : "Xin đăng ký mới · chưa gửi") : wasSupplied ? `${formatKg(i.daily_kg)} mỗi ngày` : "Chưa đăng ký"}
+                </Text>
+              )}
             </View>
           </View>
           {open ? (
@@ -168,7 +210,7 @@ export default function FarmerCapacityScreen() {
           />
         }
       >
-        <Text style={styles.intro}>Bác đăng ký mỗi ngày cắt được bao nhiêu ký. Hệ thống không bao giờ gửi lệnh nhiều hơn số này.</Text>
+        <Text style={styles.intro}>Bác đăng ký mỗi ngày cắt được bao nhiêu ký. Hệ thống không bao giờ gửi lệnh nhiều hơn số này. Mọi thay đổi cần quản trị duyệt rồi mới có hiệu lực.</Text>
 
         {error ? (
           <View style={styles.errorBox}>
@@ -190,13 +232,42 @@ export default function FarmerCapacityScreen() {
 
         {data ? (
           <>
+            {pending ? (
+              <View style={styles.pending}>
+                <View style={styles.bannerHead}>
+                  <Icon name="hourglass_empty" size={28} color={colors.onTertiaryContainer} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.pendingTitle}>Đang chờ quản trị duyệt</Text>
+                    <Text style={styles.pendingText}>Gửi lúc {formatDateTime(pending.created_at)}</Text>
+                  </View>
+                </View>
+                <View style={styles.change}>
+                  {pending.payload.map((c) => (
+                    <Text key={c.produce_id} style={styles.changeText}>
+                      {c.name}: {Number(c.to_kg) === 0 ? `ngừng cung cấp (đang ${formatKg(c.from_kg)})` : Number(c.from_kg) === 0 ? `đăng ký ${formatKg(c.to_kg)}` : `${formatKg(c.from_kg)} → ${formatKg(c.to_kg)}`}
+                    </Text>
+                  ))}
+                </View>
+                <Button label="Rút yêu cầu" icon="cancel" variant="outlined" onPress={() => askWithdraw()} loading={withdrawing} disabled={saving} style={{ alignSelf: "stretch", paddingVertical: 14 }} />
+              </View>
+            ) : rejected ? (
+              <View style={styles.rejected}>
+                <Icon name="error" size={28} color={colors.onErrorContainer} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.rejectedTitle}>Yêu cầu trước chưa được duyệt</Text>
+                  {rejected.note ? <Text style={styles.rejectedText}>Lý do: {rejected.note}</Text> : null}
+                  <Text style={styles.rejectedText}>Bên dưới là số ký đang có hiệu lực.</Text>
+                </View>
+              </View>
+            ) : null}
+
             <View style={styles.summary}>
               <Icon name="scale" size={34} filled color={colors.onPrimaryContainer} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.summaryValue}>
-                  {count} loại · {formatKg(total)}
+                  {supplied.length} loại · {formatKg(total)}
                 </Text>
-                <Text style={styles.summaryLabel}>mỗi ngày{changed.length ? " · có thay đổi chưa lưu" : ""}</Text>
+                <Text style={styles.summaryLabel}>mỗi ngày, đang có hiệu lực{changed.length ? " · có thay đổi chưa gửi" : ""}</Text>
               </View>
             </View>
 
@@ -214,7 +285,7 @@ export default function FarmerCapacityScreen() {
 
             <View style={styles.note}>
               <Icon name="info" size={24} color={colors.onSecondaryContainer} />
-              <Text style={styles.noteText}>Thay đổi áp dụng từ lần chốt sổ 18h00 kế tiếp. Lệnh đã gửi không đổi.</Text>
+              <Text style={styles.noteText}>Thay đổi chỉ có hiệu lực sau khi quản trị duyệt. Lệnh đã gửi không đổi.</Text>
             </View>
           </>
         ) : null}
@@ -225,16 +296,17 @@ export default function FarmerCapacityScreen() {
           <PressableScale
             haptic
             scaleTo={0.97}
-            disabled={!changed.length || saving}
+            disabled={!changed.length || saving || withdrawing}
             style={[styles.saveBtn, !changed.length && styles.saveBtnOff]}
             onPress={save}
             accessibilityRole="button"
-            accessibilityLabel="Lưu thay đổi"
-            accessibilityState={{ disabled: !changed.length || saving, busy: saving }}
+            accessibilityLabel="Gửi yêu cầu duyệt"
+            accessibilityState={{ disabled: !changed.length || saving || withdrawing, busy: saving }}
           >
-            {saving ? <Loader size={28} color={colors.onPrimary} /> : <Icon name="check" size={28} color={changed.length ? colors.onPrimary : colors.onSurfaceVariant} />}
-            <Text style={[styles.saveText, !changed.length && { color: colors.onSurfaceVariant }]}>{saving ? "Đang lưu…" : "Lưu thay đổi"}</Text>
+            {saving ? <Loader size={28} color={colors.onPrimary} /> : <Icon name="send" size={28} color={changed.length ? colors.onPrimary : colors.onSurfaceVariant} />}
+            <Text style={[styles.saveText, !changed.length && { color: colors.onSurfaceVariant }]}>{saving ? "Đang gửi…" : "Gửi yêu cầu duyệt"}</Text>
           </PressableScale>
+          {pending ? <Text style={styles.footerHint}>Gửi lại sẽ thay cho yêu cầu đang chờ.</Text> : null}
         </View>
       ) : null}
     </View>
@@ -248,6 +320,16 @@ const makeStyles = (c: Colors) =>
     errorBox: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: c.errorContainer, borderRadius: shape.xl, padding: 18 },
     errorText: { ...type.bodyLarge, color: c.onErrorContainer, fontSize: 17, lineHeight: 25, flex: 1 },
 
+    pending: { backgroundColor: c.tertiaryContainer, borderRadius: shape.xl, padding: 18, gap: 14 },
+    bannerHead: { flexDirection: "row", alignItems: "center", gap: 12 },
+    pendingTitle: { color: c.onTertiaryContainer, fontSize: 21, lineHeight: 29, fontWeight: "800", includeFontPadding: false },
+    pendingText: { ...type.bodyLarge, color: c.onTertiaryContainer, fontSize: 16, lineHeight: 23 },
+    change: { backgroundColor: c.surface, borderRadius: shape.lg, padding: 14, gap: 4 },
+    changeText: { ...type.bodyLarge, color: c.onSurface, fontSize: 17, lineHeight: 25 },
+    rejected: { flexDirection: "row", alignItems: "flex-start", gap: 12, backgroundColor: c.errorContainer, borderRadius: shape.xl, padding: 18 },
+    rejectedTitle: { color: c.onErrorContainer, fontSize: 20, lineHeight: 28, fontWeight: "800", includeFontPadding: false },
+    rejectedText: { ...type.bodyLarge, color: c.onErrorContainer, fontSize: 17, lineHeight: 25 },
+
     summary: { flexDirection: "row", alignItems: "center", gap: 16, backgroundColor: c.primaryContainer, borderRadius: shape.xlIncreased, padding: 20 },
     summaryValue: { color: c.onPrimaryContainer, fontSize: 26, lineHeight: 34, fontWeight: "800", includeFontPadding: false, fontVariant: ["tabular-nums"] },
     summaryLabel: { ...type.bodyLarge, color: c.onPrimaryContainer, fontSize: 17, lineHeight: 24 },
@@ -260,6 +342,7 @@ const makeStyles = (c: Colors) =>
     rowHead: { flexDirection: "row", alignItems: "center", gap: 14 },
     photo: { width: 68, height: 68, borderRadius: shape.lg },
     name: { color: c.onSurface, fontSize: 22, lineHeight: 30, fontWeight: "700", includeFontPadding: false },
+    asked: { ...type.bodyLarge, color: c.tertiary, fontSize: 16, lineHeight: 23, fontWeight: "700" },
     state: { ...type.bodyLarge, color: c.onSurfaceVariant, fontSize: 16, lineHeight: 23 },
     rowControls: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 12 },
     textBtn: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 48, paddingHorizontal: 8 },
@@ -271,6 +354,7 @@ const makeStyles = (c: Colors) =>
 
     footer: { paddingHorizontal: 16, paddingTop: 12, backgroundColor: c.surface, borderTopWidth: 1, borderTopColor: c.outlineVariant },
     saveBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 12, backgroundColor: c.primary, borderRadius: shape.full, minHeight: 68, paddingVertical: 16, paddingHorizontal: 24 },
+    footerHint: { ...type.bodyMedium, color: c.onSurfaceVariant, fontSize: 15, lineHeight: 22, textAlign: "center", marginTop: 8 },
     saveBtnOff: { backgroundColor: c.surfaceContainerHighest },
     saveText: { color: c.onPrimary, fontSize: 22, lineHeight: 30, fontWeight: "800", includeFontPadding: false },
   });

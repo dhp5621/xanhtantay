@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { broadcasts, farms, harvest_commands, harvest_runs, orders } from "@/db/schema";
 import { getSessionUser } from "@/lib/session";
 import { COMMAND_CATEGORY } from "@/lib/commands";
+import { recentDecisions } from "@/lib/requests";
 import { addDays, todayVN } from "@/lib/commerce";
 import { ORDER_STATUS_LABELS } from "@xanhtantay/types";
 
@@ -37,6 +38,10 @@ export async function GET(req: Request) {
       .where(and(eq(farms.owner_id, user.id), eq(harvest_commands.status, "sent"), gte(harvest_runs.delivery_date, since)))
       .orderBy(desc(harvest_commands.created_at))
       .limit(5);
+    for (const { r } of await recentDecisions(user.id)) {
+      const what = r.kind === "farm" ? "thông tin vườn" : "rau củ đăng ký";
+      out.push({ id: `req-${r.id}-${r.status}`, title: r.status === "approved" ? "Đã duyệt thay đổi" : "Thay đổi chưa được duyệt", body: r.status === "approved" ? `Thay đổi ${what} của bác đã được duyệt.` : r.note ? `Thay đổi ${what}: ${r.note}` : `Thay đổi ${what} của bác chưa được duyệt.`, url: r.kind === "farm" ? "/farmer/vuon" : "/farmer/nang-suat" });
+    }
     for (const { c } of rows) out.push({ id: `cmd-${c.id}`, title: "Lệnh thu hoạch mới", body: c.message, url: "/farmer", category: COMMAND_CATEGORY, data: { commandId: c.id } });
   } else {
     const rows = await db

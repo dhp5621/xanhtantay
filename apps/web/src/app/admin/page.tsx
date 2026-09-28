@@ -1,10 +1,12 @@
 export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { db } from "@/db";
-import { users, farms, orders, subscriptions, group_orders, push_devices, harvest_runs, harvest_commands, farm_capacity, produce } from "@/db/schema";
+import { users, farms, orders, subscriptions, group_orders, push_devices, harvest_runs, harvest_commands, farm_capacity, produce, change_requests, type FarmChange, type CapacityChange } from "@/db/schema";
 import { and, count, desc, eq, ne, sum } from "drizzle-orm";
 import { Icon } from "@/components/ui/Icon";
 import { AdminPush } from "@/components/admin/AdminPush";
+import { RequestReview } from "@/components/admin/RequestReview";
+import { FARM_FIELD_LABELS } from "@/lib/requests";
 import { CutoffBanner } from "@/components/ui/CutoffBanner";
 import { CutoffButton, AdvanceRunButton } from "@/components/admin/BrainControls";
 import { formatVND, RUN_STATUS_LABELS, formatClock } from "@/lib/format";
@@ -19,6 +21,7 @@ export default async function BrainDashboard() {
   // If tomorrow's book is past its cut-off but was never closed, that one needs closing first.
   const tomorrow = addDays(today, 1);
 
+  const requests = await db.select({ r: change_requests, farm: farms, farmer: users.name }).from(change_requests).innerJoin(farms, eq(change_requests.farm_id, farms.id)).leftJoin(users, eq(farms.owner_id, users.id)).where(eq(change_requests.status, "pending")).orderBy(desc(change_requests.created_at));
   const [preview, fc, runs, caps, [u], [f], [rev], [s], [g], pushRows, [openTomorrow]] = await Promise.all([
     previewFor(bookDate),
     forecast(addDays(today, 1), 7),
@@ -68,6 +71,7 @@ export default async function BrainDashboard() {
       </div>
 
       {lateBook && <p className="status-pill status-cancelled" style={{ height: "auto", padding: "10px 14px", whiteSpace: "normal" }}><Icon name="warning" size={18} filled /> Sổ giao {formatYMD(tomorrow)} đã qua 18h00 mà chưa chốt ({openTomorrow.c} đơn). Bấm “Chốt sổ & gửi lệnh”.</p>}
+      {requests.length > 0 && <a href="#duyet" className="m3-request pending" style={{ textDecoration: "none" }}><Icon name="fact_check" filled /><span style={{ flex: 1 }}><span className="title-md" style={{ display: "block" }}>{requests.length} yêu cầu của nông hộ đang chờ duyệt</span><span className="body-sm" style={{ opacity: 0.85 }}>Đổi thông tin vườn hoặc rau củ đăng ký chỉ có hiệu lực sau khi duyệt.</span></span><Icon name="arrow_downward" /></a>}
       <CutoffBanner cutoffAt={cutoffInstant(bookDate).toISOString()} deliveryLabel={formatYMD(bookDate)} />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 stagger">
@@ -164,6 +168,35 @@ export default async function BrainDashboard() {
                 </article>
               );
             })}
+          </div>
+        )}
+      </section>
+
+      <section id="duyet">
+        <div className="m3-section-head"><h2 className="title-lg text-on-surface"><Icon name="fact_check" filled /> Yêu cầu chờ duyệt</h2><span className="body-sm text-on-surface-variant">{requests.length ? `${requests.length} yêu cầu từ nông hộ` : "Nông hộ đổi thông tin vườn hoặc rau củ đăng ký đều phải qua đây"}</span></div>
+        {requests.length === 0 ? <p className="body-md text-on-surface-variant">Không có yêu cầu nào đang chờ.</p> : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {requests.map(({ r, farm, farmer }) => (
+              <article key={r.id} className="m3-card-elevated" style={{ padding: "18px 20px", borderRadius: "var(--shape-xl)" }}>
+                <div className="flex items-start justify-between gap-3 flex-wrap" style={{ marginBottom: 12 }}>
+                  <div>
+                    <p className="title-md text-on-surface">{addressFarmer(farmer ?? farm.name).call} · {farm.name}</p>
+                    <p className="body-sm text-on-surface-variant">{farm.location} · gửi lúc {formatClock(r.created_at)} {formatYMD(todayVN(r.created_at), { day: "numeric", month: "numeric" })}</p>
+                  </div>
+                  <span className="m3-chip sm round m3-chip-surface"><Icon name={r.kind === "farm" ? "storefront" : "scale"} size={14} filled /> {r.kind === "farm" ? "Thông tin vườn" : "Rau củ đăng ký"}</span>
+                </div>
+                <dl className="m3-diff">
+                  {r.kind === "farm"
+                    ? (Object.entries(r.payload as FarmChange) as [keyof FarmChange, string | null][]).map(([k, v]) => (
+                        <div key={k} style={{ display: "contents" }}><dt>{FARM_FIELD_LABELS[k]}</dt><dd><del>{farm[k] || "(để trống)"}</del><br /><ins>{v || "(để trống)"}</ins></dd></div>
+                      ))
+                    : (r.payload as CapacityChange).map((c) => (
+                        <div key={c.produce_id} style={{ display: "contents" }}><dt>{c.name}</dt><dd><del>{c.from_kg ? formatKg(c.from_kg) : "chưa đăng ký"}</del> → <ins>{c.to_kg ? `${formatKg(c.to_kg)} mỗi ngày` : "ngừng cung cấp"}</ins></dd></div>
+                      ))}
+                </dl>
+                <RequestReview id={r.id} />
+              </article>
+            ))}
           </div>
         )}
       </section>
