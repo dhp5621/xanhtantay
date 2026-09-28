@@ -137,3 +137,10 @@ Shown on an order once it is `delivered`, for 3 days after `delivered_at`. One r
 - `Refund = { id, order_id, reason, description, photos: string[], video_url, method, status: "pending" | "approved" | "rejected", resolution: "refund" | "replace" | null, refund_amount: number | null, note: string | null, created_at, reviewed_at }`
 - Upload evidence first: `POST /upload` as multipart with `file` and `purpose=refund` → `{ url }`. Images up to 3 MB, evidence video up to 30 MB. **Compress on the device before uploading**: images to at most 1280 px on the long side (JPEG/WebP), video to at most 720p and 60 s.
 - The verdict arrives as a push and in `GET /notifications` with id `refund-{id}-{approved|rejected}` and url `/don-hang/{orderId}`.
+
+## Form of address follows gender (supersedes the earlier note)
+
+- `users.gender`: `"male" | "female" | null`. When no form of address was chosen by hand, it follows from gender and role: **farmers "bác" (male) / "cô" (female); customers "anh" (male) / "chị" (female); "bạn" for anyone who did not give their gender.** A hand-chosen `salutation` overrides it (offered: bác / cô / chú for farmers, anh / chị / bạn for customers, or any typed word).
+- `GET /users/me` returns `gender`, `salutation`, `short_name`, and the resolved **`call_name`** (e.g. "Cô Tư") and **`pronoun`** (e.g. "cô"). Clients must use `pronoun` wherever the app addresses the signed-in person in its own text (never a hardcoded "bác"), capitalised at the start of a sentence, and `call_name` in greetings.
+- `PATCH /users/me` accepts `gender` (`"male" | "female" | null`), `salutation` (letters only, max 12, empty string = follow gender) and `short_name` (max 24, empty = given name), and returns the same fields including the new `call_name` and `pronoun`.
+- Accounts may have their own password (set by the admin); sign-in is unchanged for clients.

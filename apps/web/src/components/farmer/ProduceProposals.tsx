@@ -18,7 +18,7 @@ const STATUS: Record<string, { label: string; chip: string; icon: string }> = {
 const EMPTY = { name: "", category: "rau_la", daily_kg: 10, image_url: "", note: "" };
 
 /** Produce that is not on the platform's list yet: the farmer proposes it with a photo, the operator approves. */
-export function ProduceProposals({ initial }: { initial: Proposal[] }) {
+export function ProduceProposals({ initial, you = "bạn" }: { initial: Proposal[]; you?: string }) {
   const [list, setList] = useState(initial);
   const [open, setOpen] = useState(false);
   const [camera, setCamera] = useState(false);
@@ -55,7 +55,7 @@ export function ProduceProposals({ initial }: { initial: Proposal[] }) {
   return (
     <section>
       <h2 className="title-lg text-on-surface" style={{ marginBottom: 6 }}>Rau củ khác</h2>
-      <p className="body-md text-on-surface-variant" style={{ marginBottom: 12 }}>Vườn có loại rau củ chưa có trong danh sách? Bác gửi tên, ảnh và sản lượng, quản trị duyệt xong là có trong danh sách.</p>
+      <p className="body-md text-on-surface-variant" style={{ marginBottom: 12 }}>Vườn có loại rau củ chưa có trong danh sách? {you.charAt(0).toUpperCase() + you.slice(1)} gửi tên, ảnh và sản lượng, quản trị duyệt xong là có trong danh sách.</p>
       {list.length > 0 && (
         <div className="m3-list-group" style={{ marginBottom: 12 }}>
           {list.map((p) => {

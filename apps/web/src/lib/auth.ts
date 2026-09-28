@@ -3,6 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { db } from "@/db";
 import { users, farms } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { hasOwnPassword, verifyPassword } from "./password";
 
 /** Demo accounts advertised on the login page. Password for all: DEMO_PASSWORD (default demo123). */
 export const DEMO_ACCOUNTS = {
@@ -27,9 +28,10 @@ export const authOptions: NextAuthOptions = {
         const [user] = await db.select().from(users).where(eq(users.email, email));
         if (!user) return null;
 
-        // Demo auth: every seeded account shares DEMO_PASSWORD.
-        // Production should bcrypt.compare(credentials.password, user.password_hash).
-        if (credentials.password !== DEMO_PASSWORD) return null;
+        // An account whose password was set in /admin uses that one only; the rest share DEMO_PASSWORD.
+        if (hasOwnPassword(user.password_hash)) {
+          if (!(await verifyPassword(credentials.password, user.password_hash))) return null;
+        } else if (credentials.password !== DEMO_PASSWORD) return null;
 
         let farmSlug: string | null = null;
         if (user.role === "farmer") {

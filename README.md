@@ -46,7 +46,7 @@ Font tự host trong `apps/web/public/fonts`. Icon là bản rút gọn theo tê
 
 ### Thông báo
 
-Lời lẽ thông báo do máy chủ soạn, lịch sự và xưng hô theo cách gọi lưu trong cơ sở dữ liệu (`users.salutation` + `users.short_name`, ví dụ "bác Ba", "chị Lan"; sửa ở `/admin` → Người dùng). Lệnh thu hoạch có hai nút **Đồng ý** / **Không đồng ý** ngay trên thông báo. Bấm vào thông báo sẽ mở đúng màn hình liên quan (đúng đơn hàng, lệnh thu hoạch, trang duyệt).
+Lời lẽ thông báo do máy chủ soạn, lịch sự và xưng hô theo cơ sở dữ liệu. Mặc định theo giới tính (`users.gender`): nông dân là **bác** (nam) / **cô** (nữ), người mua là **anh** / **chị**, không nêu giới tính thì gọi **bạn**. Người dùng có thể tự chọn cách xưng hô khác (`users.salutation`) và tên gọi (`users.short_name`) trong trang Tài khoản; quản trị sửa ở `/admin` → Người dùng. Mọi màn hình của nông dân dùng đúng cách xưng hô này, không mặc định "bác". Lệnh thu hoạch có hai nút **Đồng ý** / **Không đồng ý** ngay trên thông báo. Bấm vào thông báo sẽ mở đúng màn hình liên quan (đúng đơn hàng, lệnh thu hoạch, trang duyệt).
 
 Có hai đường giao thông báo (lệnh thu hoạch cho nông dân, hành trình hộp rau cho khách):
 
@@ -103,6 +103,7 @@ Trang đăng nhập có nút một chạm cho cả hai. Quản trị: `/admin/lo
 - Xem trước "nếu chốt sổ bây giờ" và dự báo 7 ngày tới.
 - **Chốt sổ & gửi lệnh**: cộng tổng nhu cầu, chia cho từng nông hộ theo tỷ lệ năng suất đăng ký (bước 0,5 kg, không vượt năng suất), ghi lệnh và gửi thông báo. Tự chạy lúc 18h00 qua cron, quản trị có thể bấm tay.
 - Theo dõi chuyến: nông hộ nào đã xác nhận, chuyển trạng thái thu hoạch → lên xe lạnh → tới sảnh (khách nhận thông báo).
+- **Người dùng**: xem và đổi ảnh đại diện, đặt mật khẩu riêng cho từng tài khoản khách hoặc nông dân (lưu dạng mã hoá scrypt), hoặc cho tài khoản dùng lại mật khẩu demo.
 - Quản lý mọi bảng: đơn, hộp rau, thành phần hộp, loại rau, năng suất, nông hộ, lệnh thu hoạch, gói định kỳ, gom đơn, cụm chung cư, người dùng. Xem được trên điện thoại.
 - **Dung lượng lưu trữ**: tệp được xoá ngay khi không còn nơi nào hiển thị (yêu cầu hoàn tiền đã rút), và mỗi ngày lúc 18h00 hệ thống tự dọn tệp tải lên mà không gửi, tệp không còn được tham chiếu, bằng chứng của yêu cầu đã xử lý quá 60 ngày. Tab Hoàn tiền có thẻ xem dung lượng và nút **Dọn ngay**.
 - **Tab Hoàn tiền** (`/admin/hoan-tien`): xem ảnh, video bằng chứng, chọn hoàn tiền (kèm số tiền) hoặc giao bù, chấp nhận hoặc từ chối kèm lời nhắn; khách được báo kết quả.
@@ -119,5 +120,5 @@ Trang đăng nhập có nút một chạm cho cả hai. Quản trị: `/admin/lo
 
 ## Việc còn lại
 - Thanh toán trực tuyến.
-- Mật khẩu thật (bcrypt) thay cho mật khẩu demo dùng chung.
+- Người dùng tự đổi mật khẩu và đăng ký tài khoản (hiện quản trị đặt mật khẩu).
 - Thực đơn hộp thay đổi theo mùa (hiện có bộ Thu 2026).

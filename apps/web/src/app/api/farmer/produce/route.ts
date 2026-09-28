@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { farms, produce } from "@/db/schema";
 import { getSessionUser } from "@/lib/session";
+import { addressOf } from "@/lib/address";
 import { fileRequest, produceProposals } from "@/lib/requests";
 
 const CATEGORIES = ["rau_la", "cu_qua"];
@@ -35,7 +36,9 @@ export async function POST(req: Request) {
   }
   const note = String(body.note ?? "").trim().slice(0, 300) || null;
   const all = await db.select({ name: produce.name }).from(produce);
-  if (all.some((p) => fold(p.name) === fold(name))) return NextResponse.json({ error: `"${name}" đã có trong danh sách. Bác đăng ký ngay ở mục rau củ có sẵn nhé.` }, { status: 409 });
+  const you = (await addressOf(user.id, "farmer")).pronoun;
+  const You = you.charAt(0).toUpperCase() + you.slice(1);
+  if (all.some((p) => fold(p.name) === fold(name))) return NextResponse.json({ error: `"${name}" đã có trong danh sách. ${You} đăng ký ngay ở mục rau củ có sẵn nhé.` }, { status: 409 });
   const open = (await produceProposals(farm.id)).filter((p) => p.status === "pending");
   if (open.some((p) => fold(p.name) === fold(name))) return NextResponse.json({ error: `"${name}" đang chờ duyệt rồi ạ` }, { status: 409 });
   if (open.length >= 5) return NextResponse.json({ error: "Đang có 5 loại chờ duyệt. Xin chờ quản trị duyệt bớt rồi gửi tiếp ạ." }, { status: 429 });

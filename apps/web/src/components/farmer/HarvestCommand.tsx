@@ -10,7 +10,7 @@ import { formatClock } from "@/lib/format";
 export interface Command { id: string; message: string; items: { name: string; kg: number }[]; total_kg: number; status: "sent" | "confirmed" | "declined"; confirmed_at: string | Date | null; declined_at?: string | Date | null; delivery_date: string }
 
 /** The whole farmer interface: one message, answered with Có or Không. */
-export function HarvestCommand({ command, dateLabel }: { command: Command; dateLabel: string }) {
+export function HarvestCommand({ command, dateLabel, you = "bạn" }: { command: Command; dateLabel: string; /** How the farmer is addressed: "bác", "cô", "chú"… */ you?: string }) {
   const [state, setState] = useState(command.status);
   const [at, setAt] = useState<string | Date | null>(command.status === "declined" ? command.declined_at ?? null : command.confirmed_at);
   const [busy, setBusy] = useState<"confirm" | "decline" | null>(null);
@@ -22,10 +22,10 @@ export function HarvestCommand({ command, dateLabel }: { command: Command; dateL
     try {
       const res = await fetch(`/api/farmer/commands/${command.id}/${choice}`, { method: "POST" });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data?.error ?? "Chưa gửi được, bác thử lại nhé");
+      if (!res.ok) throw new Error(data?.error ?? `Chưa gửi được, ${you} thử lại giúp nhé`);
       setState(data.status ?? (choice === "confirm" ? "confirmed" : "declined"));
       setAt((choice === "confirm" ? data.confirmed_at : data.declined_at) ?? new Date().toISOString());
-      show(choice === "confirm" ? "Đã xác nhận. Hẹn bác 4h sáng mai!" : "Đã báo điều phối là bác không cắt được.", { kind: choice === "confirm" ? "success" : "info" });
+      show(choice === "confirm" ? `Đã xác nhận. Hẹn ${you} 4h sáng mai ạ!` : `Đã báo điều phối là ${you} không cắt được ạ.`, { kind: choice === "confirm" ? "success" : "info" });
       router.refresh();
     } catch (e) { show(e instanceof Error ? e.message : "Có lỗi", { kind: "error", duration: 6000 }); }
     finally { setBusy(null); }
@@ -55,7 +55,7 @@ export function HarvestCommand({ command, dateLabel }: { command: Command; dateL
         <div className="flex flex-col gap-3">
           {declined && (
             <div className="m3-command-row" style={{ justifyContent: "center", background: "var(--md-error-container)", color: "var(--md-on-error-container)" }}>
-              <Icon name="cancel" size={28} filled /> <span>Bác đã báo không cắt được{at ? ` lúc ${formatClock(at)}` : ""}</span>
+              <Icon name="cancel" size={28} filled /> <span>{you.charAt(0).toUpperCase() + you.slice(1)} đã báo không cắt được{at ? ` lúc ${formatClock(at)}` : ""}</span>
             </div>
           )}
           <button className="m3-btn m3-btn-filled m3-command-btn" onClick={() => answer("confirm")} disabled={!!busy}>

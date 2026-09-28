@@ -32,6 +32,7 @@ export default async function FarmerPage() {
 
       {current ? (
         <HarvestCommand
+          you={addressFarmer(me?.name ?? "").pronoun}
           command={{ id: current.id, message: current.message, items: current.items.map((i) => ({ name: i.name, kg: i.kg })), total_kg: current.total_kg, status: current.status, confirmed_at: current.confirmed_at, declined_at: current.declined_at, delivery_date: current.delivery_date }}
           dateLabel={formatYMD(current.delivery_date)}
         />

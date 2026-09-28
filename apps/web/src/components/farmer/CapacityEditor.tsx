@@ -16,7 +16,7 @@ const asked = (i: CapacityItem) => i.pending_kg ?? i.daily_kg;
 const describe = (i: CapacityItem) => (i.pending_kg === 0 ? `${i.name}: xin ngừng cung cấp` : i.daily_kg === 0 ? `${i.name}: xin đăng ký ${formatKg(i.pending_kg ?? 0)} mỗi ngày` : `${i.name}: ${formatKg(i.daily_kg)} → ${formatKg(i.pending_kg ?? 0)} mỗi ngày`);
 
 /** What the farm can cut per day, per produce. Changes are requests: the operator approves them first. */
-export function CapacityEditor({ initial }: { initial: Data }) {
+export function CapacityEditor({ initial, you = "bạn" }: { initial: Data; you?: string }) {
   const [data, setData] = useState(initial);
   const [kg, setKg] = useState<Record<string, number>>(() => Object.fromEntries(initial.items.map((i) => [i.produce_id, asked(i)])));
   const [busy, setBusy] = useState(false);
@@ -37,7 +37,7 @@ export function CapacityEditor({ initial }: { initial: Data }) {
     try {
       const res = await fetch("/api/farmer/capacity", { method, headers: { "Content-Type": "application/json" }, body: method === "PUT" ? JSON.stringify({ items: wanted.map((i) => ({ produce_id: i.produce_id, daily_kg: kg[i.produce_id] })) }) : undefined });
       const json = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(json?.error ?? "Chưa gửi được, bác thử lại nhé");
+      if (!res.ok) throw new Error(json?.error ?? `Chưa gửi được, ${you} thử lại giúp nhé`);
       apply(json);
       show(done, { kind: "success", duration: 6000 });
     } catch (e) { show(e instanceof Error ? e.message : "Có lỗi", { kind: "error", duration: 6000 }); }
@@ -72,7 +72,7 @@ export function CapacityEditor({ initial }: { initial: Data }) {
 
   return (
     <div className="flex flex-col gap-6">
-      <RequestBanner state={data} lines={data.items.filter((i) => i.pending_kg !== null).map(describe)} onWithdraw={() => call("DELETE", "Đã rút yêu cầu")} />
+      <RequestBanner you={you} state={data} lines={data.items.filter((i) => i.pending_kg !== null).map(describe)} onWithdraw={() => call("DELETE", "Đã rút yêu cầu")} />
       <div className="m3-card-filled" style={{ padding: 20, borderRadius: "var(--shape-xl)", display: "flex", gap: 14, alignItems: "center" }}>
         <span className="m3-list-leading"><Icon name="scale" filled /></span>
         <div>
@@ -82,7 +82,7 @@ export function CapacityEditor({ initial }: { initial: Data }) {
       </div>
       <section>
         <h2 className="title-lg text-on-surface" style={{ marginBottom: 12 }}>Đang cung cấp</h2>
-        {supplied.length ? <div className="m3-list-group">{supplied.map(row)}</div> : <p className="body-md text-on-surface-variant">Bác chưa đăng ký loại rau củ nào.</p>}
+        {supplied.length ? <div className="m3-list-group">{supplied.map(row)}</div> : <p className="body-md text-on-surface-variant">{you.charAt(0).toUpperCase() + you.slice(1)} chưa đăng ký loại rau củ nào.</p>}
       </section>
       {rest.length > 0 && (
         <section>

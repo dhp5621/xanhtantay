@@ -18,7 +18,7 @@ const asked = (d: FarmData): Fields => ({ ...inForce(d), ...Object.fromEntries(O
 const short = (s: string) => (s.length > 80 ? `${s.slice(0, 80)}…` : s || "(để trống)");
 
 /** How the farm is presented to customers. Changes are requests: the operator approves them first. */
-export function FarmForm({ initial }: { initial: FarmData }) {
+export function FarmForm({ initial, you = "bạn" }: { initial: FarmData; you?: string }) {
   const [data, setData] = useState(initial);
   const [form, setForm] = useState(() => asked(initial));
   const [busy, setBusy] = useState(false);
@@ -33,7 +33,7 @@ export function FarmForm({ initial }: { initial: FarmData }) {
     try {
       const res = await fetch("/api/farms/mine", { method, headers: { "Content-Type": "application/json" }, body: method === "PATCH" ? JSON.stringify(Object.fromEntries(wanted.map((k) => [k, form[k]]))) : undefined });
       const json = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(json?.error ?? "Chưa gửi được, bác thử lại nhé");
+      if (!res.ok) throw new Error(json?.error ?? `Chưa gửi được, ${you} thử lại giúp nhé`);
       setData(json); setForm(asked(json));
       show(done, { kind: "success", duration: 6000 });
       router.refresh();
@@ -43,7 +43,7 @@ export function FarmForm({ initial }: { initial: FarmData }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <RequestBanner state={data} lines={Object.entries(data.pending?.payload ?? {}).map(([k, v]) => `${LABELS[k as keyof Fields]}: ${short(now[k as keyof Fields])} → ${short(v ?? "")}`)} onWithdraw={() => call("DELETE", "Đã rút yêu cầu")} />
+      <RequestBanner you={you} state={data} lines={Object.entries(data.pending?.payload ?? {}).map(([k, v]) => `${LABELS[k as keyof Fields]}: ${short(now[k as keyof Fields])} → ${short(v ?? "")}`)} onWithdraw={() => call("DELETE", "Đã rút yêu cầu")} />
       <form onSubmit={(e) => { e.preventDefault(); call("PATCH", "Đã gửi. Quản trị sẽ duyệt rồi thay đổi mới có hiệu lực."); }} className="m3-card-filled flex flex-col gap-4" style={{ padding: 22, borderRadius: "var(--shape-xl)" }}>
         <div className="m3-field"><label className="m3-field-label" htmlFor="ff-name">Tên vườn</label>
           <input id="ff-name" className="m3-input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} maxLength={80} minLength={2} required /></div>

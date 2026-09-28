@@ -58,7 +58,7 @@ export async function reviewRequest(id: string, action: "approve" | "reject", no
   const reason = (note ?? "").replace(/\s+/g, " ").trim().slice(0, 300) || null;
   await db.update(change_requests).set({ status: action === "approve" ? "approved" : "rejected", note: reason, reviewed_at: new Date() }).where(eq(change_requests.id, id));
   const url = row.r.kind === "farm" ? "/farmer/vuon" : "/farmer/nang-suat";
-  await pushToUsers([row.owner], { ...decisionNotice({ name: row.farmer ?? "bác", role: "farmer" }, row.r.kind, action === "approve", reason), url });
+  await pushToUsers([row.owner], { ...decisionNotice({ name: row.farmer ?? "bạn", role: "farmer" }, row.r.kind, action === "approve", reason), url });
   return { ok: true as const, kind: row.r.kind, action };
 }
 

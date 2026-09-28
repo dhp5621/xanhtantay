@@ -7,7 +7,7 @@ import { formatClock } from "@/lib/format";
 export interface RequestInfo { pending: { created_at: string | Date } | null; rejected: { note: string | null } | null }
 
 /** Tells the farmer where their change stands: waiting for the operator, or turned down and why. */
-export function RequestBanner({ state, lines, onWithdraw }: { state: RequestInfo; lines: string[]; onWithdraw: () => Promise<void> }) {
+export function RequestBanner({ state, lines, onWithdraw, you = "bạn" }: { state: RequestInfo; lines: string[]; onWithdraw: () => Promise<void>; you?: string }) {
   const [busy, setBusy] = useState(false);
   if (state.pending) {
     const at = new Date(state.pending.created_at);
@@ -31,7 +31,7 @@ export function RequestBanner({ state, lines, onWithdraw }: { state: RequestInfo
         <Icon name="error" filled />
         <div style={{ flex: 1, minWidth: 0 }}>
           <p className="title-md">Yêu cầu trước chưa được duyệt</p>
-          <p className="body-sm" style={{ opacity: 0.9 }}>{state.rejected.note ? `Lý do: ${state.rejected.note}` : "Bác liên hệ điều phối để biết thêm."}</p>
+          <p className="body-sm" style={{ opacity: 0.9 }}>{state.rejected.note ? `Lý do: ${state.rejected.note}` : `${you.charAt(0).toUpperCase() + you.slice(1)} liên hệ điều phối để biết thêm nhé.`}</p>
         </div>
       </div>
     );

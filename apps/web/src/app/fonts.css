@@ -6,7 +6,7 @@
   font-weight: 300 700;
   /* block: never show ligature text while the icon font loads */
   font-display: block;
-  src: url("/fonts/material-symbols-rounded-subset.woff2?v=667fb90b25") format("woff2");
+  src: url("/fonts/material-symbols-rounded-subset.woff2?v=81e8d785bb") format("woff2");
 }
 
 @font-face {

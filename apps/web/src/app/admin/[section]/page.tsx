@@ -1,4 +1,7 @@
 export const dynamic = "force-dynamic";
+import { PasswordTool } from "@/components/admin/PasswordTool";
+import { hasOwnPassword } from "@/lib/password";
+import { DEMO_PASSWORD } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import { asc, desc, eq, sum } from "drizzle-orm";
 import { db } from "@/db";
@@ -148,6 +151,8 @@ export default async function AdminSectionPage({ params }: { params: Promise<{ s
     return o;
   });
 
+  const accounts = section.key === "users" ? (await db.select({ id: users.id, name: users.name, email: users.email, role: users.role, avatar_url: users.avatar_url, hash: users.password_hash }).from(users).orderBy(users.role, users.name)).map(({ hash, ...a }) => ({ ...a, own: hasOwnPassword(hash) })) : null;
+
   return (
     <div className="flex flex-col gap-6">
       <div className="anim-in" style={{ display: "flex", alignItems: "center", gap: 14 }}>
@@ -157,6 +162,7 @@ export default async function AdminSectionPage({ params }: { params: Promise<{ s
           <p className="body-md text-on-surface-variant">{section.desc} · {rows.length} mục{hint ? ` · ${hint}` : ""}</p>
         </div>
       </div>
+      {accounts && <PasswordTool accounts={accounts} demoPassword={DEMO_PASSWORD} />}
       <AdminTable section={section} rows={viewRows} columns={viewColumns} lookups={lookups} />
     </div>
   );

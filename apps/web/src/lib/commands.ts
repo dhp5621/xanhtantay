@@ -12,7 +12,7 @@ export type AnswerResult = { ok: true; command: typeof harvest_commands.$inferSe
 /** A farmer answers their harvest command: "Có" (confirm) or "Không" (decline). They may still change a "Không" into a "Có". */
 export async function answerCommand(id: string, userId: string, answer: "confirm" | "decline"): Promise<AnswerResult> {
   const [row] = await db.select({ c: harvest_commands, owner: farms.owner_id, farmer: callName }).from(harvest_commands).innerJoin(farms, eq(harvest_commands.farm_id, farms.id)).leftJoin(users, eq(farms.owner_id, users.id)).where(eq(harvest_commands.id, id));
-  const notice = answerNotice({ name: row?.farmer ?? "bác", role: "farmer" }, answer);
+  const notice = answerNotice({ name: row?.farmer ?? "bạn", role: "farmer" }, answer);
   if (!row || row.owner !== userId) return { ok: false, status: 404, error: "Không tìm thấy lệnh thu hoạch" };
   if (answer === "confirm") {
     if (row.c.status === "confirmed") return { ok: true, command: row.c, notice };

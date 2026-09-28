@@ -23,7 +23,7 @@ export default async function TaiKhoanPage() {
   const isFarmer = user.role === "farmer";
 
   const [[me], clusterList] = await Promise.all([
-    db.select({ name: users.name, phone: users.phone, avatar_url: users.avatar_url, cluster_id: users.cluster_id, address: users.address, cluster: clusters.name }).from(users).leftJoin(clusters, eq(users.cluster_id, clusters.id)).where(eq(users.id, user.id)),
+    db.select({ name: users.name, phone: users.phone, avatar_url: users.avatar_url, cluster_id: users.cluster_id, address: users.address, gender: users.gender, salutation: users.salutation, short_name: users.short_name, cluster: clusters.name }).from(users).leftJoin(clusters, eq(users.cluster_id, clusters.id)).where(eq(users.id, user.id)),
     getClusters(),
   ]);
 
@@ -101,7 +101,7 @@ export default async function TaiKhoanPage() {
         ))}
       </div>
 
-      {me && <div className="anim-in delay-3"><ProfileForm initial={{ name: me.name, phone: me.phone, cluster_id: me.cluster_id, address: me.address }} clusters={clusterList} showAddress={!isFarmer} /></div>}
+      {me && <div className="anim-in delay-3"><ProfileForm initial={{ name: me.name, phone: me.phone, cluster_id: me.cluster_id, address: me.address, gender: me.gender, salutation: me.salutation, short_name: me.short_name }} clusters={clusterList} showAddress={!isFarmer} farmer={isFarmer} /></div>}
 
       <div className="m3-card m3-card-filled anim-in delay-4" style={{ padding: 16 }}><WebPushToggle /></div>
       <div className="anim-in delay-4" style={{ display: "flex", justifyContent: "center" }}><SignOutButton /></div>

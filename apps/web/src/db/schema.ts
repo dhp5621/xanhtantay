@@ -36,14 +36,25 @@ export const users = pgTable("users", {
   /** Customer's building and flat, prefilled at checkout. */
   cluster_id: text("cluster_id").references(() => clusters.id, { onDelete: "set null" }),
   address: text("address"),
-  /** How this person is addressed: "bác", "cô", "u", "anh", "chị"… with the name they go by ("Ba", "Lan"). */
+  /** "male" | "female" | null. Decides the form of address when none was chosen: farmers bác (male) / cô (female), customers anh / chị; "bạn" for anyone who did not say. */
+  gender: text("gender"),
+  /** A form of address chosen by hand ("bác", "u", "thầy"…); overrides the one that follows from gender. With the name they go by ("Ba", "Lan"). */
   salutation: text("salutation"),
   short_name: text("short_name"),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
-/** "bác Ba" when the form of address is on file, else the full name. Feed it to addressFarmer / addressPerson. */
-export const callName = sql<string>`case when ${users.salutation} is not null and ${users.short_name} is not null then ${users.salutation} || ' ' || ${users.short_name} else ${users.name} end`;
+/**
+ * "bác Ba": the chosen form of address, or the one that follows from gender and role, with the
+ * name the person goes by (their given name when none is on file). The full name when neither is known. The two parts are joined by a
+ * no-break space, which is how addressPerson tells a stored form of address (any word the person
+ * chose) from a full name. Feed it to addressFarmer / addressPerson.
+ */
+export const callName = sql<string>`case
+  when coalesce(${users.salutation}, case ${users.gender} when 'female' then (case when ${users.role} = 'farmer' then 'cô' else 'chị' end) when 'male' then (case when ${users.role} = 'farmer' then 'bác' else 'anh' end) end) is not null
+  then coalesce(${users.salutation}, case ${users.gender} when 'female' then (case when ${users.role} = 'farmer' then 'cô' else 'chị' end) when 'male' then (case when ${users.role} = 'farmer' then 'bác' else 'anh' end) end)
+    || chr(160) || coalesce(${users.short_name}, (regexp_match(trim(${users.name}), '([^ ]+)$'))[1])
+  else ${users.name} end`;
 
 export const farms = pgTable("farms", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),

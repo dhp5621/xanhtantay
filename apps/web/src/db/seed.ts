@@ -36,17 +36,17 @@ async function seed() {
 
   const up = { password_hash: "$2b$10$example" };
   await db.insert(s.users).values([
-    { id: "farmer-bac-ba", salutation: "bác", short_name: "Ba", name: "Bác Ba Nguyễn", phone: "0901234567", email: "bacba@xanhtantay.vn", role: "farmer", ...up },
-    { id: "farmer-co-tu", salutation: "cô", short_name: "Tư", name: "Cô Tư Lê", phone: "0912345678", email: "cotu@xanhtantay.vn", role: "farmer", ...up },
-    { id: "farmer-u-tham", salutation: "u", short_name: "Thắm", name: "U Thắm Trần", phone: "0923456789", email: "utham@xanhtantay.vn", role: "farmer", ...up },
-    { id: "farmer-bac-tu", salutation: "bác", short_name: "Tư", name: "Bác Tư Hoàng", phone: "0967890123", email: "bactu@xanhtantay.vn", role: "farmer", ...up },
-    { id: "customer-demo", salutation: "chị", short_name: "Lan", name: "Nguyễn Thị Lan", phone: "0934567890", email: "lan@gmail.com", role: "customer", cluster_id: "cl-times-city", address: "T5 · căn 1208", ...up },
-    { id: "customer-minh", salutation: "anh", short_name: "Minh", name: "Trần Văn Minh", phone: "0945678901", email: "minh@gmail.com", role: "customer", cluster_id: "cl-times-city", address: "T8 · căn 0915", ...up },
-    { id: "customer-hoa", salutation: "chị", short_name: "Hoa", name: "Lê Thị Hoa", phone: "0956789012", email: "hoa@gmail.com", role: "customer", cluster_id: "cl-royal-city", address: "R2 · căn 2104", ...up },
-    { id: "customer-quan", salutation: "anh", short_name: "Quân", name: "Phạm Anh Quân", phone: "0978901234", email: "quan@gmail.com", role: "customer", cluster_id: "cl-smart-city", address: "S2.05 · căn 1611", ...up },
-    { id: "customer-mai", salutation: "chị", short_name: "Mai", name: "Đỗ Thanh Mai", phone: "0989012345", email: "mai@gmail.com", role: "customer", cluster_id: "cl-times-city", address: "T2 · căn 0707", ...up },
-    { id: "customer-son", salutation: "anh", short_name: "Sơn", name: "Vũ Hồng Sơn", phone: "0990123456", email: "son@gmail.com", role: "customer", cluster_id: "cl-goldmark", address: "Ruby 2 · căn 1803", ...up },
-  ]).onConflictDoUpdate({ target: s.users.id, set: { cluster_id: sql`excluded.cluster_id`, address: sql`excluded.address`, name: sql`excluded.name`, phone: sql`excluded.phone`, salutation: sql`excluded.salutation`, short_name: sql`excluded.short_name` } });
+    { id: "farmer-bac-ba", gender: "male", salutation: null, short_name: "Ba", name: "Bác Ba Nguyễn", phone: "0901234567", email: "bacba@xanhtantay.vn", role: "farmer", ...up },
+    { id: "farmer-co-tu", gender: "female", salutation: null, short_name: "Tư", name: "Cô Tư Lê", phone: "0912345678", email: "cotu@xanhtantay.vn", role: "farmer", ...up },
+    { id: "farmer-u-tham", gender: "female", salutation: "u", short_name: "Thắm", name: "U Thắm Trần", phone: "0923456789", email: "utham@xanhtantay.vn", role: "farmer", ...up },
+    { id: "farmer-bac-tu", gender: "male", salutation: null, short_name: "Tư", name: "Bác Tư Hoàng", phone: "0967890123", email: "bactu@xanhtantay.vn", role: "farmer", ...up },
+    { id: "customer-demo", gender: "female", salutation: null, short_name: "Lan", name: "Nguyễn Thị Lan", phone: "0934567890", email: "lan@gmail.com", role: "customer", cluster_id: "cl-times-city", address: "T5 · căn 1208", ...up },
+    { id: "customer-minh", gender: "male", salutation: null, short_name: "Minh", name: "Trần Văn Minh", phone: "0945678901", email: "minh@gmail.com", role: "customer", cluster_id: "cl-times-city", address: "T8 · căn 0915", ...up },
+    { id: "customer-hoa", gender: "female", salutation: null, short_name: "Hoa", name: "Lê Thị Hoa", phone: "0956789012", email: "hoa@gmail.com", role: "customer", cluster_id: "cl-royal-city", address: "R2 · căn 2104", ...up },
+    { id: "customer-quan", gender: "male", salutation: null, short_name: "Quân", name: "Phạm Anh Quân", phone: "0978901234", email: "quan@gmail.com", role: "customer", cluster_id: "cl-smart-city", address: "S2.05 · căn 1611", ...up },
+    { id: "customer-mai", gender: "female", salutation: null, short_name: "Mai", name: "Đỗ Thanh Mai", phone: "0989012345", email: "mai@gmail.com", role: "customer", cluster_id: "cl-times-city", address: "T2 · căn 0707", ...up },
+    { id: "customer-son", gender: "male", salutation: null, short_name: "Sơn", name: "Vũ Hồng Sơn", phone: "0990123456", email: "son@gmail.com", role: "customer", cluster_id: "cl-goldmark", address: "Ruby 2 · căn 1803", ...up },
+  ]).onConflictDoUpdate({ target: s.users.id, set: { cluster_id: sql`excluded.cluster_id`, address: sql`excluded.address`, name: sql`excluded.name`, phone: sql`excluded.phone`, gender: sql`excluded.gender`, salutation: sql`excluded.salutation`, short_name: sql`excluded.short_name` } });
 
   await db.insert(s.farms).values([
     { id: "farm-bac-ba", owner_id: "farmer-bac-ba", name: "Vườn nhà bác Ba", slug: "vuon-bac-ba", location: "Ba Bể, Bắc Kạn", province: "Bắc Kạn", cover_url: U("photo-1625246333195-78d9c38ad449"), description: "Nương rau trên triền đồi ven hồ Ba Bể. Bác Ba trồng củ quả theo lối cũ của người Tày: ủ phân chuồng, tưới nước suối, không thuốc trừ sâu." },

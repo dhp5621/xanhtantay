@@ -5,7 +5,7 @@ import { addressPerson } from "./commerce";
  * addressed in the database ("bác Ba", "chị Lan").
  */
 type Who = { name: string; role?: "farmer" | "customer" | null };
-const to = (w: Who) => addressPerson(w.name, w.role === "farmer" ? "bác" : "bạn");
+const to = (w: Who) => addressPerson(w.name);
 
 export const ANSWER_LABELS = { confirm: "Đồng ý", decline: "Không đồng ý" };
 
@@ -15,7 +15,7 @@ export function commandNotice(message: string) {
 
 export function orderNotice(w: Who, status: "placed" | "harvesting" | "loaded" | "delivered", farmer?: string | null) {
   const { call, pronoun } = to(w);
-  const by = farmer ? addressPerson(farmer, "bác").call.replace(/^./, (c) => c.toLowerCase()) : "bác nông dân";
+  const by = farmer ? addressPerson(farmer).call.replace(/^./, (c) => c.toLowerCase()) : "bác nông dân";
   const body = {
     placed: `${call} ơi, đơn của ${pronoun} đã vào sổ rồi ạ. 18h00 chốt sổ, mai rau sẽ có tại sảnh. Cảm ơn ${pronoun} đã đặt rau!`,
     harvesting: `${call} ơi, 4h00 sáng nay rau của ${pronoun} đang được ${by} thu hoạch ạ.`,

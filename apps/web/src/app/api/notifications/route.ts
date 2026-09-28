@@ -41,7 +41,7 @@ export async function GET(req: Request) {
       .orderBy(desc(harvest_commands.created_at))
       .limit(5);
     for (const { r } of await recentDecisions(user.id)) {
-      out.push({ id: `req-${r.id}-${r.status}`, ...decisionNotice({ name: me?.name ?? "bác", role: "farmer" }, r.kind, r.status === "approved", r.note), url: r.kind === "farm" ? "/farmer/vuon" : "/farmer/nang-suat" });
+      out.push({ id: `req-${r.id}-${r.status}`, ...decisionNotice({ name: me?.name ?? "bạn", role: "farmer" }, r.kind, r.status === "approved", r.note), url: r.kind === "farm" ? "/farmer/vuon" : "/farmer/nang-suat" });
     }
     for (const { c } of rows) out.push({ id: `cmd-${c.id}`, title: "Lệnh thu hoạch mới", body: c.message, url: "/farmer", category: COMMAND_CATEGORY, data: { commandId: c.id } });
   } else {

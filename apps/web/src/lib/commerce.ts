@@ -54,6 +54,9 @@ export function shipFeeFor(type: "single" | "subscription" | "group") {
   return type === "subscription" ? 0 : SHIP_FEE;
 }
 
+/** Follows from gender by default (farmers: bác / cô, customers: anh / chị, "bạn" when not given). These are offered when choosing by hand; anything else is typed. */
+export const FARMER_SALUTATIONS = ["bác", "cô", "chú"];
+export const CUSTOMER_SALUTATIONS = ["anh", "chị", "bạn"];
 /** Forms of address the platform understands at the start of a name. */
 export const SALUTATIONS = ["bác", "cô", "chú", "u", "anh", "chị", "ông", "bà", "dì", "cậu", "mế", "thím", "mợ", "bá", "cụ", "em", "bạn"];
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -61,18 +64,21 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 /**
  * How to address someone, from the form of address on file ("bác Ba", see `callName`) or, failing
  * that, from their full name. `fallback` is used when the name carries no form of address:
- * farmers are "bác", customers "bạn".
+ * "bạn", for farmers and customers alike.
  *   "bác Ba" / "Bác Ba Nguyễn" → { call: "Bác Ba", pronoun: "bác" }
  *   "Nguyễn Thị Lan" (customer) → { call: "Bạn Lan", pronoun: "bạn" }
  */
 export function addressPerson(name: string, fallback = "bạn") {
+  // From the database: "cô<nbsp>Tư". Whatever form of address the person chose is used as is.
+  const [chosen, given] = name.split("\u00A0");
+  if (given?.trim() && chosen.trim()) return { call: `${cap(chosen.trim().toLowerCase())} ${given.trim()}`, pronoun: chosen.trim().toLowerCase() };
   const parts = name.trim().split(/\s+/).filter(Boolean);
   const title = (parts[0] ?? "").toLowerCase();
   if (SALUTATIONS.includes(title) && parts[1]) return { call: `${cap(title)} ${parts[1]}`, pronoun: title };
   // Vietnamese given names come last.
   return { call: `${cap(fallback)} ${parts[parts.length - 1] ?? ""}`.trim(), pronoun: fallback };
 }
-export const addressFarmer = (name: string) => addressPerson(name, "bác");
+export const addressFarmer = (name: string) => addressPerson(name);
 
 /** "15 kg cà rốt và 20 kg bắp cải" */
 export function joinItems(items: { name: string; kg: number }[]) {

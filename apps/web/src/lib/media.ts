@@ -178,5 +178,5 @@ export async function makePhotoDataUrl(file: File, maxChars = 150_000): Promise<
     const url = await read(blob);
     if (url.length <= maxChars) return url;
   }
-  throw new Error("Ảnh quá lớn, bác chọn ảnh khác giúp ạ");
+  throw new Error("Ảnh quá lớn, xin chọn ảnh khác giúp ạ");
 }
