@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
-import { View, Text, StyleSheet, ScrollView, RefreshControl, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, StyleSheet, ScrollView, RefreshControl, Platform } from "react-native";
+import { KeyboardScroll } from "../../components/keyboard";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { apiFetch, ApiError } from "../../constants/api";
@@ -86,8 +87,8 @@ export default function OrderDetailScreen() {
   const menuTarget = mine && order.status !== "cancelled" && user?.role !== "farmer" ? { orderId: order.id } : undefined;
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.container}>
-      <ScrollView
+    <View style={styles.container}>
+      <KeyboardScroll
         style={styles.container}
         contentContainerStyle={{ padding: 16, paddingBottom: 32 + insets.bottom }}
         keyboardShouldPersistTaps="handled"
@@ -155,8 +156,8 @@ export default function OrderDetailScreen() {
             </AnimIn>
           ) : null}
         </TraceView>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardScroll>
+    </View>
   );
 }
 

@@ -1,12 +1,12 @@
 import { useCallback, useState } from "react";
 import { View, Text, StyleSheet, ScrollView, RefreshControl, Platform } from "react-native";
 import * as Haptics from "expo-haptics";
-import { useFocusEffect } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import type { HarvestCommand } from "@xanhtantay/types";
 import { apiFetch, ApiError } from "../../constants/api";
 import { colors, shape, type, elevation, useStyles, type Colors } from "../../constants/theme";
 import { formatClock, formatClockDay, formatDay, formatKg } from "../../constants/format";
-import type { FarmerCommands } from "../../constants/types";
+import type { FarmerCapacity, FarmerCommands } from "../../constants/types";
 import { useLiveRefresh } from "../../hooks/useLive";
 import { AnimIn, AnimInScale, PressableScale, Skeleton } from "../../components/motion";
 import { useDialog } from "../../components/Dialog";
@@ -24,8 +24,13 @@ export default function FarmerScreen() {
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [busy, setBusy] = useState<"confirm" | "decline" | null>(null);
+  const [capacity, setCapacity] = useState<FarmerCapacity | null>(null);
 
   const load = useCallback(async () => {
+    // Only feeds the subtitle of "Rau củ đăng ký"; the row works without it.
+    apiFetch("/farmer/capacity")
+      .then(setCapacity)
+      .catch(() => {});
     try {
       setData(await apiFetch("/farmer/commands"));
       setError(null);
@@ -64,6 +69,11 @@ export default function FarmerScreen() {
   const history = (data?.commands ?? []).filter((c) => c.id !== current?.id);
   const confirmed = current?.status === "confirmed";
   const declined = current?.status === "declined";
+  const supplied = capacity?.items.filter((i) => Number(i.daily_kg) > 0) ?? [];
+  const links = [
+    { href: "/farmer/nang-suat", icon: "scale", title: "Rau củ đăng ký", desc: capacity ? `${supplied.length} loại · ${formatKg(supplied.reduce((s, i) => s + Number(i.daily_kg), 0))} mỗi ngày` : "Mỗi ngày bác cắt được bao nhiêu ký" },
+    { href: "/farmer/vuon", icon: "potted_plant", title: "Thông tin vườn", desc: "Tên, địa chỉ, lời giới thiệu" },
+  ];
 
   return (
     <ScrollView
@@ -210,6 +220,24 @@ export default function FarmerScreen() {
         </AnimInScale>
       ) : null}
 
+      {data?.farm ? (
+        <View style={{ gap: 10 }}>
+          <Text style={styles.sectionTitle}>Vườn của bác</Text>
+          {links.map((l) => (
+            <PressableScale key={l.href} haptic scaleTo={0.98} style={styles.link} onPress={() => router.push(l.href as never)} accessibilityRole="button" accessibilityLabel={l.title}>
+              <View style={styles.linkIcon}>
+                <Icon name={l.icon} size={28} filled color={colors.onPrimaryContainer} />
+              </View>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={styles.linkTitle}>{l.title}</Text>
+                <Text style={styles.linkDesc}>{l.desc}</Text>
+              </View>
+              <Icon name="chevron_right" size={28} color={colors.onSurfaceVariant} />
+            </PressableScale>
+          ))}
+        </View>
+      ) : null}
+
       {history.length > 0 && (
         <View style={{ gap: 8 }}>
           <Text style={styles.sectionTitle}>Các lệnh trước</Text>
@@ -276,6 +304,11 @@ const makeStyles = (c: Colors) =>
     emptyIcon: { width: 84, height: 84, borderRadius: 42, backgroundColor: c.secondaryContainer, alignItems: "center", justifyContent: "center", marginBottom: 18 },
     emptyTitle: { color: c.onSurface, fontSize: 24, lineHeight: 32, fontWeight: "800", textAlign: "center", includeFontPadding: false },
     emptyBody: { ...type.bodyLarge, color: c.onSurfaceVariant, fontSize: 19, lineHeight: 28, textAlign: "center", marginTop: 8 },
+
+    link: { flexDirection: "row", alignItems: "center", gap: 14, backgroundColor: c.surfaceContainerLow, borderRadius: shape.xl, paddingVertical: 16, paddingHorizontal: 16, minHeight: 84 },
+    linkIcon: { width: 52, height: 52, borderRadius: shape.lg, backgroundColor: c.primaryContainer, alignItems: "center", justifyContent: "center" },
+    linkTitle: { color: c.onSurface, fontSize: 21, lineHeight: 29, fontWeight: "700", includeFontPadding: false },
+    linkDesc: { ...type.bodyLarge, color: c.onSurfaceVariant, fontSize: 16, lineHeight: 23 },
 
     historyRow: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: c.surfaceContainerLowest, borderRadius: shape.lg, padding: 16, borderWidth: 1, borderColor: c.outlineVariant },
     historyDate: { ...type.titleMedium, color: c.onSurface, fontSize: 17 },

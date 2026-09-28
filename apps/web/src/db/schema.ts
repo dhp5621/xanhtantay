@@ -218,6 +218,9 @@ export const broadcasts = pgTable("broadcasts", {
   url: text("url"),
   /** "mobile" | "web" | "all" */
   target: text("target").notNull().default("all"),
+  /** Action buttons, as in PushMessage ("harvest_command" = Có / Không). */
+  category: text("category"),
+  data: jsonb("data").$type<Record<string, string>>(),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 export interface WebPushSubscription { endpoint: string; expirationTime?: number | null; keys: { p256dh: string; auth: string } }

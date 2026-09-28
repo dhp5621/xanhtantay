@@ -3,9 +3,10 @@
 import { useState } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { WebPushToggle } from "@/components/WebPushToggle";
+import { PUSH_TEMPLATES } from "@/lib/push-templates";
 
 type Target = "mobile" | "web" | "all";
-interface Result { mobile: { sent: number; failed: number }; web: { sent: number; failed: number }; removed: number; webConfigured: boolean }
+interface Result { mobile: { sent: number; failed: number }; web: { sent: number; failed: number }; removed: number; webConfigured: boolean; sentTitle?: string }
 
 const TARGETS: { value: Target; label: string; icon: string }[] = [
   { value: "mobile", label: "Điện thoại", icon: "smartphone" },
@@ -23,6 +24,24 @@ export function AdminPush({ counts }: { counts: { mobile: number; web: number } 
   const [error, setError] = useState("");
 
   const reach = target === "mobile" ? counts.mobile : target === "web" ? counts.web : counts.mobile + counts.web;
+
+  const [testing, setTesting] = useState<string | null>(null);
+  /** One tap sends a ready-made message of that kind to the chosen devices. */
+  const test = async (key: string) => {
+    setTesting(key);
+    setError("");
+    setResult(null);
+    try {
+      const res = await fetch("/api/admin/push", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ template: key, target }) });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error ?? `Lỗi ${res.status}`);
+      setResult(json);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gửi thất bại");
+    } finally {
+      setTesting(null);
+    }
+  };
 
   const send = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,6 +76,17 @@ export function AdminPush({ counts }: { counts: { mobile: number; web: number } 
         <p className="body-sm text-on-surface-variant">
           Đang có {counts.mobile} điện thoại và {counts.web} trình duyệt đăng ký · lần này gửi tới {reach} thiết bị.
         </p>
+        <div>
+          <p className="m3-field-label" style={{ marginBottom: 8 }}>Gửi thử theo mẫu</p>
+          <div className="flex flex-wrap gap-2">
+            {PUSH_TEMPLATES.map((t) => (
+              <button key={t.key} type="button" className="m3-chip" title={t.hint} onClick={() => test(t.key)} disabled={!!testing || sending}>
+                {testing === t.key ? <span className="m3-loader sm" /> : <Icon name={t.icon} size={18} />} {t.label}
+              </button>
+            ))}
+          </div>
+          <p className="body-sm text-on-surface-variant" style={{ marginTop: 8 }}>Bấm một mẫu là gửi ngay tới nhóm thiết bị đã chọn ở trên, tiêu đề có chữ [Thử]. Mẫu "Lệnh thu hoạch" đặt lệnh mới nhất của nông hộ demo về "Chờ xác nhận" để thử lại hai nút Có / Không.</p>
+        </div>
         <div className="m3-field">
           <label className="m3-field-label" htmlFor="push-title">Tiêu đề</label>
           <input id="push-title" className="m3-input" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} placeholder="Rau mới về hôm nay!" required />
@@ -72,7 +102,7 @@ export function AdminPush({ counts }: { counts: { mobile: number; web: number } 
           {error && <span className="body-sm" style={{ color: "var(--md-error)" }}>{error}</span>}
           {result && (
             <span className="body-sm text-on-surface-variant">
-              <Icon name="task_alt" size={16} /> Điện thoại: {result.mobile.sent} đã gửi{result.mobile.failed ? `, ${result.mobile.failed} lỗi` : ""} · Trình duyệt: {result.webConfigured ? `${result.web.sent} đã gửi${result.web.failed ? `, ${result.web.failed} lỗi` : ""}` : "chưa cấu hình VAPID"} · Máy chưa đăng ký đẩy sẽ nhận trong 15 giây khi đang mở app hoặc trang
+              <Icon name="task_alt" size={16} /> {result.sentTitle ? `"${result.sentTitle}" · ` : ""}Điện thoại: {result.mobile.sent} đã gửi{result.mobile.failed ? `, ${result.mobile.failed} lỗi` : ""} · Trình duyệt: {result.webConfigured ? `${result.web.sent} đã gửi${result.web.failed ? `, ${result.web.failed} lỗi` : ""}` : "chưa cấu hình VAPID"} · Máy chưa đăng ký đẩy sẽ nhận trong 15 giây khi đang mở app hoặc trang
               {result.removed ? ` · đã xoá ${result.removed} thiết bị hết hạn` : ""}
             </span>
           )}

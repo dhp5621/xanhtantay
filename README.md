@@ -85,7 +85,7 @@ Trang đăng nhập có nút một chạm cho cả hai. Quản trị: `/admin/lo
 - **Sau khi đặt**: lời nhắn quan tâm từ quê và thông điệp tác động (tiền về tay nông hộ, số kg, số bữa).
 - **Hành trình có cảm xúc** (`/don-hang`): 18h00 đơn vào sổ → 4h00 rau đang được bác nông dân thu hoạch → 6h00 hàng lên xe lạnh về phố → 16h00 rau quê đã có tại sảnh chung cư nhà bạn.
 - **Gói định kỳ** (`/dinh-ky`): đổi số hộp, tần suất, tạm dừng / bật lại.
-- **Gom đơn chung** (`/gom-don`): tạo nhóm theo cụm chung cư, link mời, tham gia / rời nhóm trước giờ chốt.
+- **Gom đơn chung** (`/gom-don`): tạo nhóm theo cụm chung cư, chọn ngày giao trong 2 tuần tới (giờ giao luôn 16h00), link mời, tham gia / rời nhóm trước giờ chốt.
 - **Tra cứu QR** (`/tra-cuu/[đơn]`): trang công khai sau mã QR trên bao bì: giờ thu hoạch, nông hộ, thành phần hộp; không lộ danh tính người mua.
 - **Tài khoản**: avatar, họ tên, cụm chung cư và số căn mặc định.
 
@@ -93,6 +93,8 @@ Trang đăng nhập có nút một chạm cho cả hai. Quản trị: `/admin/lo
 - Một màn hình duy nhất, chữ to: *"Bác Ba ơi, 4h sáng mai bác cắt đúng 15 kg cà rốt và 20 kg bắp cải nhé. Xe tải lạnh sẽ qua lấy lúc 6h."*
 - Trả lời bằng **Có** (Đã hiểu & Xác nhận) hoặc **Không** (không cắt được), bấm được ngay trên thông báo (Android, iOS, trình duyệt) mà không cần mở app. Bộ não thấy hộ nào báo không cắt được.
 - Bên dưới là các lần thu hoạch trước.
+- **Rau củ đăng ký** (`/farmer/nang-suat`): nông dân tự đổi mỗi ngày cắt được bao nhiêu ký mỗi loại, thêm hoặc ngừng cung cấp; áp dụng từ lần chốt sổ kế tiếp.
+- **Thông tin vườn** (`/farmer/vuon`): đổi tên, địa chỉ, lời giới thiệu vườn.
 
 ### Bộ não trung tâm (`/admin`)
 - Gom đơn đặt trước, gói định kỳ tới hạn và nhóm gom đơn của chuyến sắp chốt; so nhu cầu với năng suất từng loại rau.
@@ -100,7 +102,7 @@ Trang đăng nhập có nút một chạm cho cả hai. Quản trị: `/admin/lo
 - **Chốt sổ & gửi lệnh**: cộng tổng nhu cầu, chia cho từng nông hộ theo tỷ lệ năng suất đăng ký (bước 0,5 kg, không vượt năng suất), ghi lệnh và gửi thông báo. Tự chạy lúc 18h00 qua cron, quản trị có thể bấm tay.
 - Theo dõi chuyến: nông hộ nào đã xác nhận, chuyển trạng thái thu hoạch → lên xe lạnh → tới sảnh (khách nhận thông báo).
 - Quản lý mọi bảng: đơn, hộp rau, thành phần hộp, loại rau, năng suất, nông hộ, lệnh thu hoạch, gói định kỳ, gom đơn, cụm chung cư, người dùng. Xem được trên điện thoại.
-- Gửi thông báo đẩy tới điện thoại và trình duyệt.
+- Gửi thông báo đẩy tới điện thoại và trình duyệt, kèm **mẫu gửi thử** cho từng loại thông báo (lệnh thu hoạch có nút Có / Không, đơn mới, các bước hành trình, nhắc chốt sổ, nhóm đủ nhà, thực đơn).
 
 ### Giao diện & nền tảng
 - Material 3 Expressive: token màu/hình/chuyển động, sheet/dialog qua portal, thanh điều hướng mờ khi cuộn, loader nhiều hình, hỗ trợ giảm chuyển động.

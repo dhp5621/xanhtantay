@@ -92,6 +92,8 @@ function Navigator() {
         <Stack.Screen name="don-hang/[id]" options={{ headerShown: true, title: "Chi tiết đơn hàng" }} />
         <Stack.Screen name="farms/index" options={{ headerShown: true, title: "Vườn rau" }} />
         <Stack.Screen name="farms/[id]" options={{ headerShown: true, title: "Vườn rau" }} />
+        <Stack.Screen name="farmer/nang-suat" options={{ headerShown: true, title: "Rau củ đăng ký" }} />
+        <Stack.Screen name="farmer/vuon" options={{ headerShown: true, title: "Thông tin vườn" }} />
         <Stack.Screen name="dinh-ky/index" options={{ headerShown: true, title: "Gói định kỳ" }} />
         <Stack.Screen name="tra-cuu/index" options={{ headerShown: true, title: "Truy xuất hộp rau" }} />
         <Stack.Screen name="tra-cuu/[id]" options={{ headerShown: true, title: "Truy xuất hộp rau" }} />

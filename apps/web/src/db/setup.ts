@@ -49,11 +49,13 @@ const CREATE = [
   `CREATE INDEX IF NOT EXISTS orders_delivery_idx ON orders(delivery_date, status)`,
   `CREATE INDEX IF NOT EXISTS orders_user_idx ON orders(user_id, created_at DESC)`,
   `CREATE TABLE IF NOT EXISTS push_devices (id text PRIMARY KEY, platform text NOT NULL, token text NOT NULL UNIQUE, subscription jsonb, user_id text REFERENCES users(id) ON DELETE SET NULL, created_at timestamp NOT NULL DEFAULT now(), updated_at timestamp NOT NULL DEFAULT now())`,
-  `CREATE TABLE IF NOT EXISTS broadcasts (id text PRIMARY KEY, title text NOT NULL, body text NOT NULL, url text, target text NOT NULL DEFAULT 'all', created_at timestamp NOT NULL DEFAULT now())`,
+  `CREATE TABLE IF NOT EXISTS broadcasts (id text PRIMARY KEY, title text NOT NULL, body text NOT NULL, url text, target text NOT NULL DEFAULT 'all', category text, data jsonb, created_at timestamp NOT NULL DEFAULT now())`,
   // Columns added after the first release: existing databases are upgraded in place.
   `ALTER TYPE command_status ADD VALUE IF NOT EXISTS 'declined'`,
   `ALTER TABLE harvest_commands ADD COLUMN IF NOT EXISTS declined_at timestamp`,
   `ALTER TABLE orders ADD COLUMN IF NOT EXISTS meal_plan jsonb`,
+  `ALTER TABLE broadcasts ADD COLUMN IF NOT EXISTS category text`,
+  `ALTER TABLE broadcasts ADD COLUMN IF NOT EXISTS data jsonb`,
   `ALTER TABLE boxes ADD COLUMN IF NOT EXISTS mix text NOT NULL DEFAULT 'me-gui'`,
   `ALTER TABLE boxes ADD COLUMN IF NOT EXISTS mix_name text NOT NULL DEFAULT 'Thùng rau mẹ gửi'`,
 ];

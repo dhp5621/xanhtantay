@@ -20,7 +20,7 @@ export function CreateGroupDialog({ boxes, clusters, myClusterId, earliest }: { 
   const { show } = useSnackbar();
   const [form, setForm] = useState({ box_id: boxes[1]?.id ?? boxes[0]?.id ?? "", cluster_id: myClusterId ?? clusters[0]?.id ?? "", title: "", min_members: 3, delivery_date: earliest, quantity: 1 });
   const close = () => { setClosing(true); setTimeout(() => { setClosing(false); setOpen(false); }, 250); };
-  const dates = Array.from({ length: 7 }, (_, i) => addDays(earliest, i));
+  const dates = Array.from({ length: 15 }, (_, i) => addDays(earliest, i));
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,6 +63,7 @@ export function CreateGroupDialog({ boxes, clusters, myClusterId, earliest }: { 
                 <div className="m3-field"><label className="m3-field-label" htmlFor="cg-qty">Bạn đặt</label><input id="cg-qty" type="number" min={1} max={20} className="m3-input" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: Number(e.target.value) })} required /></div>
               </div>
             </div>
+            <p className="body-sm text-on-surface-variant" style={{ marginTop: 10 }}>Chọn được ngày giao trong 2 tuần tới. Giờ giao luôn là 16h00 tại sảnh, chốt sổ 18h00 hôm trước.</p>
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 22 }}>
               <button type="button" className="m3-btn m3-btn-text" onClick={close}>Huỷ</button>
               <button type="submit" className="m3-btn m3-btn-filled" disabled={busy}>{busy ? <span className="m3-loader sm on-primary" /> : <Icon name="rocket_launch" />}<span>Tạo nhóm</span></button>

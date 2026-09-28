@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Platform, ScrollView } from "react-native";
+import { KeyboardScroll } from "../../components/keyboard";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSession } from "../../hooks/useSession";
 import { colors, shape, type, useStyles } from "../../constants/theme";
@@ -43,8 +44,8 @@ export default function DangNhapScreen() {
 
   return (
     <Screen edges={["top", "bottom"]}>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+      <View style={{ flex: 1 }}>
+        <KeyboardScroll contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
           <AnimInScale style={styles.hero}>
             <HeroBlob size={220} right={-70} top={-90} />
             <HeroBlob size={140} right={120} top={90} delay={1500} color="rgba(255,255,255,.18)" />
@@ -121,8 +122,8 @@ export default function DangNhapScreen() {
           <TouchableOpacity onPress={() => router.replace("/tabs")} style={{ alignSelf: "center", padding: 12 }}>
             <Text style={styles.skip}>Về trang chủ →</Text>
           </TouchableOpacity>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        </KeyboardScroll>
+      </View>
     </Screen>
   );
 }

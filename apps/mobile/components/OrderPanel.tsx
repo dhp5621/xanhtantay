@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { View, Text, TextInput, StyleSheet } from "react-native";
+import { DeliveryDatePicker } from "./DeliveryDatePicker";
 import { router } from "expo-router";
 import type { Box, Cluster, GroupOrder, SubscriptionFrequency } from "@xanhtantay/types";
 import { apiFetch, ApiError } from "../constants/api";
@@ -35,6 +36,9 @@ export function OrderPanel({ box, deliveryDate, shipFee = SHIP_FEE, initialMode 
   const [groups, setGroups] = useState<GroupOrder[] | null>(null);
   const [groupTitle, setGroupTitle] = useState("");
   const [minMembers, setMinMembers] = useState<number>(GROUP_MIN_MEMBERS.default);
+  // A new group may be delivered on a later day than the earliest open one.
+  const [groupDate, setGroupDate] = useState<string | null>(null);
+  const groupDay = deliveryDate ? (groupDate && groupDate >= deliveryDate ? groupDate : deliveryDate) : null;
   const [busy, setBusy] = useState<string | null>(null);
 
   // Cluster list + the address saved on the account as the default delivery point.
@@ -144,7 +148,7 @@ export function OrderPanel({ box, deliveryDate, shipFee = SHIP_FEE, initialMode 
     try {
       const created: GroupOrder = await apiFetch("/groups", {
         method: "POST",
-        body: JSON.stringify({ box_id: box.id, cluster_id: clusterId, title, min_members: minMembers, delivery_date: deliveryDate ?? undefined, quantity, address: address.trim() || undefined }),
+        body: JSON.stringify({ box_id: box.id, cluster_id: clusterId, title, min_members: minMembers, delivery_date: groupDay ?? undefined, quantity, address: address.trim() || undefined }),
       });
       setGroupTitle("");
       router.push(`/tabs/gom-don/${created.id}`);
@@ -263,6 +267,12 @@ export function OrderPanel({ box, deliveryDate, shipFee = SHIP_FEE, initialMode 
             <TextInput style={styles.input} placeholder={`Gom ${box.name}${cluster ? ` · ${cluster.name}` : ""}`} placeholderTextColor={colors.onSurfaceVariant} value={groupTitle} onChangeText={setGroupTitle} maxLength={80} />
             <Text style={styles.label}>Số nhà tối thiểu để miễn phí giao</Text>
             <QuantityStepper value={minMembers} onChange={setMinMembers} min={GROUP_MIN_MEMBERS.min} max={GROUP_MIN_MEMBERS.max} unit="nhà" />
+            {deliveryDate && groupDay ? (
+              <>
+                <Text style={styles.label}>Ngày giao</Text>
+                <DeliveryDatePicker earliest={deliveryDate} value={groupDay} onChange={setGroupDate} />
+              </>
+            ) : null}
             <Button label="Tạo nhóm và tham gia" icon="rocket_launch" variant="tonal" onPress={createGroup} loading={busy === "create"} disabled={!!busy && busy !== "create"} style={styles.submit} />
           </View>
         </AnimIn>

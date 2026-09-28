@@ -43,8 +43,10 @@ export default async function TaiKhoanPage() {
       { icon: "pending_actions", label: "Chờ xác nhận", value: all.c - done.c, href: "/farmer" },
     ];
     menuItems = [
-      { href: "/farmer", icon: "agriculture", label: "Lệnh thu hoạch", desc: "Tin nhắn hôm nay và nút xác nhận" },
-      ...(myFarm ? [{ href: `/farms/${myFarm.slug}`, icon: "storefront", label: "Trang vườn của tôi", desc: "Khách hàng thấy vườn như thế nào" }] : []),
+      { href: "/farmer", icon: "agriculture", label: "Lệnh thu hoạch", desc: "Tin nhắn hôm nay, trả lời Có hoặc Không" },
+      { href: "/farmer/nang-suat", icon: "scale", label: "Rau củ đăng ký", desc: "Mỗi ngày cắt được bao nhiêu ký mỗi loại" },
+      { href: "/farmer/vuon", icon: "storefront", label: "Thông tin vườn", desc: "Tên, địa chỉ, lời giới thiệu" },
+      ...(myFarm ? [{ href: `/farms/${myFarm.slug}`, icon: "visibility", label: "Trang vườn của tôi", desc: "Khách hàng thấy vườn như thế nào" }] : []),
     ];
   } else {
     const [[o], [s], [g]] = await Promise.all([

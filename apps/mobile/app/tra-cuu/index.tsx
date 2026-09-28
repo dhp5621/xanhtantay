@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { View, Text, StyleSheet, TextInput, ScrollView, Modal, Platform, Linking } from "react-native";
+import { KeyboardScroll } from "../../components/keyboard";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -50,7 +51,7 @@ export default function TraCuuScreen() {
   }, [params.id]);
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: 16, paddingBottom: 32 + insets.bottom }} keyboardShouldPersistTaps="handled">
+    <KeyboardScroll style={styles.container} contentContainerStyle={{ padding: 16, paddingBottom: 32 + insets.bottom }} keyboardShouldPersistTaps="handled">
       <PageHeader icon="qr_code_2" eyebrow="Quét là biết" title="Truy xuất hộp rau" subtitle="Quét mã QR trên hộp, hoặc nhập mã đơn để xem rau từ vườn nào, cắt lúc mấy giờ." />
 
       <AnimIn>
@@ -102,7 +103,7 @@ export default function TraCuuScreen() {
       {result && (
         <View style={{ marginTop: 24 }}>
           {/* Visitors cannot open farm profiles, so farms are only links for signed-in customers. */}
-          <TraceView trace={result} linkFarms={user?.role === "customer"}>
+          <TraceView trace={result} linkFarms={!!user}>
             <AnimIn>
               <View style={styles.qrCard}>
                 <QrImage orderId={result.id} size={150} />
@@ -123,7 +124,7 @@ export default function TraCuuScreen() {
           lookup(value);
         }}
       />
-    </ScrollView>
+    </KeyboardScroll>
   );
 }
 

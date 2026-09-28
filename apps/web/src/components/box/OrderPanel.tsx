@@ -9,7 +9,7 @@ import { Portal } from "@/components/ui/Portal";
 import { useSnackbar } from "@/components/ui/Snackbar";
 import { CutoffBanner } from "@/components/ui/CutoffBanner";
 import { formatVND } from "@/lib/format";
-import { FREQUENCY_LABELS, SHIP_FEE, formatKg, formatYMD } from "@/lib/commerce";
+import { FREQUENCY_LABELS, SHIP_FEE, formatKg, formatYMD, addDays } from "@/lib/commerce";
 
 interface Cluster { id: string; name: string; address: string; district: string }
 interface Group { id: string; title: string; cluster_id: string; min_members: number; current_members: number; delivery_date: string }
@@ -40,6 +40,8 @@ export function OrderPanel({ box, clusters, groups, me, deliveryDate, cutoffAt }
   const [frequency, setFrequency] = useState<"weekly" | "biweekly" | "monthly">("weekly");
   const [groupId, setGroupId] = useState<string>("new");
   const [groupTitle, setGroupTitle] = useState("");
+  // A new group may be delivered later than the earliest open day; the hour never changes.
+  const [groupDate, setGroupDate] = useState(deliveryDate);
   const [minMembers, setMinMembers] = useState(3);
   const [busy, setBusy] = useState(false);
   const [placed, setPlaced] = useState<Placed | null>(null);
@@ -74,7 +76,7 @@ export function OrderPanel({ box, clusters, groups, me, deliveryDate, cutoffAt }
         show("Bạn đã vào nhóm. Rủ thêm hàng xóm để cả nhóm miễn ship!", { kind: "success" });
         router.push(`/gom-don/${group.id}`);
       } else {
-        const g = await post("/api/groups", { box_id: box.id, cluster_id: clusterId, title: groupTitle.trim() || `Gom hộp rau ${clusterName}`, min_members: minMembers, quantity: qty, address });
+        const g = await post("/api/groups", { box_id: box.id, cluster_id: clusterId, title: groupTitle.trim() || `Gom hộp rau ${clusterName}`, min_members: minMembers, delivery_date: groupDate, quantity: qty, address });
         show("Đã tạo nhóm. Chia sẻ link cho hàng xóm nhé!", { kind: "success" });
         router.push(`/gom-don/${g.id}`);
       }
@@ -134,6 +136,14 @@ export function OrderPanel({ box, clusters, groups, me, deliveryDate, cutoffAt }
               ))}
               <button type="button" onClick={() => setGroupId("new")} className={`m3-chip ${groupId === "new" ? "selected" : ""}`} style={{ height: 40 }}><Icon name="add" size={18} /> Tạo nhóm mới cho {clusterName || "toà nhà"}</button>
             </div>
+            {groupId === "new" && (
+              <div className="m3-field" style={{ marginTop: 6 }}>
+                <label className="m3-field-label" htmlFor="op-date">Ngày giao (luôn 16h00 tại sảnh)</label>
+                <select id="op-date" className="m3-select" value={groupDate} onChange={(e) => setGroupDate(e.target.value)}>
+                  {Array.from({ length: 15 }, (_, i) => addDays(deliveryDate, i)).map((d) => <option key={d} value={d}>{formatYMD(d)}</option>)}
+                </select>
+              </div>
+            )}
             {groupId === "new" && (
               <div className="grid gap-2" style={{ gridTemplateColumns: "1fr 110px", marginTop: 6 }}>
                 <input className="m3-input" placeholder={`Gom hộp rau ${clusterName}`} value={groupTitle} onChange={(e) => setGroupTitle(e.target.value)} maxLength={80} aria-label="Tên nhóm" />

@@ -1,5 +1,7 @@
 import { useCallback, useState } from "react";
-import { View, Text, FlatList, StyleSheet, RefreshControl, Modal, TextInput, ScrollView, KeyboardAvoidingView, Platform, Pressable } from "react-native";
+import { View, Text, FlatList, StyleSheet, RefreshControl, Modal, TextInput, ScrollView, Platform, Pressable } from "react-native";
+import { KeyboardPad, KeyboardScroll } from "../../../components/keyboard";
+import { DeliveryDatePicker } from "../../../components/DeliveryDatePicker";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useFocusEffect } from "expo-router";
 import type { Cluster, GroupOrder } from "@xanhtantay/types";
@@ -32,7 +34,7 @@ export default function GomDonScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [form, setForm] = useState<{ box_id: string; cluster_id: string | null; title: string; min_members: number; quantity: number; address: string }>({ box_id: "", cluster_id: null, title: "", min_members: GROUP_MIN_MEMBERS.default, quantity: 1, address: "" });
+  const [form, setForm] = useState<{ box_id: string; cluster_id: string | null; title: string; min_members: number; quantity: number; address: string; delivery_date?: string }>({ box_id: "", cluster_id: null, title: "", min_members: GROUP_MIN_MEMBERS.default, quantity: 1, address: "" });
 
   const load = useCallback(async () => {
     try {
@@ -70,6 +72,8 @@ export default function GomDonScreen() {
   const boxes = (catalog?.boxes ?? []).filter((b) => b.active !== false);
   const box = boxes.find((b) => b.id === form.box_id) ?? null;
   const cluster = clusters.find((c) => c.id === form.cluster_id) ?? null;
+  // Earliest open day by default; a day that has since closed falls back to it.
+  const deliveryDate = catalog ? (form.delivery_date && form.delivery_date >= catalog.delivery_date ? form.delivery_date : catalog.delivery_date) : null;
   const defaultTitle = box ? `Gom ${box.name}${cluster ? ` · ${cluster.name}` : ""}` : "";
 
   const submit = async () => {
@@ -86,7 +90,7 @@ export default function GomDonScreen() {
           cluster_id: form.cluster_id,
           title: form.title.trim() || defaultTitle,
           min_members: form.min_members,
-          delivery_date: catalog?.delivery_date,
+          delivery_date: deliveryDate ?? undefined,
           quantity: form.quantity,
           address: form.address.trim() || undefined,
         }),
@@ -182,10 +186,10 @@ export default function GomDonScreen() {
       )}
 
       <Modal visible={open} transparent animationType="slide" statusBarTranslucent onRequestClose={() => setOpen(false)}>
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.scrim}>
+        <KeyboardPad style={styles.scrim}>
           <Pressable style={StyleSheet.absoluteFill} onPress={() => setOpen(false)} />
           <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 16) + 14 }]}>
-            <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+            <KeyboardScroll pad={false} containerStyle={{ flex: 0, flexShrink: 1 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
                 <View style={styles.dialogIcon}>
                   <Icon name="groups" size={22} color={colors.onPrimaryContainer} />
@@ -224,20 +228,24 @@ export default function GomDonScreen() {
               <Text style={styles.label}>Toà, tầng, số căn hộ của bạn</Text>
               <TextInput style={styles.input} placeholder="Ví dụ: Toà S2, căn 1508" placeholderTextColor={colors.onSurfaceVariant} value={form.address} onChangeText={(v) => setForm({ ...form, address: v })} maxLength={160} />
 
-              {catalog ? (
-                <View style={styles.dateRow}>
-                  <Icon name="event" size={16} color={colors.primary} />
-                  <Text style={styles.dateText}>Giao {formatDay(catalog.delivery_date)}, 16h00 tại sảnh</Text>
-                </View>
+              {catalog && deliveryDate ? (
+                <>
+                  <Text style={styles.label}>Ngày giao</Text>
+                  <DeliveryDatePicker earliest={catalog.delivery_date} value={deliveryDate} onChange={(d) => setForm((x) => ({ ...x, delivery_date: d }))} />
+                  <View style={styles.dateRow}>
+                    <Icon name="event" size={16} color={colors.primary} />
+                    <Text style={styles.dateText}>Giao {formatDay(deliveryDate)}, 16h00 tại sảnh</Text>
+                  </View>
+                </>
               ) : null}
 
               <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 18, alignItems: "center" }}>
                 <Button label="Huỷ" variant="text" onPress={() => setOpen(false)} />
                 <Button label="Tạo nhóm" icon="rocket_launch" onPress={submit} loading={busy} disabled={!boxes.length} />
               </View>
-            </ScrollView>
+            </KeyboardScroll>
           </View>
-        </KeyboardAvoidingView>
+        </KeyboardPad>
       </Modal>
     </View>
   );

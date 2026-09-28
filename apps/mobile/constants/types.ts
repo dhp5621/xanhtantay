@@ -120,6 +120,20 @@ export interface FarmerCommands {
   commands: HarvestCommand[];
 }
 
+/** `GET /farmer/capacity`, `PUT /farmer/capacity`: every produce on the platform; `daily_kg` 0 = not supplied. */
+export interface FarmerCapacityItem {
+  produce_id: string;
+  name: string;
+  category: string;
+  image_url: string | null;
+  daily_kg: number;
+}
+export interface FarmerCapacity {
+  farm: { id: string; name: string; location: string; slug: string };
+  items: FarmerCapacityItem[];
+  total_kg: number;
+}
+
 /** Where a changed menu belongs: saved on an order, or only on screen for a box not bought yet. */
 export type MenuTarget = { orderId: string } | { box: string };
 

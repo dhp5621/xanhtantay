@@ -86,3 +86,16 @@ Emotional tracking copy (use `ORDER_TIMELINE`):
 - Response: `{ plan: BoxMealDay[], meal?: BoxMeal, customised: boolean, ai: boolean }`. Errors: `{ error }` with 400 / 401 / 404 / 503.
 - `BoxMeal.source?: string` names where an AI-found recipe came from; house dishes have none.
 - `GET /orders/{id}` → `box.meal_plan` is the order's own menu when customised, and `box.customised: boolean` says so.
+
+## Farmer: registered supply
+
+- `GET /farmer/capacity` → `{ farm: { id, name, location, slug }, items: [{ produce_id, name, category, image_url, daily_kg }], total_kg }`. `items` lists every produce on the platform; `daily_kg: 0` means the farm does not supply it.
+- `PUT /farmer/capacity` with `{ items: [{ produce_id, daily_kg }] }` (whole kilograms, 0 to 500; 0 removes it) → same shape as GET. Only the listed produce change. Applies from the next cut-off; commands already sent are not changed.
+
+## Groups: delivery day
+
+`POST /groups` accepts `delivery_date` (`YYYY-MM-DD`) from the earliest open day (`delivery_date` of `GET /boxes`) up to 14 days later. Only the day is chosen; delivery is always 16:00, cut-off 18:00 the day before.
+
+## Farmer: farm profile
+
+- `PATCH /farms/mine` with any of `{ name, location, province, description }` → the farm (same shape as `GET /farms/mine`). `name` max 80, `location` max 120 (e.g. "Ba Bể, Bắc Kạn"), `province` max 40, each at least 2 characters; `description` max 1200, empty clears it. The slug never changes. Errors: `{ error }` with 400 / 401 / 403 / 404.

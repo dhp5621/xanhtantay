@@ -25,7 +25,7 @@ export async function GET(req: Request) {
 
   // Admin broadcasts of the last day reach everyone, signed in or not.
   const sent = await db.select().from(broadcasts).where(and(gte(broadcasts.created_at, new Date(Date.now() - 864e5)), inArray(broadcasts.target, ["all", platform]))).orderBy(desc(broadcasts.created_at)).limit(10);
-  for (const b of sent) out.push({ id: `bc-${b.id}`, title: b.title, body: b.body, url: b.url ?? "/" });
+  for (const b of sent) out.push({ id: `bc-${b.id}`, title: b.title, body: b.body, url: b.url ?? "/", ...(b.category ? { category: b.category } : {}), ...(b.data ? { data: b.data } : {}) });
   if (!user) return NextResponse.json({ notifications: out }, { headers: { "Cache-Control": "no-store" } });
 
   if (user.role === "farmer") {

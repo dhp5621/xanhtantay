@@ -6,8 +6,12 @@ import { MAX_BOX_QUANTITY } from "../constants/commerce";
 import { PressableScale } from "./motion";
 import { Icon } from "./Icon";
 
-/** − number + ; the number can also be typed. Out-of-range input snaps back when the field loses focus. */
-export function QuantityStepper({ value, onChange, min = 1, max = MAX_BOX_QUANTITY, unit = "hộp" }: { value: number; onChange: (n: number) => void; min?: number; max?: number; unit?: string }) {
+/**
+ * − number + ; the number can also be typed. Out-of-range input snaps back when the field loses focus.
+ * `step` is what − and + move by (they land on multiples of it); typing still accepts any whole number.
+ * `large` is the size for the farmer screens.
+ */
+export function QuantityStepper({ value, onChange, min = 1, max = MAX_BOX_QUANTITY, unit = "hộp", step: stepBy = 1, large }: { value: number; onChange: (n: number) => void; min?: number; max?: number; unit?: string; step?: number; large?: boolean }) {
   const styles = useStyles(makeStyles);
   const [text, setText] = useState(String(value));
 
@@ -16,19 +20,20 @@ export function QuantityStepper({ value, onChange, min = 1, max = MAX_BOX_QUANTI
   }, [value]);
 
   const clamp = (n: number) => Math.min(max, Math.max(min, n));
-  const step = (delta: number) => {
+  const step = (dir: 1 | -1) => {
     if (Platform.OS !== "web") Haptics.selectionAsync().catch(() => {});
-    onChange(clamp(value + delta));
+    onChange(clamp(dir > 0 ? Math.floor(value / stepBy) * stepBy + stepBy : Math.ceil(value / stepBy) * stepBy - stepBy));
   };
+  const btn = [styles.btn, large && styles.btnLarge];
 
   return (
     <View style={styles.wrap}>
-      <PressableScale scaleTo={0.85} disabled={value <= min} style={styles.btn} onPress={() => step(-1)} accessibilityLabel="Giảm số lượng">
-        <Icon name="remove" size={20} color={colors.onSurface} />
+      <PressableScale scaleTo={0.85} disabled={value <= min} style={btn} onPress={() => step(-1)} accessibilityLabel="Giảm số lượng">
+        <Icon name="remove" size={large ? 28 : 20} color={colors.onSurface} />
       </PressableScale>
       <View style={styles.field}>
         <TextInput
-          style={styles.input}
+          style={[styles.input, large && styles.inputLarge]}
           value={text}
           keyboardType="number-pad"
           inputMode="numeric"
@@ -48,10 +53,10 @@ export function QuantityStepper({ value, onChange, min = 1, max = MAX_BOX_QUANTI
           }}
           accessibilityLabel="Số lượng"
         />
-        <Text style={styles.unit}>{unit}</Text>
+        <Text style={[styles.unit, large && styles.unitLarge]}>{unit}</Text>
       </View>
-      <PressableScale scaleTo={0.85} disabled={value >= max} style={[styles.btn, styles.btnFilled]} onPress={() => step(1)} accessibilityLabel="Tăng số lượng">
-        <Icon name="add" size={20} color={colors.onPrimary} />
+      <PressableScale scaleTo={0.85} disabled={value >= max} style={[btn, styles.btnFilled]} onPress={() => step(1)} accessibilityLabel="Tăng số lượng">
+        <Icon name="add" size={large ? 28 : 20} color={colors.onPrimary} />
       </PressableScale>
     </View>
   );
@@ -61,8 +66,11 @@ const makeStyles = (c: Colors) =>
   StyleSheet.create({
     wrap: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: c.primaryContainer, borderRadius: shape.full, padding: 4, alignSelf: "flex-start" },
     btn: { width: 40, height: 40, borderRadius: 20, backgroundColor: c.surfaceContainerLowest, alignItems: "center", justifyContent: "center" },
+    btnLarge: { width: 56, height: 56, borderRadius: 28 },
     btnFilled: { backgroundColor: c.primary },
     field: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 6 },
     input: { minWidth: 40, paddingVertical: 0, paddingHorizontal: 2, textAlign: "center", ...type.titleMedium, fontSize: 18, lineHeight: 24, color: c.onPrimaryContainer },
+    inputLarge: { minWidth: 64, fontSize: 26, lineHeight: 34, fontWeight: "800" },
+    unitLarge: { fontSize: 17, opacity: 1 },
     unit: { ...type.bodyMedium, color: c.onPrimaryContainer, fontSize: 13, opacity: 0.8 },
   });

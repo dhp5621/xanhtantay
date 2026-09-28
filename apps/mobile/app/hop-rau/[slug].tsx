@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { View, Text, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, StyleSheet, ScrollView, Platform } from "react-native";
+import { KeyboardScroll } from "../../components/keyboard";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
@@ -89,9 +90,9 @@ export default function BoxDetailScreen() {
   const initialMode = MODES.includes(mode as OrderMode) ? (mode as OrderMode) : "single";
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1, backgroundColor: colors.surface }}>
+    <View style={{ flex: 1, backgroundColor: colors.surface }}>
       <Stack.Screen options={{ title: mixName }} />
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 32 + insets.bottom, gap: 24 }} keyboardShouldPersistTaps="handled">
+      <KeyboardScroll contentContainerStyle={{ padding: 16, paddingBottom: 32 + insets.bottom, gap: 24 }} keyboardShouldPersistTaps="handled">
         <AnimInScale>
           <View style={styles.hero}>
             <SmartImage uri={box.image_url} style={StyleSheet.absoluteFill} loaderSize={32} transition={400} />
@@ -161,8 +162,8 @@ export default function BoxDetailScreen() {
             }}
           />
         </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardScroll>
+    </View>
   );
 }
 

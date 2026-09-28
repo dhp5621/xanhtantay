@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
-import { View, Text, StyleSheet, ScrollView, Share, TextInput, RefreshControl, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, StyleSheet, ScrollView, Share, TextInput, RefreshControl, Platform } from "react-native";
+import { KeyboardScroll } from "../../../components/keyboard";
 import * as Clipboard from "expo-clipboard";
 import { useLocalSearchParams, useFocusEffect, router } from "expo-router";
 import { apiFetch, ApiError, API_URL } from "../../../constants/api";
@@ -113,8 +114,8 @@ export default function GomDonDetailScreen() {
   const totalBoxes = group.members.reduce((s, m) => s + (m.quantity ?? 0), 0);
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1, backgroundColor: colors.surface }}>
-      <ScrollView
+    <View style={{ flex: 1, backgroundColor: colors.surface }}>
+      <KeyboardScroll
         style={styles.container}
         contentContainerStyle={{ padding: 16, paddingBottom: 32, gap: 18 }}
         keyboardShouldPersistTaps="handled"
@@ -257,8 +258,8 @@ export default function GomDonDetailScreen() {
             </View>
           )}
         </AnimIn>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardScroll>
+    </View>
   );
 }
 

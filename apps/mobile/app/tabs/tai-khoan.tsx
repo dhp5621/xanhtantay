@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Platform } from "react-native";
+import { KeyboardScroll } from "../../components/keyboard";
 import { LinearGradient } from "expo-linear-gradient";
 import * as ImagePicker from "expo-image-picker";
 import { router, useFocusEffect } from "expo-router";
@@ -8,12 +9,12 @@ import { apiFetch, ApiError } from "../../constants/api";
 import { colors, shape, type, useStyles } from "../../constants/theme";
 import { makeAvatarDataUrl } from "../../constants/media";
 import { formatKg } from "../../constants/format";
-import type { FarmProfile, Me } from "../../constants/types";
+import type { FarmerCommands, FarmProfile, Me } from "../../constants/types";
 import { useSession } from "../../hooks/useSession";
 import { useTheme } from "../../hooks/useTheme";
 import { useLiveRefresh } from "../../hooks/useLive";
 import { AnimIn, AnimInScale, PressableScale, Skeleton } from "../../components/motion";
-import { Avatar, Button, Chip, ListItem, Screen } from "../../components/ui";
+import { Avatar, Button, Chip, ListItem, Screen, StatTile } from "../../components/ui";
 import { ClusterPicker } from "../../components/ClusterPicker";
 import { Icon } from "../../components/Icon";
 import type { Colors } from "../../constants/theme";
@@ -28,6 +29,17 @@ const CUSTOMER_MENU = [
   { href: "/farms", icon: "potted_plant", label: "Vườn rau", desc: "Những nhà vườn trồng rau cho bạn" },
 ];
 
+const FARMER_MENU = [
+  { href: "/tabs/farmer", icon: "agriculture", label: "Lệnh thu hoạch", desc: "Tin nhắn hôm nay và nút xác nhận" },
+  { href: "/farmer/nang-suat", icon: "scale", label: "Rau củ đăng ký", desc: "Mỗi ngày bác cắt được bao nhiêu ký" },
+  { href: "/farmer/vuon", icon: "potted_plant", label: "Thông tin vườn", desc: "Tên, địa chỉ, lời giới thiệu" },
+  { href: "farm-page", icon: "storefront", label: "Trang vườn của tôi", desc: "Khách hàng thấy vườn như thế nào" },
+  { href: "/tra-cuu", icon: "qr_code_2", label: "Truy xuất hộp rau", desc: "Quét mã QR trên hộp để xem hành trình" },
+];
+
+/** A request that has not answered yet is not the same as one that answered "nothing". */
+type LoadState = "loading" | "ready" | "none" | "error";
+
 /** Account: avatar, contact details, the building that receives the boxes, theme and sign-out. */
 export default function TaiKhoanScreen() {
   const { alert } = useDialog();
@@ -35,6 +47,10 @@ export default function TaiKhoanScreen() {
   const { user, loading, logout, refresh } = useSession();
   const [me, setMe] = useState<Me | null>(null);
   const [farm, setFarm] = useState<FarmProfile | null>(null);
+  const [meState, setMeState] = useState<LoadState>("loading");
+  const [farmState, setFarmState] = useState<LoadState>("loading");
+  const [commands, setCommands] = useState<FarmerCommands | null>(null);
+  const [commandsState, setCommandsState] = useState<LoadState>("loading");
   const [clusters, setClusters] = useState<Cluster[]>([]);
   const [form, setForm] = useState<{ name: string; phone: string; cluster_id: string | null; address: string } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -50,16 +66,44 @@ export default function TaiKhoanScreen() {
       setForm(null);
       return;
     }
-    try {
-      const profile: Me = await apiFetch("/users/me");
-      setMe(profile);
-      // Keep what the user is typing; only seed the form the first time.
-      setForm((f) => f ?? { name: profile.name ?? "", phone: profile.phone ?? "", cluster_id: profile.cluster_id ?? null, address: profile.address ?? "" });
-    } catch {
-      // stale session → the account page just shows the login CTA
+    // What is already on screen stays there when a later reload fails.
+    const keep = (s: LoadState): LoadState => (s === "ready" ? s : "error");
+    const profile = (async () => {
+      try {
+        const p: Me = await apiFetch("/users/me");
+        setMe(p);
+        // Keep what the user is typing; only seed the form the first time.
+        setForm((f) => f ?? { name: p.name ?? "", phone: p.phone ?? "", cluster_id: p.cluster_id ?? null, address: p.address ?? "" });
+        setMeState("ready");
+      } catch {
+        setMeState(keep);
+      }
+    })();
+    if (user.role !== "farmer") {
+      await Promise.all([profile, apiFetch("/clusters").then((c) => setClusters(c ?? [])).catch(() => {})]);
+      return;
     }
-    if (user.role === "farmer") setFarm(await apiFetch("/farms/mine").catch(() => null));
-    else setClusters((await apiFetch("/clusters").catch(() => null)) ?? []);
+    await Promise.all([
+      profile,
+      apiFetch("/farms/mine")
+        .then((f: FarmProfile) => {
+          setFarm(f);
+          setFarmState("ready");
+        })
+        .catch((e) => {
+          // Only a 404 means there is no farm; a failed request says nothing about it.
+          if (e instanceof ApiError && e.status === 404) {
+            setFarm(null);
+            setFarmState("none");
+          } else setFarmState(keep);
+        }),
+      apiFetch("/farmer/commands")
+        .then((c: FarmerCommands) => {
+          setCommands(c);
+          setCommandsState("ready");
+        })
+        .catch(() => setCommandsState(keep)),
+    ]);
   }, [user]);
 
   useLiveRefresh(load);
@@ -71,6 +115,12 @@ export default function TaiKhoanScreen() {
   // A different account on the same phone starts from its own details.
   useEffect(() => {
     setForm(null);
+    setMe(null);
+    setFarm(null);
+    setCommands(null);
+    setMeState("loading");
+    setFarmState("loading");
+    setCommandsState("loading");
   }, [user?.id]);
 
   const saveAvatar = async (avatar_url: string | null) => {
@@ -110,16 +160,26 @@ export default function TaiKhoanScreen() {
     ], { icon: "photo_camera" });
   };
 
-  const dirty = !!form && !!me && (form.name.trim() !== (me.name ?? "") || form.phone.trim() !== (me.phone ?? "") || form.cluster_id !== (me.cluster_id ?? null) || form.address.trim() !== (me.address ?? ""));
+  const dirty = !!form && !!me && (form.name.trim() !== (me.name ?? "") || form.phone.trim() !== (me.phone ?? "") || (!isFarmer && (form.cluster_id !== (me.cluster_id ?? null) || form.address.trim() !== (me.address ?? ""))));
 
   const saveProfile = async () => {
     if (!form) return;
     if (!form.name.trim()) {
-      alert("Thiếu tên", "Bạn điền tên để bác giao hàng gọi cho đúng nhé.");
+      alert("Thiếu tên", isFarmer ? "Bác điền tên để khách hàng biết ai trồng rau nhé." : "Bạn điền tên để bác giao hàng gọi cho đúng nhé.");
       return;
     }
     setSaving(true);
     try {
+      if (isFarmer) {
+        // Farmers have no delivery address: only name and phone, as on the web.
+        const body = { name: form.name.trim(), phone: form.phone.trim() };
+        await apiFetch("/users/me", { method: "PATCH", body: JSON.stringify(body) });
+        setMe((m) => (m ? { ...m, ...body, phone: body.phone || null } : m));
+        setForm((f) => (f ? { ...f, ...body } : f));
+        refresh().catch(() => {});
+        alert("Đã lưu thông tin", "Tên và số điện thoại của bác đã được cập nhật.", undefined, { icon: "check_circle" });
+        return;
+      }
       const body = { name: form.name.trim(), phone: form.phone.trim(), cluster_id: form.cluster_id, address: form.address.trim() };
       await apiFetch("/users/me", { method: "PATCH", body: JSON.stringify(body) });
       setMe((m) => (m ? { ...m, ...body, phone: body.phone || null, address: body.address || null, cluster: clusters.find((c) => c.id === body.cluster_id) ?? null } : m));
@@ -171,12 +231,34 @@ export default function TaiKhoanScreen() {
   }
 
   const name = me?.name ?? user.name ?? "";
-  const subtitle = isFarmer ? (farm ? `${farm.name} · ${farm.province}` : "Chưa gắn với vườn nào") : (me?.email ?? user.email ?? "");
+  const subtitle = isFarmer ? (farm ? `${farm.name} · ${farm.province}` : farmState === "none" ? "Chưa gắn với vườn nào" : farmState === "error" ? "Chưa tải được thông tin vườn" : null) : (me?.email ?? user.email ?? "");
+  const retryHint = "Mạng đang yếu. Kéo xuống để thử lại.";
+  const list = commands?.commands ?? [];
+  const declinedCount = list.filter((c) => c.status === "declined").length;
+  const stats = [
+    { icon: "sms", label: "Lệnh đã nhận", value: list.length },
+    { icon: "thumb_up", label: "Đã xác nhận", value: list.filter((c) => c.status === "confirmed").length },
+    { icon: "pending_actions", label: "Chờ xác nhận", value: list.filter((c) => c.status === "sent").length },
+  ];
+  const profileCard = (title: string) =>
+    form ? null : (
+      <View>
+        <Text style={styles.sectionLabel}>{title}</Text>
+        {meState === "error" ? (
+          <View style={[styles.card, styles.retry]}>
+            <Icon name="wifi_off" size={20} color={colors.onSurfaceVariant} />
+            <Text style={[styles.muted, { flex: 1 }]}>Chưa tải được thông tin tài khoản. {retryHint}</Text>
+          </View>
+        ) : (
+          <Skeleton height={220} radius={shape.xl} />
+        )}
+      </View>
+    );
 
   return (
     <Screen>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
-        <ScrollView
+      <View style={{ flex: 1 }}>
+        <KeyboardScroll
           contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 40 }}
           keyboardShouldPersistTaps="handled"
           refreshControl={
@@ -202,7 +284,7 @@ export default function TaiKhoanScreen() {
               </View>
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Text style={styles.heroName}>{name}</Text>
-                <Text style={styles.heroSub} numberOfLines={1}>{subtitle}</Text>
+                {subtitle === null ? <Skeleton height={14} width="70%" style={{ marginVertical: 3 }} /> : <Text style={styles.heroSub} numberOfLines={1}>{subtitle}</Text>}
                 <View style={styles.roleChip}>
                   <Icon name={isFarmer ? "agriculture" : "inventory_2"} size={14} filled color={colors.onSurface} />
                   <Text style={styles.roleChipText}>{isFarmer ? "Nhà vườn" : "Khách hàng"}</Text>
@@ -212,50 +294,115 @@ export default function TaiKhoanScreen() {
           </AnimInScale>
 
           {isFarmer ? (
-            <AnimIn delay={80}>
-              <Text style={styles.sectionLabel}>VƯỜN CỦA TÔI</Text>
-              {farm ? (
-                <View style={styles.card}>
-                  <Text style={styles.cardTitle}>{farm.name}</Text>
-                  <View style={styles.infoRow}>
-                    <Icon name="location_on" size={18} color={colors.onSurfaceVariant} />
-                    <Text style={styles.infoText}>
-                      {farm.location}
-                      {farm.province && !farm.location?.includes(farm.province) ? `, ${farm.province}` : ""}
-                    </Text>
-                  </View>
-                  {farm.description ? <Text style={[styles.muted, { marginTop: 8 }]}>{farm.description}</Text> : null}
-                  {farm.grows?.length ? (
-                    <>
-                      <Text style={[styles.sectionLabel, { marginTop: 14 }]}>SỨC TRỒNG ĐÃ ĐĂNG KÝ MỖI NGÀY</Text>
-                      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-                        {farm.grows.map((g) => (
-                          <Chip key={g.produce_id} icon="eco" label={`${g.name} · ${formatKg(g.daily_kg)}`} tone="primary" small />
-                        ))}
+            <>
+              <AnimIn delay={60}>
+                {commands ? (
+                  <>
+                    <View style={{ flexDirection: "row", gap: 8 }}>
+                      {stats.map((s) => (
+                        <StatTile key={s.label} icon={s.icon} value={s.value} label={s.label} onPress={() => router.push("/tabs/farmer")} />
+                      ))}
+                    </View>
+                    {declinedCount > 0 ? (
+                      <View style={{ marginTop: 8 }}>
+                        <Chip icon="cancel" label={`Không cắt được: ${declinedCount}`} tone="error" onPress={() => router.push("/tabs/farmer")} />
                       </View>
-                    </>
-                  ) : null}
-                </View>
-              ) : (
-                <View style={[styles.card, { backgroundColor: colors.errorContainer }]}>
-                  <Text style={[styles.muted, { color: colors.onErrorContainer }]}>Tài khoản này chưa gắn với vườn nào. Bác liên hệ quản trị để được tạo vườn nhé.</Text>
-                </View>
-              )}
-            </AnimIn>
+                    ) : null}
+                  </>
+                ) : commandsState === "error" ? (
+                  <View style={[styles.card, styles.retry]}>
+                    <Icon name="wifi_off" size={20} color={colors.onSurfaceVariant} />
+                    <Text style={[styles.muted, { flex: 1 }]}>Chưa tải được số lệnh thu hoạch. {retryHint}</Text>
+                  </View>
+                ) : (
+                  <View style={{ flexDirection: "row", gap: 8 }}>
+                    <Skeleton height={104} radius={shape.lgIncreased} style={{ flex: 1 }} />
+                    <Skeleton height={104} radius={shape.lgIncreased} style={{ flex: 1 }} />
+                    <Skeleton height={104} radius={shape.lgIncreased} style={{ flex: 1 }} />
+                  </View>
+                )}
+              </AnimIn>
+
+              <AnimIn delay={80}>
+                <Text style={styles.sectionLabel}>VƯỜN CỦA TÔI</Text>
+                {farm ? (
+                  <View style={styles.card}>
+                    <Text style={styles.cardTitle}>{farm.name}</Text>
+                    <View style={styles.infoRow}>
+                      <Icon name="location_on" size={18} color={colors.onSurfaceVariant} />
+                      <Text style={styles.infoText}>
+                        {farm.location}
+                        {farm.province && !farm.location?.includes(farm.province) ? `, ${farm.province}` : ""}
+                      </Text>
+                    </View>
+                    {farm.description ? <Text style={[styles.muted, { marginTop: 8 }]}>{farm.description}</Text> : null}
+                    {farm.grows?.length ? (
+                      <>
+                        <Text style={[styles.sectionLabel, { marginTop: 14 }]}>SỨC TRỒNG ĐÃ ĐĂNG KÝ MỖI NGÀY</Text>
+                        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                          {farm.grows.map((g) => (
+                            <Chip key={g.produce_id} icon="eco" label={`${g.name} · ${formatKg(g.daily_kg)}`} tone="primary" small />
+                          ))}
+                        </View>
+                      </>
+                    ) : null}
+                  </View>
+                ) : farmState === "none" ? (
+                  <View style={[styles.card, { backgroundColor: colors.errorContainer }]}>
+                    <Text style={[styles.muted, { color: colors.onErrorContainer }]}>Tài khoản này chưa gắn với vườn nào. Bác liên hệ quản trị để được tạo vườn nhé.</Text>
+                  </View>
+                ) : farmState === "error" ? (
+                  <View style={[styles.card, styles.retry]}>
+                    <Icon name="wifi_off" size={20} color={colors.onSurfaceVariant} />
+                    <Text style={[styles.muted, { flex: 1 }]}>Chưa tải được thông tin vườn. {retryHint}</Text>
+                  </View>
+                ) : (
+                  <View style={[styles.card, { alignItems: "center", paddingVertical: 28 }]}>
+                    <Loader size={40} />
+                  </View>
+                )}
+              </AnimIn>
+
+              <View>
+                {FARMER_MENU.filter((m) => m.href !== "farm-page" || farm).map((m, i) => (
+                  <AnimIn key={m.href} index={i} delay={120}>
+                    <ListItem icon={m.icon} title={m.label} desc={m.desc} onPress={() => router.push((m.href === "farm-page" ? `/farms/${farm?.slug}` : m.href) as never)} />
+                  </AnimIn>
+                ))}
+              </View>
+
+              <AnimIn delay={200}>
+                {profileCard("THÔNG TIN CỦA TÔI") ?? (
+                  <>
+                    <Text style={styles.sectionLabel}>THÔNG TIN CỦA TÔI</Text>
+                    <View style={styles.card}>
+                      <Text style={styles.label}>Họ tên</Text>
+                      <TextInput style={styles.input} value={form?.name ?? ""} onChangeText={(v) => setForm((f) => (f ? { ...f, name: v } : f))} placeholder="Tên của bác" placeholderTextColor={colors.onSurfaceVariant} maxLength={80} autoComplete="name" />
+                      <Text style={styles.label}>Số điện thoại</Text>
+                      <TextInput style={styles.input} value={form?.phone ?? ""} onChangeText={(v) => setForm((f) => (f ? { ...f, phone: v } : f))} placeholder="Để xe tải lạnh gọi khi tới vườn" placeholderTextColor={colors.onSurfaceVariant} keyboardType="phone-pad" maxLength={20} autoComplete="tel" />
+                      <Button label="Lưu thông tin" icon="check" onPress={saveProfile} loading={saving} disabled={!dirty} style={{ alignSelf: "stretch", marginTop: 16 }} />
+                    </View>
+                  </>
+                )}
+              </AnimIn>
+            </>
           ) : (
             <>
               <AnimIn delay={80}>
-                <Text style={styles.sectionLabel}>THÔNG TIN NHẬN RAU</Text>
-                <View style={styles.card}>
-                  <Text style={styles.label}>Họ tên</Text>
-                  <TextInput style={styles.input} value={form?.name ?? ""} onChangeText={(v) => setForm((f) => (f ? { ...f, name: v } : f))} placeholder="Tên của bạn" placeholderTextColor={colors.onSurfaceVariant} maxLength={80} autoComplete="name" />
-                  <Text style={styles.label}>Số điện thoại</Text>
-                  <TextInput style={styles.input} value={form?.phone ?? ""} onChangeText={(v) => setForm((f) => (f ? { ...f, phone: v } : f))} placeholder="Để bác giao hàng gọi khi rau tới sảnh" placeholderTextColor={colors.onSurfaceVariant} keyboardType="phone-pad" maxLength={20} autoComplete="tel" />
-                  <Text style={styles.label}>Cụm chung cư</Text>
-                  <ClusterPicker clusters={clusters} value={form?.cluster_id ?? null} onChange={(id) => setForm((f) => (f ? { ...f, cluster_id: id } : f))} />
-                  <Text style={styles.label}>Toà, tầng, số căn hộ</Text>
-                  <TextInput style={styles.input} value={form?.address ?? ""} onChangeText={(v) => setForm((f) => (f ? { ...f, address: v } : f))} placeholder="Ví dụ: Toà S2, căn 1508" placeholderTextColor={colors.onSurfaceVariant} maxLength={160} />
-                  <Button label="Lưu thông tin" icon="check" onPress={saveProfile} loading={saving} disabled={!dirty} style={{ alignSelf: "stretch", marginTop: 16 }} />
+                {profileCard("THÔNG TIN NHẬN RAU")}
+                <View style={form ? undefined : { display: "none" }}>
+                  <Text style={styles.sectionLabel}>THÔNG TIN NHẬN RAU</Text>
+                  <View style={styles.card}>
+                    <Text style={styles.label}>Họ tên</Text>
+                    <TextInput style={styles.input} value={form?.name ?? ""} onChangeText={(v) => setForm((f) => (f ? { ...f, name: v } : f))} placeholder="Tên của bạn" placeholderTextColor={colors.onSurfaceVariant} maxLength={80} autoComplete="name" />
+                    <Text style={styles.label}>Số điện thoại</Text>
+                    <TextInput style={styles.input} value={form?.phone ?? ""} onChangeText={(v) => setForm((f) => (f ? { ...f, phone: v } : f))} placeholder="Để bác giao hàng gọi khi rau tới sảnh" placeholderTextColor={colors.onSurfaceVariant} keyboardType="phone-pad" maxLength={20} autoComplete="tel" />
+                    <Text style={styles.label}>Cụm chung cư</Text>
+                    <ClusterPicker clusters={clusters} value={form?.cluster_id ?? null} onChange={(id) => setForm((f) => (f ? { ...f, cluster_id: id } : f))} />
+                    <Text style={styles.label}>Toà, tầng, số căn hộ</Text>
+                    <TextInput style={styles.input} value={form?.address ?? ""} onChangeText={(v) => setForm((f) => (f ? { ...f, address: v } : f))} placeholder="Ví dụ: Toà S2, căn 1508" placeholderTextColor={colors.onSurfaceVariant} maxLength={160} />
+                    <Button label="Lưu thông tin" icon="check" onPress={saveProfile} loading={saving} disabled={!dirty} style={{ alignSelf: "stretch", marginTop: 16 }} />
+                  </View>
                 </View>
               </AnimIn>
 
@@ -286,8 +433,8 @@ export default function TaiKhoanScreen() {
               {signingOut ? <Loader size={22} color={colors.error} /> : <Text style={styles.logoutBtnText}>Đăng xuất</Text>}
             </TouchableOpacity>
           </AnimIn>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        </KeyboardScroll>
+      </View>
     </Screen>
   );
 }
@@ -328,6 +475,7 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
   roleChip: { flexDirection: "row", alignItems: "center", gap: 5, alignSelf: "flex-start", marginTop: 8, backgroundColor: colors.surfaceContainerLowest, borderRadius: shape.full, paddingVertical: 4, paddingHorizontal: 10 },
   roleChipText: { ...type.labelLarge, color: colors.onSurface, fontSize: 12, lineHeight: 16 },
   muted: { ...type.bodyMedium, color: colors.onSurfaceVariant, fontSize: 13 },
+  retry: { flexDirection: "row", alignItems: "center", gap: 10 },
   card: { backgroundColor: colors.surfaceContainerLow, borderRadius: shape.xl, padding: 18 },
   cardTitle: { ...type.titleLarge, color: colors.onSurface, fontSize: 19, lineHeight: 25 },
   infoRow: { flexDirection: "row", alignItems: "flex-start", gap: 8, marginTop: 6 },

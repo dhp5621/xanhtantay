@@ -1,4 +1,5 @@
 export const dynamic = "force-dynamic";
+import Link from "next/link";
 import { getSessionUser } from "@/lib/session";
 import { getCommandsForFarmer } from "@/lib/queries";
 import { Icon } from "@/components/ui/Icon";
@@ -37,6 +38,11 @@ export default async function FarmerPage() {
           <p className="body-lg text-on-surface-variant" style={{ marginTop: 8 }}>18h00 mỗi ngày hệ thống sẽ gửi lệnh cho sáng hôm sau.</p>
         </section>
       )}
+
+      <nav className="m3-list-group anim-in delay-1" aria-label="Vườn của tôi">
+        <Link href="/farmer/nang-suat" className="m3-list-item"><span className="m3-list-leading"><Icon name="scale" filled /></span><span style={{ flex: 1 }}><span style={{ display: "block" }}>Rau củ đăng ký</span><span className="body-sm text-on-surface-variant" style={{ fontWeight: 400 }}>Mỗi ngày cắt được bao nhiêu ký mỗi loại</span></span><Icon name="chevron_right" /></Link>
+        <Link href="/farmer/vuon" className="m3-list-item"><span className="m3-list-leading"><Icon name="storefront" filled /></span><span style={{ flex: 1 }}><span style={{ display: "block" }}>Thông tin vườn</span><span className="body-sm text-on-surface-variant" style={{ fontWeight: 400 }}>Tên, địa chỉ, lời giới thiệu</span></span><Icon name="chevron_right" /></Link>
+      </nav>
 
       {history.length > 0 && (
         <section className="anim-in delay-2">

@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
-import { View, Text, FlatList, StyleSheet, RefreshControl, Modal, Pressable, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, FlatList, StyleSheet, RefreshControl, Modal, Pressable, Platform } from "react-native";
+import { KeyboardPad } from "../../components/keyboard";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useFocusEffect } from "expo-router";
 import type { Subscription, SubscriptionFrequency } from "@xanhtantay/types";
@@ -134,7 +135,7 @@ export default function DinhKyScreen() {
       />
 
       <Modal visible={!!editing} transparent animationType="slide" statusBarTranslucent onRequestClose={() => setEditing(null)}>
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.scrim}>
+        <KeyboardPad style={styles.scrim}>
           <Pressable style={StyleSheet.absoluteFill} onPress={() => setEditing(null)} />
           <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 16) + 14 }]}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
@@ -168,7 +169,7 @@ export default function DinhKyScreen() {
               <Button label="Lưu thay đổi" icon="check" onPress={saveEdit} loading={!!editing && busy === editing.id} />
             </View>
           </View>
-        </KeyboardAvoidingView>
+        </KeyboardPad>
       </Modal>
     </>
   );
