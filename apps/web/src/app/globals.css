@@ -2031,3 +2031,18 @@ input[type="number"].tabular::-webkit-inner-spin-button { -webkit-appearance: no
 .m3-size.selected .text-on-surface-variant { color: inherit; opacity: 0.8; }
 .m3-size-price { font-size: 13px; line-height: 18px; font-weight: 600; margin-top: 2px; white-space: nowrap; }
 @media (prefers-reduced-motion: reduce) { .m3-size { transition: none; } }
+
+/* Farmer's "Không": as large as "Có", visually quieter */
+.m3-command-no { background: transparent; color: inherit; border-color: currentColor; min-height: 64px; font-size: 18px; }
+
+/* Menu: swap the whole week, or ask for another way to cook one meal */
+.m3-menu-swap { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.m3-menu-swap-btn { width: 100%; height: 64px !important; font-size: 18px !important; border-radius: var(--shape-xl) !important; }
+.m3-menu-swap-btn .msr { font-size: 28px !important; }
+.m3-link-btn { background: none; border: none; padding: 0; color: var(--md-primary); font: inherit; font-weight: 600; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.m3-link-btn:disabled { opacity: 0.5; cursor: default; }
+.m3-menu-ask { display: flex; flex-direction: column; gap: 8px; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--md-outline-variant); }
+.m3-menu-ask-row { display: flex; gap: 8px; align-items: center; }
+.m3-menu-ask-row .m3-input { flex: 1; min-width: 0; }
+.m3-menu-ask-row .m3-btn { flex-shrink: 0; }
+@media (max-width: 560px) { .m3-menu-ask-row { flex-direction: column; align-items: stretch; } }

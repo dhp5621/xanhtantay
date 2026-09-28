@@ -27,7 +27,7 @@ export default async function FarmerPage() {
 
       {current ? (
         <HarvestCommand
-          command={{ id: current.id, message: current.message, items: current.items.map((i) => ({ name: i.name, kg: i.kg })), total_kg: current.total_kg, status: current.status, confirmed_at: current.confirmed_at, delivery_date: current.delivery_date }}
+          command={{ id: current.id, message: current.message, items: current.items.map((i) => ({ name: i.name, kg: i.kg })), total_kg: current.total_kg, status: current.status, confirmed_at: current.confirmed_at, declined_at: current.declined_at, delivery_date: current.delivery_date }}
           dateLabel={formatYMD(current.delivery_date)}
         />
       ) : (
@@ -44,7 +44,7 @@ export default async function FarmerPage() {
           <div className="m3-list-group">
             {history.map((c) => (
               <div key={c.id} className="m3-list-item" style={{ cursor: "default", flexWrap: "wrap" }}>
-                <span className="m3-list-leading"><Icon name={c.status === "confirmed" ? "check_circle" : "schedule"} filled /></span>
+                <span className="m3-list-leading"><Icon name={c.status === "confirmed" ? "check_circle" : c.status === "declined" ? "cancel" : "schedule"} filled /></span>
                 <span style={{ flex: 1, minWidth: 160 }}>
                   <span style={{ display: "block" }}>{formatYMD(c.delivery_date)}</span>
                   <span className="body-sm text-on-surface-variant" style={{ fontWeight: 400 }}>{c.items.map((i) => `${formatKg(i.kg)} ${i.name.toLowerCase()}`).join(" · ")}</span>

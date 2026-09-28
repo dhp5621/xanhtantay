@@ -103,7 +103,7 @@ export const SECTIONS: Section[] = [
   {
     key: "harvest_commands", table: "harvest_commands", label: "Lệnh thu hoạch", icon: "sms", desc: "Tin nhắn đã gửi cho nông hộ", canDelete: false,
     fields: [
-      { key: "status", label: "Xác nhận", type: "select", options: [{ value: "sent", label: "Chờ xác nhận" }, { value: "confirmed", label: "Đã xác nhận" }] },
+      { key: "status", label: "Xác nhận", type: "select", options: [{ value: "sent", label: "Chờ xác nhận" }, { value: "declined", label: "Không cắt được" }, { value: "confirmed", label: "Đã xác nhận" }] },
       { key: "message", label: "Nội dung", type: "textarea", required: true },
     ],
     createFields: [],

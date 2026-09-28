@@ -106,7 +106,7 @@ export default async function BrainDashboard() {
           <div className="m3-section-head"><h2 className="title-lg text-on-surface"><Icon name="call_split" filled /> {bookRun ? "Lệnh đã gửi" : "Nếu chốt sổ bây giờ"}</h2><span className="body-sm text-on-surface-variant">Chia theo năng suất, bước 0,5 kg</span></div>
           {preview.allocations.length === 0 && !bookRun ? <p className="body-md text-on-surface-variant">Chưa có gì để phân bổ.</p> : (
             <div className="m3-list-group">
-              {(bookRun ? commands.filter((c) => c.c.run_id === bookRun.id).map((c) => ({ farm_id: c.c.farm_id, farm_name: c.farm, farmer_name: c.farmer ?? c.farm, items: c.c.items, total_kg: Number(c.c.total_kg), confirmed: c.c.status === "confirmed" })) : preview.allocations.map((a) => ({ ...a, confirmed: null as boolean | null }))).map((a) => (
+              {(bookRun ? commands.filter((c) => c.c.run_id === bookRun.id).map((c) => ({ farm_id: c.c.farm_id, farm_name: c.farm, farmer_name: c.farmer ?? c.farm, items: c.c.items, total_kg: Number(c.c.total_kg), confirmed: c.c.status === "confirmed", declined: c.c.status === "declined" })) : preview.allocations.map((a) => ({ ...a, confirmed: null as boolean | null, declined: false }))).map((a) => (
                 <div key={a.farm_id} className="m3-list-item" style={{ cursor: "default", alignItems: "flex-start", background: "var(--md-surface-container-lowest)" }}>
                   <span className="m3-list-leading"><Icon name="agriculture" filled /></span>
                   <span style={{ flex: 1, minWidth: 0 }}>
@@ -114,7 +114,7 @@ export default async function BrainDashboard() {
                     <span className="body-sm text-on-surface-variant" style={{ fontWeight: 400 }}>{a.items.map((i) => `${formatKg(i.kg)} ${i.name.toLowerCase()}`).join(" · ")}</span>
                   </span>
                   <span className="label-lg tabular">{formatKg(a.total_kg)}</span>
-                  {a.confirmed !== null && <span className={`m3-chip sm round ${a.confirmed ? "m3-chip-primary" : "m3-chip-surface"}`}><Icon name={a.confirmed ? "check_circle" : "schedule"} size={14} filled /> {a.confirmed ? "Đã xác nhận" : "Chờ"}</span>}
+                  {a.confirmed !== null && <span className={`m3-chip sm round ${a.confirmed ? "m3-chip-primary" : a.declined ? "m3-chip-error" : "m3-chip-surface"}`}><Icon name={a.confirmed ? "check_circle" : a.declined ? "cancel" : "schedule"} size={14} filled /> {a.confirmed ? "Đã xác nhận" : a.declined ? "Không cắt được" : "Chờ"}</span>}
                 </div>
               ))}
             </div>
@@ -144,12 +144,13 @@ export default async function BrainDashboard() {
             {runs.map((r) => {
               const cmds = commands.filter((c) => c.c.run_id === r.id);
               const confirmed = cmds.filter((c) => c.c.status === "confirmed").length;
+              const declined = cmds.filter((c) => c.c.status === "declined").length;
               return (
                 <article key={r.id} className="m3-card-elevated" style={{ padding: "18px 22px", borderRadius: "var(--shape-xl)" }}>
                   <div className="flex items-start justify-between gap-3 flex-wrap">
                     <div>
                       <p className="title-lg text-on-surface">Giao {formatYMD(r.delivery_date)}</p>
-                      <p className="body-sm text-on-surface-variant">{r.total_orders} đơn · {r.total_boxes} hộp · {formatKg(Number(r.total_kg))} · chốt lúc {formatClock(r.cutoff_at)} · {confirmed}/{cmds.length} nông hộ đã xác nhận{Number(r.shortage_kg) > 0 ? ` · thiếu ${formatKg(Number(r.shortage_kg))}` : " · rau thừa 0%"}</p>
+                      <p className="body-sm text-on-surface-variant">{r.total_orders} đơn · {r.total_boxes} hộp · {formatKg(Number(r.total_kg))} · chốt lúc {formatClock(r.cutoff_at)} · {confirmed}/{cmds.length} nông hộ đã xác nhận{declined ? ` · ${declined} hộ báo không cắt được` : ""}{Number(r.shortage_kg) > 0 ? ` · thiếu ${formatKg(Number(r.shortage_kg))}` : " · rau thừa 0%"}</p>
                     </div>
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className={`status-pill status-${r.status}`}>{RUN_STATUS_LABELS[r.status]}</span>
@@ -158,7 +159,7 @@ export default async function BrainDashboard() {
                   </div>
                   {r.summary && <p className="body-md text-on-surface" style={{ marginTop: 10, lineHeight: 1.6 }}><Icon name="psychology" size={16} className="text-primary" filled /> {r.summary}</p>}
                   <div className="flex flex-wrap gap-2" style={{ marginTop: 10 }}>
-                    {cmds.map((c) => <span key={c.c.id} className={`m3-chip sm round ${c.c.status === "confirmed" ? "m3-chip-primary" : "m3-chip-surface"}`} title={c.c.message}><Icon name={c.c.status === "confirmed" ? "check_circle" : "schedule"} size={14} filled /> {addressFarmer(c.farmer ?? c.farm).call} · {formatKg(Number(c.c.total_kg))}</span>)}
+                    {cmds.map((c) => <span key={c.c.id} className={`m3-chip sm round ${c.c.status === "confirmed" ? "m3-chip-primary" : c.c.status === "declined" ? "m3-chip-error" : "m3-chip-surface"}`} title={c.c.message}><Icon name={c.c.status === "confirmed" ? "check_circle" : c.c.status === "declined" ? "cancel" : "schedule"} size={14} filled /> {addressFarmer(c.farmer ?? c.farm).call} · {formatKg(Number(c.c.total_kg))}</span>)}
                   </div>
                 </article>
               );

@@ -17,7 +17,8 @@ export interface Produce { id: string; name: string; unit: string; category: str
 export interface FarmCapacity { produce_id: string; name: string; image_url: string | null; daily_kg: number }
 
 export interface BoxRecipe { minutes?: number; ingredients: string[]; steps: string[] }
-export interface BoxMeal { time: "Trưa" | "Tối"; title: string; uses: string[]; note?: string; recipe: BoxRecipe }
+/** `source` is set on dishes the AI found online. */
+export interface BoxMeal { time: "Trưa" | "Tối"; title: string; uses: string[]; note?: string; recipe: BoxRecipe; source?: string }
 export interface BoxMealDay { day: number; meals: BoxMeal[] }
 export interface BoxItem { produce_id: string; name: string; image_url: string | null; quantity_kg: number; farms: { name: string; slug: string; province: string }[] }
 export type BoxSize = "S" | "M" | "L";
@@ -61,7 +62,7 @@ export interface GroupOrder {
 export interface CommandItem { produce_id: string; name: string; kg: number }
 export interface HarvestCommand {
   id: string; run_id: string; farm_id: string; items: CommandItem[]; total_kg: number; message: string;
-  status: "sent" | "confirmed"; confirmed_at: string | null; created_at: string; delivery_date: string;
+  status: "sent" | "confirmed" | "declined"; confirmed_at: string | null; declined_at: string | null; created_at: string; delivery_date: string;
 }
 
 /** Emotional tracking: the clock time is part of the message. */

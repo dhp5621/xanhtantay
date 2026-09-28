@@ -8,7 +8,7 @@ import { useSnackbar } from "@/components/ui/Snackbar";
 const INTERVAL_MS = 15_000;
 const KEY = "xtt-seen-notifications";
 
-interface Item { id: string; title: string; body: string; url: string }
+interface Item { id: string; title: string; body: string; url: string; category?: string; data?: Record<string, string> }
 
 function readSeen(): Set<string> | null {
   try {
@@ -55,9 +55,13 @@ export function NotificationPoller() {
     const announce = async (n: Item) => {
       if ("Notification" in window && Notification.permission === "granted") {
         try {
-          const reg = "serviceWorker" in navigator ? await navigator.serviceWorker.getRegistration("/") : undefined;
+          // Registering is what makes the Có / Không buttons possible: only the worker can show and handle them.
+          const reg = "serviceWorker" in navigator ? await navigator.serviceWorker.register("/sw.js", { scope: "/" }).then(() => navigator.serviceWorker.ready) : undefined;
           if (reg) {
-            await reg.showNotification(n.title, { body: n.body, icon: "/icon.png", badge: "/icon.png", tag: n.id, data: { url: n.url } });
+            const commandId = n.category === "harvest-command" ? n.data?.commandId : undefined;
+            const options: NotificationOptions & { actions?: { action: string; title: string }[] } = { body: n.body, icon: "/icon.png", badge: "/icon.png", tag: n.id, requireInteraction: !!commandId, data: { url: n.url, commandId: commandId ?? null } };
+            if (commandId) options.actions = [{ action: "confirm", title: "Có, xác nhận" }, { action: "decline", title: "Không" }];
+            await reg.showNotification(n.title, options);
           } else {
             const note = new Notification(n.title, { body: n.body, icon: "/icon.png", tag: n.id });
             note.onclick = () => {

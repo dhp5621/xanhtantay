@@ -61,7 +61,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ table:
       const [o] = await db.select({ o: schema.orders, price: schema.boxes.price }).from(schema.orders).innerJoin(schema.boxes, eq(schema.orders.box_id, schema.boxes.id)).where(eq(schema.orders.id, id));
       if (o) { updates.subtotal = o.price * Number(updates.quantity); updates.total = o.price * Number(updates.quantity) + o.o.ship_fee; }
     }
-    if (g.section.table === "harvest_commands" && updates.status) updates.confirmed_at = updates.status === "confirmed" ? new Date() : null;
+    if (g.section.table === "harvest_commands" && updates.status) { updates.confirmed_at = updates.status === "confirmed" ? new Date() : null; updates.declined_at = updates.status === "declined" ? new Date() : null; }
     const [row] = await db.update(g.table).set(updates).where(eq(g.table.id, id)).returning();
     if (!row) return NextResponse.json({ error: "Không tìm thấy" }, { status: 404 });
     if (g.section.table === "orders" && row.group_order_id) await syncGroupCount(row.group_order_id);

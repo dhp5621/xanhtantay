@@ -78,7 +78,7 @@ export async function getOrderTrace(id: string) {
     harvested_at: row.o.harvested_at, loaded_at: row.o.loaded_at, delivered_at: row.o.delivered_at,
     cutoff_at: row.run?.cutoff_at ?? null, allocated: !!row.run,
     cluster: row.cluster ? { name: row.cluster.name, district: row.cluster.district } : null,
-    box: { id: box.id, slug: box.slug, name: box.name, size: box.size, weight_kg: box.weight_kg, image_url: box.image_url, days: box.days, servings: box.servings, meal_plan: box.meal_plan },
+    box: { id: box.id, slug: box.slug, name: box.name, size: box.size, weight_kg: box.weight_kg, image_url: box.image_url, days: box.days, servings: box.servings, meal_plan: row.o.meal_plan?.length ? row.o.meal_plan : box.meal_plan, customised: !!row.o.meal_plan?.length },
     contents,
     farms: growers.map((g) => ({ name: g.farm, slug: g.slug, location: g.location, farmer: g.farmer, confirmed: g.confirmed })),
     user_id: row.o.user_id, total: row.o.total, subtotal: row.o.subtotal, ship_fee: row.o.ship_fee, note: row.o.note, care_message: row.o.care_message, address: row.o.address, group_order_id: row.o.group_order_id,

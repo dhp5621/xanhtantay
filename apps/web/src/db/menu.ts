@@ -1,7 +1,7 @@
 import type { BoxMeal, BoxMealDay } from "./schema";
 
 /** Dish library for the box menus. Every dish is built on produce that is actually in the boxes. */
-const DISH: Record<string, Omit<BoxMeal, "time">> = {
+export const DISH: Record<string, Omit<BoxMeal, "time">> = {
   cai_ngot_xao_toi: {
     title: "Cải ngọt xào tỏi", uses: ["Cải ngọt"], note: "Rau lá ăn trước cho tươi.",
     recipe: { minutes: 10, ingredients: ["300 g cải ngọt", "3 tép tỏi", "1 thìa dầu ăn", "1 thìa nước mắm", "chút hạt nêm"], steps: ["Cải ngọt nhặt bỏ lá già, rửa sạch, cắt khúc 5 cm, để ráo.", "Tỏi đập dập, băm nhỏ.", "Phi thơm tỏi với dầu trên lửa lớn.", "Cho phần cuống vào đảo 1 phút rồi mới cho lá.", "Nêm nước mắm, hạt nêm, đảo nhanh tay tới khi rau vừa chín tới thì tắt bếp."] },

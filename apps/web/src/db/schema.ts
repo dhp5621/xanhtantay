@@ -13,7 +13,7 @@ export const orderTypeEnum = pgEnum("order_type", ["single", "subscription", "gr
 export const subscriptionFrequencyEnum = pgEnum("subscription_frequency", ["weekly", "biweekly", "monthly"]);
 export const groupOrderStatusEnum = pgEnum("group_order_status", ["open", "locked", "delivered", "cancelled"]);
 export const runStatusEnum = pgEnum("run_status", ["allocated", "harvesting", "loaded", "delivered"]);
-export const commandStatusEnum = pgEnum("command_status", ["sent", "confirmed"]);
+export const commandStatusEnum = pgEnum("command_status", ["sent", "confirmed", "declined"]);
 
 /** Apartment clusters in Hà Nội: the unit of group buying and lobby delivery. */
 export const clusters = pgTable("clusters", {
@@ -70,7 +70,8 @@ export const farm_capacity = pgTable("farm_capacity", {
 }, (t) => [uniqueIndex("farm_capacity_farm_produce").on(t.farm_id, t.produce_id)]);
 
 export interface BoxRecipe { minutes?: number; ingredients: string[]; steps: string[] }
-export interface BoxMeal { time: "Trưa" | "Tối"; title: string; uses: string[]; note?: string; recipe: BoxRecipe }
+/** `source` is set on dishes the AI found online; dishes from the house menu have none. */
+export interface BoxMeal { time: "Trưa" | "Tối"; title: string; uses: string[]; note?: string; recipe: BoxRecipe; source?: string }
 export interface BoxMealDay { day: number; meals: BoxMeal[] }
 
 /** Seasonal box, mixed from several farms, sold in sizes. Comes with its own day-by-day menu. */
@@ -160,6 +161,8 @@ export const harvest_commands = pgTable("harvest_commands", {
   message: text("message").notNull(),
   status: commandStatusEnum("status").notNull().default("sent"),
   confirmed_at: timestamp("confirmed_at"),
+  /** The farmer answered "Không": the brain's operator has to find the produce elsewhere. */
+  declined_at: timestamp("declined_at"),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -175,6 +178,8 @@ export const orders = pgTable("orders", {
   ship_fee: integer("ship_fee").notNull().default(0),
   total: integer("total").notNull(),
   note: text("note"),
+  /** The customer's own menu for this order once they swap a dish or the whole week; null = the box's menu. */
+  meal_plan: jsonb("meal_plan").$type<BoxMealDay[]>(),
   /** "Lời nhắn quan tâm" shown to the customer with this order. */
   care_message: text("care_message"),
   cluster_id: text("cluster_id").references(() => clusters.id, { onDelete: "set null" }),

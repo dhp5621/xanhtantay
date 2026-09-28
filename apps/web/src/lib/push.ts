@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { push_devices } from "@/db/schema";
 
 export type PushTarget = "mobile" | "web" | "all";
-export interface PushMessage { title: string; body: string; url?: string }
+export interface PushMessage { title: string; body: string; url?: string; /** Action buttons the clients know by name ("harvest-command" = Có / Không). */ category?: string; data?: Record<string, string> }
 export interface PushResult { mobile: { sent: number; failed: number }; web: { sent: number; failed: number }; removed: number; webConfigured: boolean }
 
 const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
@@ -27,7 +27,7 @@ async function sendExpo(devices: { id: string; token: string }[], msg: PushMessa
       const res = await fetch(EXPO_PUSH_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json", ...(process.env.EXPO_ACCESS_TOKEN ? { Authorization: `Bearer ${process.env.EXPO_ACCESS_TOKEN}` } : {}) },
-        body: JSON.stringify(batch.map((d) => ({ to: d.token, title: msg.title, body: msg.body, sound: "default", data: msg.url ? { url: msg.url } : {} }))),
+        body: JSON.stringify(batch.map((d) => ({ to: d.token, title: msg.title, body: msg.body, sound: "default", priority: "high", channelId: "default", ...(msg.category ? { categoryId: msg.category } : {}), data: { ...(msg.url ? { url: msg.url } : {}), ...msg.data } }))),
       });
       const json = (await res.json().catch(() => ({}))) as { data?: { status: string; details?: { error?: string } }[] };
       batch.forEach((d, j) => {

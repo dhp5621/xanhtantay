@@ -56,7 +56,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
       </section>
 
       <BoxContents items={o.contents} title="Trong hộp của bạn" />
-      <BoxMenu plan={o.box.meal_plan} title="Ăn gì mấy ngày tới" />
+      <BoxMenu plan={o.box.meal_plan} title="Ăn gì mấy ngày tới" target={o.status === "cancelled" ? undefined : { orderId: o.id }} customised={o.box.customised} />
     </div>
   );
 }

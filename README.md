@@ -40,7 +40,7 @@ Font tự host trong `apps/web/public/fonts`. Icon là bản rút gọn theo tê
 | `DEMO_PASSWORD` | | Mật khẩu chung cho tài khoản demo, mặc định `demo123` |
 | `ADMIN_PASSWORD` | ✔ cho `/admin` | Mật khẩu quản trị; `ADMIN_USER` mặc định `admin`; `ADMIN_SESSION_SECRET` tuỳ chọn |
 | `CRON_SECRET` | ✔ cho chốt sổ tự động | Bảo vệ `/api/cron/cutoff` (Vercel Cron chạy 11:00 UTC = 18h00 giờ Việt Nam) |
-| `CHAT_API_SECRET` | | Khoá chat API (OpenAI-compatible) để Bộ não viết tóm tắt chuyến. `CHAT_API_URL`, `CHAT_API_MODEL` tuỳ chọn. Không có khoá thì dùng tóm tắt theo quy tắc |
+| `CHAT_API_SECRET` | cho AI | Khoá chat API ([gemini-web2api](https://github.com/Sophomoresty/gemini-web2api), OpenAI-compatible). Dùng để tìm công thức mới trên mạng và viết tóm tắt chuyến. `CHAT_API_URL`, `CHAT_API_MODEL` tuỳ chọn; `CHAT_SEARCH_MODEL` (mặc định `gemini-3.6-flash`) là model dùng khi cần tìm kiếm web. Không có khoá thì thực đơn đổi sang các món khác của bếp nhà |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | cho thông báo đẩy | Web Push; app mobile dùng Expo push |
 | `BLOB_READ_WRITE_TOKEN` | | Vercel Blob cho ảnh tải lên. Avatar lưu thẳng trong DB, không cần Blob |
 
@@ -81,6 +81,7 @@ Trang đăng nhập có nút một chạm cho cả hai. Quản trị: `/admin/lo
 - **Hộp rau** (`/hop-rau`): bán theo hộp, không bán lẻ. Chọn mix (Thùng rau mẹ gửi, Nương rau vùng cao, Củ quả hầm canh) rồi chọn size S / M / L như chọn cỡ áo. Mỗi hộp ghi rõ thành phần, rau từ vườn nào, và thực đơn chia theo ngày (trưa, tối) kèm cách làm.
 - **Ba cách nhận**: gói định kỳ (miễn phí giao), gom đơn cùng toà nhà (đủ nhóm miễn ship), mua một lần (phí 15.000₫).
 - **Đặt trước 18h00, giao hôm sau**: băng đếm ngược tới giờ chốt sổ; sau 18h00 đơn tính cho chuyến kế tiếp. Huỷ miễn phí trước giờ chốt.
+- **Đổi thực đơn bằng AI**: trong mỗi bữa, dưới cách làm có ô "Tôi muốn cách làm khác" để gõ ý muốn (ít dầu mỡ, kiểu Hàn, món đang hot…); AI tìm công thức mới trên mạng, chỉ nấu từ rau củ trong hộp và không lặp món đã có. Nút to **Đổi thực đơn cả tuần** nằm trên các ngày. Thực đơn đã đổi được lưu theo từng đơn.
 - **Sau khi đặt**: lời nhắn quan tâm từ quê và thông điệp tác động (tiền về tay nông hộ, số kg, số bữa).
 - **Hành trình có cảm xúc** (`/don-hang`): 18h00 đơn vào sổ → 4h00 rau đang được bác nông dân thu hoạch → 6h00 hàng lên xe lạnh về phố → 16h00 rau quê đã có tại sảnh chung cư nhà bạn.
 - **Gói định kỳ** (`/dinh-ky`): đổi số hộp, tần suất, tạm dừng / bật lại.
@@ -90,7 +91,7 @@ Trang đăng nhập có nút một chạm cho cả hai. Quản trị: `/admin/lo
 
 ### Nông dân (`/farmer`)
 - Một màn hình duy nhất, chữ to: *"Bác Ba ơi, 4h sáng mai bác cắt đúng 15 kg cà rốt và 20 kg bắp cải nhé. Xe tải lạnh sẽ qua lấy lúc 6h."*
-- Một nút duy nhất: **Đã hiểu & Xác nhận**. Lệnh mới đi kèm thông báo đẩy.
+- Trả lời bằng **Có** (Đã hiểu & Xác nhận) hoặc **Không** (không cắt được), bấm được ngay trên thông báo (Android, iOS, trình duyệt) mà không cần mở app. Bộ não thấy hộ nào báo không cắt được.
 - Bên dưới là các lần thu hoạch trước.
 
 ### Bộ não trung tâm (`/admin`)

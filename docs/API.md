@@ -64,3 +64,25 @@ Emotional tracking copy (use `ORDER_TIMELINE`):
 - `POST /push/register`, `DELETE /push/register` (unchanged)
 - `GET /qr/{orderId}` SVG QR → opens `/tra-cuu/{orderId}`
 - Removed: `/products`, `/recipes/*`, `/diary/*`, `/farms/{id}/diary`, `/users/points`, `/orders/{id}/status`, old `/feed` shape.
+
+## Farmer answers: Có / Không
+
+- `POST /farmer/commands/{id}/confirm` → the command, `status: "confirmed"`. Allowed from `sent` or `declined`.
+- `POST /farmer/commands/{id}/decline` → the command, `status: "declined"`, `declined_at` set. `409` with `{ error }` if it was already confirmed.
+- `HarvestCommand.status` is `"sent" | "confirmed" | "declined"`; `declined_at: string | null`.
+- Push and polled notifications for a new command carry `category: "harvest-command"` (Expo: `categoryId`) and `data: { url: "/farmer", commandId }`. The notification body is the command's full message. Clients attach two buttons to that category, "Có, xác nhận" and "Không", and answer without opening the app.
+- `GET /notifications?platform=mobile` items: `{ id, title, body, url, category?, data? }`.
+
+## Menu: another recipe, or a whole new week
+
+`POST /menu` (signed in). The AI searches the web for new recipes cooked from the produce in the box; without AI it falls back to other house dishes. Can take up to a minute.
+
+- Body: `{ action, order_id? , box?, plan?, seen?, day?, meal?, wish? }`
+  - `order_id`: the change is saved on that order (owner only). Otherwise send `box` (slug or id) and the `plan` currently on screen; nothing is stored.
+  - `action: "meal"` with `day` (the day number) and `meal` (index in that day's `meals`), optional `wish` (free text, max 200 chars).
+  - `action: "week"`: a whole new plan, optional `wish`.
+  - `action: "reset"`: back to the box's own menu.
+  - `seen`: titles already shown to this customer, so they are not suggested again.
+- Response: `{ plan: BoxMealDay[], meal?: BoxMeal, customised: boolean, ai: boolean }`. Errors: `{ error }` with 400 / 401 / 404 / 503.
+- `BoxMeal.source?: string` names where an AI-found recipe came from; house dishes have none.
+- `GET /orders/{id}` → `box.meal_plan` is the order's own menu when customised, and `box.customised: boolean` says so.

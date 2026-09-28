@@ -3,12 +3,13 @@ import { and, desc, eq, gte, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { broadcasts, farms, harvest_commands, harvest_runs, orders } from "@/db/schema";
 import { getSessionUser } from "@/lib/session";
+import { COMMAND_CATEGORY } from "@/lib/commands";
 import { addDays, todayVN } from "@/lib/commerce";
 import { ORDER_STATUS_LABELS } from "@xanhtantay/types";
 
 export const dynamic = "force-dynamic";
 
-export interface AppNotification { id: string; title: string; body: string; url: string }
+export interface AppNotification { id: string; title: string; body: string; url: string; category?: string; data?: Record<string, string> }
 
 /**
  * Recent notifications for this visitor: admin broadcasts for everyone, plus the signed-in user's
@@ -36,7 +37,7 @@ export async function GET(req: Request) {
       .where(and(eq(farms.owner_id, user.id), eq(harvest_commands.status, "sent"), gte(harvest_runs.delivery_date, since)))
       .orderBy(desc(harvest_commands.created_at))
       .limit(5);
-    for (const { c } of rows) out.push({ id: `cmd-${c.id}`, title: "Lệnh thu hoạch mới", body: c.message, url: "/farmer" });
+    for (const { c } of rows) out.push({ id: `cmd-${c.id}`, title: "Lệnh thu hoạch mới", body: c.message, url: "/farmer", category: COMMAND_CATEGORY, data: { commandId: c.id } });
   } else {
     const rows = await db
       .select()

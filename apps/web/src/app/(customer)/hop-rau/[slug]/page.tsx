@@ -55,7 +55,7 @@ export default async function BoxPage({ params }: { params: Promise<{ slug: stri
           </div>
           {box.description && <p className="body-lg text-on-surface-variant anim-in delay-1" style={{ lineHeight: 1.7, maxWidth: 680 }}>{box.description}</p>}
           <BoxContents items={box.items} hint={`${box.items.length} loại · mix từ ${new Set(box.items.flatMap((i) => i.farms.map((f) => f.id))).size} vườn`} />
-          <BoxMenu plan={box.meal_plan} title="Thực đơn kèm hộp" />
+          <BoxMenu key={box.id} plan={box.meal_plan} title="Thực đơn kèm hộp" target={user?.role === "farmer" ? undefined : { box: box.slug }} />
         </div>
         <div className="m3-box-side anim-in delay-2 flex flex-col gap-4">
           <SizePicker sizes={sizes} current={box.id} />
