@@ -14,13 +14,39 @@ function urlBase64ToUint8Array(base64: string) {
   return Uint8Array.from(atob(padded), (c) => c.charCodeAt(0));
 }
 
+const toBase64Url = (buf: ArrayBuffer | null) => (buf ? btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "") : "");
+
+/** True when the subscription was made with the server's current VAPID key. */
+const sameKey = (sub: PushSubscription) => toBase64Url(sub.options.applicationServerKey) === VAPID_PUBLIC_KEY.replace(/=+$/, "");
+
+async function save(sub: PushSubscription) {
+  const res = await fetch("/api/push/register", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ platform: "web", subscription: sub.toJSON() }) });
+  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? `Lỗi ${res.status}`);
+}
+
 export async function webPushState(): Promise<WebPushState> {
   if (!supported()) return "unsupported";
   if (!VAPID_PUBLIC_KEY) return "unconfigured";
   if (Notification.permission === "denied") return "denied";
   const reg = await navigator.serviceWorker.getRegistration("/");
   const sub = await reg?.pushManager.getSubscription();
-  return sub ? "on" : "off";
+  if (!sub) return "off";
+  // A subscription made with an old key can never be delivered to: drop it so the user can turn it on again.
+  if (!sameKey(sub)) {
+    await sub.unsubscribe().catch(() => {});
+    return "off";
+  }
+  // The server may have lost this browser (database rebuilt): register it again quietly.
+  save(sub).catch(() => {});
+  return "on";
+}
+
+/** The push service refused this browser; explain what the person can actually do about it. */
+function explain(e: unknown) {
+  const msg = e instanceof Error ? e.message : String(e);
+  if (/push service error|push service not available|AbortError/i.test(msg))
+    return new Error("Trình duyệt này không kết nối được dịch vụ đẩy (Brave, trình duyệt trong app, hoặc mạng chặn Google). Thông báo vẫn hiện khi bạn đang mở trang; muốn nhận cả khi đóng trang, hãy dùng Chrome, Edge hoặc Firefox.");
+  return new Error(msg || "Không bật được thông báo");
 }
 
 /** Asks for permission (must run from a click), subscribes this browser and saves it on the server. */
@@ -29,11 +55,32 @@ export async function enableWebPush(): Promise<WebPushState> {
   if (!VAPID_PUBLIC_KEY) return "unconfigured";
   const permission = await Notification.requestPermission();
   if (permission !== "granted") return permission === "denied" ? "denied" : "off";
-  const reg = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
+
+  const options = { userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) };
+  let reg = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
   await navigator.serviceWorker.ready;
-  const sub = (await reg.pushManager.getSubscription()) ?? (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) }));
-  const res = await fetch("/api/push/register", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ platform: "web", subscription: sub.toJSON() }) });
-  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? `Lỗi ${res.status}`);
+  let sub = await reg.pushManager.getSubscription();
+  if (sub && !sameKey(sub)) {
+    await sub.unsubscribe().catch(() => {});
+    sub = null;
+  }
+  if (!sub) {
+    try {
+      sub = await reg.pushManager.subscribe(options);
+    } catch {
+      // A stale registration is the usual cause: start from a clean service worker and try once more.
+      try {
+        await (await reg.pushManager.getSubscription())?.unsubscribe();
+        await reg.unregister();
+        reg = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
+        await navigator.serviceWorker.ready;
+        sub = await reg.pushManager.subscribe(options);
+      } catch (e) {
+        throw explain(e);
+      }
+    }
+  }
+  await save(sub);
   return "on";
 }
 

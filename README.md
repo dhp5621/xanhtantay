@@ -44,6 +44,16 @@ Font tự host trong `apps/web/public/fonts`. Icon là bản rút gọn theo tê
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | cho thông báo đẩy | Web Push; app mobile dùng Expo push |
 | `BLOB_READ_WRITE_TOKEN` | | Vercel Blob cho ảnh tải lên. Avatar lưu thẳng trong DB, không cần Blob |
 
+### Thông báo
+
+Có hai đường giao thông báo (lệnh thu hoạch cho nông dân, hành trình hộp rau cho khách):
+
+1. **Hỏi máy chủ định kỳ** (luôn chạy, không cần cấu hình): khi app hoặc trang web đang mở, cứ 30 giây hỏi `/api/notifications` rồi hiện thông báo tại chỗ. Không phụ thuộc Google / Apple.
+2. **Đẩy thật** (nhận cả khi đã đóng app), cần thêm khoá:
+   - **Web**: ba biến `VAPID_*` trên Vercel, khoá công khai và khoá riêng phải cùng một cặp (`npx web-push generate-vapid-keys`). Đổi khoá xong phải deploy lại.
+   - **Android**: tạo dự án Firebase cho gói `dhp.vkn.xanhtantay`, đặt `google-services.json` vào `apps/mobile/` (hoặc biến `GOOGLE_SERVICES_JSON` trỏ tới file), rồi tải khoá FCM V1 lên Expo bằng `eas credentials`.
+   - **iOS**: hồ sơ ký phải có quyền Push Notifications (`aps-environment`) và khoá APNs của chính tài khoản Apple Developer đó được tải lên Expo. Chứng chỉ ký dùng chung không nhận được thông báo đẩy.
+
 ### Tài khoản demo (mật khẩu chung: `demo123`)
 
 | Vai trò | Email | Có sẵn gì |

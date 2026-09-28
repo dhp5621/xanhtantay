@@ -1,5 +1,6 @@
 import { useEffect } from "react";
-import { Platform } from "react-native";
+import { AppState, Platform } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants, { ExecutionEnvironment } from "expo-constants";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
@@ -13,22 +14,48 @@ Notifications.setNotificationHandler({
   handleNotification: async () => ({ shouldShowBanner: true, shouldShowList: true, shouldPlaySound: true, shouldSetBadge: false }),
 });
 
-/** Asks for permission and returns this device's Expo push token, or null when push isn't available. */
-async function getExpoPushToken(): Promise<string | null> {
-  // Simulators can't receive pushes, and Expo Go (SDK 53+) no longer supports remote notifications on Android.
-  if (!Device.isDevice) return null;
-  if (Platform.OS === "android" && Constants.executionEnvironment === ExecutionEnvironment.StoreClient) return null;
+const POLL_MS = 30_000;
+const SEEN_KEY = "xtt-seen-notifications";
 
+interface Item { id: string; title: string; body: string; url: string }
+
+/** Notification permission + Android channel. Local notifications need these too. */
+async function ensurePermission(): Promise<boolean> {
+  if (Platform.OS === "web") return false;
   if (Platform.OS === "android") {
     await Notifications.setNotificationChannelAsync("default", { name: "Thông báo chung", importance: Notifications.AndroidImportance.HIGH });
   }
   let { status } = await Notifications.getPermissionsAsync();
   if (status !== "granted") ({ status } = await Notifications.requestPermissionsAsync());
-  if (status !== "granted") return null;
+  return status === "granted";
+}
 
+/** This device's Expo push token, or null when remote push isn't available in this build. */
+async function getExpoPushToken(): Promise<string | null> {
+  // Simulators can't receive pushes, and Expo Go (SDK 53+) no longer supports remote notifications on Android.
+  if (!Device.isDevice) return null;
+  if (Platform.OS === "android" && Constants.executionEnvironment === ExecutionEnvironment.StoreClient) return null;
   const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
   if (!projectId) return null;
   return (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+}
+
+/**
+ * Delivery without FCM / APNs: asks the server what is new for this user and raises a local
+ * notification for every id not seen before. Runs while the app is open.
+ */
+async function pollNotifications() {
+  const { notifications } = (await apiFetch("/notifications")) as { notifications: Item[] };
+  const raw = await AsyncStorage.getItem(SEEN_KEY);
+  const seen = raw ? new Set(JSON.parse(raw) as string[]) : null;
+  // First run on this phone: remember what exists without announcing old news.
+  const fresh = seen ? notifications.filter((n) => !seen.has(n.id)) : [];
+  const next = seen ?? new Set<string>();
+  notifications.forEach((n) => next.add(n.id));
+  await AsyncStorage.setItem(SEEN_KEY, JSON.stringify([...next].slice(-100)));
+  for (const n of fresh.reverse()) {
+    await Notifications.scheduleNotificationAsync({ content: { title: n.title, body: n.body, sound: "default", data: { url: n.url } }, trigger: null });
+  }
 }
 
 /** Opens the screen a tapped notification points at (`data.url`, e.g. "/don-hang" or "/farmer"). */
@@ -39,8 +66,9 @@ function openNotification(response: Notifications.NotificationResponse | null) {
 }
 
 /**
- * Registers this phone for the admin's push broadcasts. Runs on launch and again when the signed-in
- * user changes, so the server links the device to whoever is using it (or keeps it anonymous).
+ * Registers this phone for push. Runs on launch and again when the signed-in user changes, so the
+ * server links the device to whoever is using it. Where remote push is unavailable, falls back to
+ * polling and local notifications while the app is open.
  */
 export function usePushNotifications() {
   const { user, loading } = useSession();
@@ -49,17 +77,37 @@ export function usePushNotifications() {
   useEffect(() => {
     if (loading) return;
     let cancelled = false;
+    let timer: ReturnType<typeof setInterval> | undefined;
+    let appState: { remove: () => void } | undefined;
     (async () => {
+      let allowed = false;
+      let remote = false;
       try {
-        const token = await getExpoPushToken();
-        if (!token || cancelled) return;
-        await apiFetch("/push/register", { method: "POST", body: JSON.stringify({ platform: Platform.OS, token }) });
+        allowed = await ensurePermission();
+        const token = allowed ? await getExpoPushToken() : null;
+        if (token && !cancelled) {
+          await apiFetch("/push/register", { method: "POST", body: JSON.stringify({ platform: Platform.OS, token }) });
+          remote = true;
+        }
       } catch (e) {
-        console.warn("[push] registration failed", e);
+        // No Firebase config (Android) or no push entitlement (iOS) in this build.
+        console.warn("[push] remote push unavailable, polling instead", e);
       }
+      // Remote push already delivers everything; polling would only duplicate it.
+      if (cancelled || remote || !allowed || !userId) return;
+      const tick = () => {
+        if (AppState.currentState === "active") pollNotifications().catch(() => {});
+      };
+      tick();
+      timer = setInterval(tick, POLL_MS);
+      appState = AppState.addEventListener("change", (s) => {
+        if (s === "active") tick();
+      });
     })();
     return () => {
       cancelled = true;
+      if (timer) clearInterval(timer);
+      appState?.remove();
     };
   }, [loading, userId]);
 

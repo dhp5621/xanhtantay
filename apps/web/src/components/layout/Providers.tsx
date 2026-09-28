@@ -5,6 +5,7 @@ import type { Session } from "next-auth";
 import { ThemeProvider } from "./ThemeProvider";
 import { SnackbarProvider } from "@/components/ui/Snackbar";
 import { LiveRefresh } from "./LiveRefresh";
+import { NotificationPoller } from "./NotificationPoller";
 
 export function Providers({ children, session }: { children: React.ReactNode; session: Session | null }) {
   return (
@@ -15,6 +16,7 @@ export function Providers({ children, session }: { children: React.ReactNode; se
       <ThemeProvider>
         <SnackbarProvider>
           <LiveRefresh />
+          <NotificationPoller />
           {children}
         </SnackbarProvider>
       </ThemeProvider>
