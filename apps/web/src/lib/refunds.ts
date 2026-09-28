@@ -2,6 +2,7 @@ import { and, desc, eq, gte } from "drizzle-orm";
 import { db } from "@/db";
 import { callName, orders, refund_requests, users } from "@/db/schema";
 import { pushToUsers } from "./push";
+import { ARRIVAL_TIME, vnInstant } from "./commerce";
 import { refundNotice } from "./messages";
 import { removeFiles } from "./storage";
 import { countWords, evidenceRequired, REFUND_MAX_WORDS, REFUND_METHODS, REFUND_PHOTOS, REFUND_REASONS, REFUND_WINDOW_DAYS } from "./refund-config";
@@ -15,9 +16,11 @@ const stored = (u: unknown): u is string => typeof u === "string" && u.length < 
 export const refundFor = async (orderId: string) => (await db.select().from(refund_requests).where(eq(refund_requests.order_id, orderId)))[0] ?? null;
 
 /** Whether a request may be filed for this order right now, and if not, why. */
-export function refundWindow(order: { status: string; delivered_at: Date | null }) {
-  if (order.status !== "delivered" || !order.delivered_at) return { open: false, reason: "Chỉ gửi được yêu cầu sau khi hộp rau đã giao." };
-  const until = new Date(order.delivered_at.getTime() + REFUND_WINDOW_DAYS * 864e5);
+export function refundWindow(order: { status: string; delivered_at: Date | null; delivery_date: string }) {
+  if (order.status !== "delivered") return { open: false, reason: "Chỉ gửi được yêu cầu sau khi hộp rau đã giao." };
+  // An order marked delivered by hand has no recorded time: count from the scheduled arrival, 16h00 on the delivery day.
+  const delivered = order.delivered_at ?? vnInstant(order.delivery_date, ARRIVAL_TIME);
+  const until = new Date(delivered.getTime() + REFUND_WINDOW_DAYS * 864e5);
   return Date.now() > until.getTime() ? { open: false, until, reason: `Đã quá ${REFUND_WINDOW_DAYS} ngày kể từ khi giao nên không gửi được yêu cầu nữa.` } : { open: true, until, reason: null };
 }
 

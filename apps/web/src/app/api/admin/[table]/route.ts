@@ -61,6 +61,16 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ table:
       const [o] = await db.select({ o: schema.orders, price: schema.boxes.price }).from(schema.orders).innerJoin(schema.boxes, eq(schema.orders.box_id, schema.boxes.id)).where(eq(schema.orders.id, id));
       if (o) { updates.subtotal = o.price * Number(updates.quantity); updates.total = o.price * Number(updates.quantity) + o.o.ship_fee; }
     }
+    // A status set by hand gets the time of its stage, so tracking and the refund window stay right.
+    if (g.section.table === "orders" && typeof updates.status === "string") {
+      const [o] = await db.select().from(schema.orders).where(eq(schema.orders.id, id));
+      const reached = ["harvesting", "loaded", "delivered"].indexOf(updates.status);
+      if (o && reached >= 0) {
+        if (!o.harvested_at) updates.harvested_at = new Date();
+        if (reached >= 1 && !o.loaded_at) updates.loaded_at = new Date();
+        if (reached >= 2 && !o.delivered_at) updates.delivered_at = new Date();
+      }
+    }
     if (g.section.table === "harvest_commands" && updates.status) { updates.confirmed_at = updates.status === "confirmed" ? new Date() : null; updates.declined_at = updates.status === "declined" ? new Date() : null; }
     const [row] = await db.update(g.table).set(updates).where(eq(g.table.id, id)).returning();
     if (!row) return NextResponse.json({ error: "Không tìm thấy" }, { status: 404 });

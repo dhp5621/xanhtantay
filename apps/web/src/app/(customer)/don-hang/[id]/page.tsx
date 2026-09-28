@@ -23,7 +23,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   const o = await getOrderTrace(id);
   if (!o || o.user_id !== user.id) notFound();
   const refund = o.status === "delivered" ? await refundFor(o.id) : null;
-  const win = refundWindow({ status: o.status, delivered_at: o.delivered_at });
+  const win = refundWindow({ status: o.status, delivered_at: o.delivered_at, delivery_date: o.delivery_date });
   const farmer = o.farms[0] ? addressFarmer(o.farms[0].farmer).call.replace(/^./, (c) => c.toLowerCase()) : null;
 
   return (
