@@ -112,6 +112,40 @@ export async function apiFetch(path: string, options?: RequestInit & { timeoutMs
   return res.json();
 }
 
+/**
+ * Multipart upload. No Content-Type header: the native layer writes the boundary itself.
+ * Goes through XMLHttpRequest because fetch() cannot report how much has been sent; `onProgress`
+ * gets the sent fraction from 0 to 1.
+ */
+export async function apiUpload(path: string, form: FormData, opts?: { onProgress?: (fraction: number) => void; timeoutMs?: number }) {
+  await ensureCookieRestored();
+  return new Promise<any>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `${API_URL}/api${path}`);
+    xhr.withCredentials = true;
+    xhr.timeout = opts?.timeoutMs ?? 180_000;
+    if (opts?.onProgress) {
+      const report = opts.onProgress;
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable && e.total > 0) report(Math.min(1, e.loaded / e.total));
+      };
+    }
+    xhr.onload = () => {
+      let data: any = null;
+      try {
+        data = JSON.parse(xhr.responseText);
+      } catch {
+        // not JSON (e.g. a gateway's "payload too large" page)
+      }
+      if (xhr.status >= 200 && xhr.status < 300) resolve(data);
+      else reject(new ApiError(data?.error ?? (xhr.status === 413 ? "Tệp lớn quá nên máy chủ không nhận ạ" : `Lỗi ${xhr.status}`), xhr.status));
+    };
+    xhr.onerror = () => reject(new TypeError("Network request failed"));
+    xhr.ontimeout = () => reject(new ApiError("Mạng đang yếu nên tải lên quá lâu, xin thử lại giúp ạ", 408));
+    xhr.send(form);
+  });
+}
+
 /** Mirrors the NextAuth Credentials sign-in flow (CSRF token, then callback) used by the web login form. */
 export async function login(email: string, password: string) {
   await ensureCookieRestored();

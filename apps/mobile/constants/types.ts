@@ -197,3 +197,34 @@ export interface MenuResponse {
   customised: boolean;
   ai: boolean;
 }
+
+export type RefundReason = "not_received" | "missing" | "spoiled" | "wrong" | "broken";
+export type RefundMethod = "refund" | "replace";
+export type RefundStatus = "pending" | "approved" | "rejected";
+
+/** A return / refund request on a delivered order. */
+export interface Refund {
+  id: string;
+  order_id: string;
+  reason: RefundReason;
+  description: string;
+  photos: string[];
+  video_url: string | null;
+  /** What the customer asked for. */
+  method: RefundMethod;
+  status: RefundStatus;
+  /** What the operator granted; may differ from `method`. */
+  resolution: RefundMethod | null;
+  refund_amount: number | null;
+  note: string | null;
+  created_at: string;
+  reviewed_at: string | null;
+}
+
+/** `GET /orders/{id}/refund`. `reason` says why a request cannot be filed. */
+export interface RefundState {
+  request: Refund | null;
+  can_request: boolean;
+  until: string | null;
+  reason: string | null;
+}

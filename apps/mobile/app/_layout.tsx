@@ -90,6 +90,7 @@ function Navigator() {
         <Stack.Screen name="dang-nhap/index" options={{ animation: "fade_from_bottom" }} />
         <Stack.Screen name="hop-rau/[slug]" options={{ headerShown: true, title: "Hộp rau" }} />
         <Stack.Screen name="don-hang/[id]" options={{ headerShown: true, title: "Chi tiết đơn hàng" }} />
+        <Stack.Screen name="don-hang/hoan-tien/[id]" options={{ headerShown: true, title: "Trả hàng / Hoàn tiền" }} />
         <Stack.Screen name="farms/index" options={{ headerShown: true, title: "Vườn rau" }} />
         <Stack.Screen name="farms/[id]" options={{ headerShown: true, title: "Vườn rau" }} />
         <Stack.Screen name="farmer/nang-suat" options={{ headerShown: true, title: "Rau củ đăng ký" }} />

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { put } from "@vercel/blob";
 import { getSessionUser } from "@/lib/session";
 
-const ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/gif", "video/mp4", "video/webm", "video/quicktime"];
+const ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/gif", "video/mp4", "video/webm", "video/quicktime", "video/3gpp"];
 // The client compresses before upload (images ≤1280px WebP, video ≤720p/25fps/30s);
 // these caps only stop uncompressed uploads from eating the 1 GB store.
 const MAX_IMAGE = 3 * 1024 * 1024;

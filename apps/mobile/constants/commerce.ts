@@ -1,4 +1,5 @@
 import type { Box, BoxSize, OrderType, SubscriptionFrequency } from "@xanhtantay/types";
+import type { RefundMethod, RefundReason, RefundStatus } from "./types";
 
 /** Display-only rules of the pre-order model (the server enforces the real ones). */
 
@@ -92,3 +93,35 @@ export function shipFeeFor(mode: OrderMode, opts?: { groupReached?: boolean; fee
   if (mode === "group" && opts?.groupReached) return 0;
   return opts?.fee ?? SHIP_FEE;
 }
+
+/** Return / refund after delivery (the server enforces the same rules). */
+export const REFUND_REASONS: { value: RefundReason; label: string; icon: string }[] = [
+  { value: "not_received", label: "Chưa nhận được hàng", icon: "inventory_2" },
+  { value: "missing", label: "Thiếu hàng", icon: "scale" },
+  { value: "spoiled", label: "Hàng bị hư hỏng", icon: "eco" },
+  { value: "wrong", label: "Giao sai hàng", icon: "swap_horiz" },
+  { value: "broken", label: "Giao hàng bị vỡ, hỏng hàng", icon: "warning" },
+];
+export const REFUND_METHODS: { value: RefundMethod; label: string; hint: string; icon: string }[] = [
+  { value: "refund", label: "Hoàn tiền", hint: "Nhận lại tiền hộp rau", icon: "payments" },
+  { value: "replace", label: "Giao bù hộp khác", hint: "Nhận hộp mới ở chuyến kế tiếp", icon: "local_shipping" },
+];
+export const REFUND_STATUS: Record<RefundStatus, { label: string; icon: string }> = {
+  pending: { label: "Đang xác minh", icon: "hourglass_empty" },
+  approved: { label: "Đã chấp nhận", icon: "check_circle" },
+  rejected: { label: "Không chấp nhận", icon: "cancel" },
+};
+/** One photo per side of the box, in the order they are sent. */
+export const REFUND_PHOTO_SLOTS = ["Mặt trước", "Mặt sau", "Bên trong", "Chỗ có vấn đề"] as const;
+export const REFUND_PHOTOS = REFUND_PHOTO_SLOTS.length;
+export const REFUND_VIDEO_SECONDS = 60;
+export const REFUND_MIN_WORDS = 3;
+export const REFUND_MAX_WORDS = 200;
+/** What `POST /upload` accepts for evidence. */
+export const REFUND_IMAGE_MAX_BYTES = 3 * 1024 * 1024;
+export const REFUND_VIDEO_MAX_BYTES = 30 * 1024 * 1024;
+/** A box that never arrived cannot be photographed: evidence is optional for that reason only. */
+export const evidenceRequired = (reason: RefundReason | null) => reason !== "not_received";
+export const countWords = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;
+export const refundReasonLabel = (v: string) => REFUND_REASONS.find((r) => r.value === v)?.label ?? v;
+export const refundMethodLabel = (v: string | null | undefined) => REFUND_METHODS.find((m) => m.value === v)?.label ?? "";

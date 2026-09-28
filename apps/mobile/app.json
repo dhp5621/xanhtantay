@@ -46,8 +46,9 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Xanh Tận Tay cần truy cập thư viện ảnh để chọn ảnh đại diện.",
-          "cameraPermission": "Xanh Tận Tay cần dùng camera để chụp ảnh đại diện."
+          "photosPermission": "Xanh Tận Tay cần truy cập thư viện để chọn ảnh đại diện, ảnh rau củ và ảnh, video bằng chứng khi trả hàng.",
+          "cameraPermission": "Xanh Tận Tay cần dùng camera để chụp ảnh đại diện, ảnh rau củ và quay ảnh, video bằng chứng khi trả hàng.",
+          "microphonePermission": "Xanh Tận Tay cần dùng micro khi bạn quay video bằng chứng."
         }
       ],
       "react-native-edge-to-edge",

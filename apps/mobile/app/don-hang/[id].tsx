@@ -6,7 +6,7 @@ import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { apiFetch, ApiError } from "../../constants/api";
 import { colors, shape, type, useStyles, type Colors } from "../../constants/theme";
 import { formatVND } from "../../constants/format";
-import type { OrderTrace } from "../../constants/types";
+import type { OrderTrace, RefundState } from "../../constants/types";
 import { useLiveRefresh } from "../../hooks/useLive";
 import { useSession } from "../../hooks/useSession";
 import { AnimIn } from "../../components/motion";
@@ -14,12 +14,13 @@ import { Button, EmptyState, SectionHead } from "../../components/ui";
 import { TraceView } from "../../components/TraceView";
 import { CareMessage } from "../../components/CareMessage";
 import { QrImage } from "../../components/QrImage";
+import { RefundCard } from "../../components/RefundCard";
 import { PageLoader } from "../../components/Loader";
 import { useDialog } from "../../components/Dialog";
 import { Icon } from "../../components/Icon";
 import { EmojiText } from "../../components/EmojiText";
 
-/** One order: journey with real timestamps, care message, contents, menu, QR and the price breakdown. */
+/** One order: journey with real timestamps, care message, contents, menu, QR, the price breakdown and, once delivered, return / refund. */
 export default function OrderDetailScreen() {
   const styles = useStyles(makeStyles);
   const insets = useSafeAreaInsets();
@@ -27,6 +28,7 @@ export default function OrderDetailScreen() {
   const { user } = useSession();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [order, setOrder] = useState<OrderTrace | null>(null);
+  const [refund, setRefund] = useState<RefundState | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -35,8 +37,12 @@ export default function OrderDetailScreen() {
   const load = useCallback(async () => {
     if (!id) return;
     try {
-      setOrder(await apiFetch(`/orders/${id}`));
+      const next: OrderTrace = await apiFetch(`/orders/${id}`);
+      setOrder(next);
       setError(null);
+      // Return / refund only exists on the buyer's own delivered order; the section stays away if it cannot be read.
+      if (next.mine && next.status === "delivered") setRefund(await apiFetch(`/orders/${id}/refund`).catch(() => null));
+      else setRefund(null);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Không tải được đơn hàng");
     } finally {
@@ -138,6 +144,13 @@ export default function OrderDetailScreen() {
                 ) : null}
                 {order.group_order_id ? <Button label="Xem nhóm gom đơn" icon="groups" variant="tonal" small onPress={() => router.push(`/tabs/gom-don/${order.group_order_id}`)} style={{ marginTop: 12 }} /> : null}
               </View>
+            </AnimIn>
+          ) : null}
+
+          {mine && order.status === "delivered" && refund && (refund.request || refund.can_request || refund.reason) ? (
+            <AnimIn>
+              <SectionHead icon="restore" title="Trả hàng / Hoàn tiền" />
+              <RefundCard orderId={order.id} state={refund} onChange={setRefund} />
             </AnimIn>
           ) : null}
 
