@@ -189,7 +189,7 @@ export default function TaiKhoanScreen() {
   };
 
   const changeAvatar = () => {
-    alert("Ảnh đại diện", "Ảnh được cắt vuông và nén còn 96×96, chỉ vài KB.", [
+    alert("Ảnh đại diện", "Ảnh được cắt vuông và nén còn 256×256.", [
       { text: "Huỷ", style: "cancel" as const },
       ...(me?.avatar_url ? [{ text: "Gỡ ảnh", style: "destructive" as const, onPress: () => saveAvatar(null) }] : []),
       { text: "Chọn từ máy", onPress: () => pickAvatar("library") },
