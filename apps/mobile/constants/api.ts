@@ -74,17 +74,36 @@ function ensureCookieRestored() {
   return cookieRestorePromise;
 }
 
-/** All requests carry credentials so the native cookie jar attaches the NextAuth session cookie. */
-export async function apiFetch(path: string, options?: RequestInit) {
-  await ensureCookieRestored();
-  const res = await fetch(`${API_URL}/api${path}`, {
-    ...options,
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...options?.headers,
-    },
+/**
+ * fetch() has no timeout option and iOS gives up on a silent request after 60 seconds, so a call
+ * that may take that long goes through XMLHttpRequest, which passes its timeout to the native layer.
+ */
+function requestWithTimeout(url: string, options: RequestInit, timeoutMs: number): Promise<Pick<Response, "ok" | "status" | "json">> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open(options.method ?? "GET", url);
+    xhr.withCredentials = true;
+    xhr.timeout = timeoutMs;
+    Object.entries((options.headers ?? {}) as Record<string, string>).forEach(([k, v]) => xhr.setRequestHeader(k, v));
+    xhr.onload = () => {
+      const text = xhr.responseText;
+      resolve({ ok: xhr.status >= 200 && xhr.status < 300, status: xhr.status, json: async () => JSON.parse(text) });
+    };
+    xhr.onerror = () => reject(new TypeError("Network request failed"));
+    xhr.ontimeout = () => reject(new ApiError("Máy chủ trả lời quá lâu, bạn thử lại nhé", 408));
+    xhr.send(typeof options.body === "string" ? options.body : null);
   });
+}
+
+/**
+ * All requests carry credentials so the native cookie jar attaches the NextAuth session cookie.
+ * `timeoutMs` is only for calls known to be slow (the AI menu); everything else keeps plain fetch.
+ */
+export async function apiFetch(path: string, options?: RequestInit & { timeoutMs?: number }) {
+  await ensureCookieRestored();
+  const { timeoutMs, ...init } = options ?? {};
+  const headers = { "Content-Type": "application/json", ...(init.headers as Record<string, string> | undefined) };
+  const res = timeoutMs ? await requestWithTimeout(`${API_URL}/api${path}`, { ...init, headers }, timeoutMs) : await fetch(`${API_URL}/api${path}`, { ...init, credentials: "include", headers });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new ApiError(err.error ?? `Lỗi ${res.status}`, res.status);

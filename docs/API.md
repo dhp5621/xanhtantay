@@ -70,7 +70,7 @@ Emotional tracking copy (use `ORDER_TIMELINE`):
 - `POST /farmer/commands/{id}/confirm` → the command, `status: "confirmed"`. Allowed from `sent` or `declined`.
 - `POST /farmer/commands/{id}/decline` → the command, `status: "declined"`, `declined_at` set. `409` with `{ error }` if it was already confirmed.
 - `HarvestCommand.status` is `"sent" | "confirmed" | "declined"`; `declined_at: string | null`.
-- Push and polled notifications for a new command carry `category: "harvest-command"` (Expo: `categoryId`) and `data: { url: "/farmer", commandId }`. The notification body is the command's full message. Clients attach two buttons to that category, "Có, xác nhận" and "Không", and answer without opening the app.
+- Push and polled notifications for a new command carry `category: "harvest_command"` (Expo: `categoryId`) and `data: { url: "/farmer", commandId }`. The notification body is the command's full message. Clients attach two buttons to that category, "Có, xác nhận" and "Không", and answer without opening the app.
 - `GET /notifications?platform=mobile` items: `{ id, title, body, url, category?, data? }`.
 
 ## Menu: another recipe, or a whole new week

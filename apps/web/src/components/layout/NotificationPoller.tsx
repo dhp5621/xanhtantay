@@ -58,7 +58,7 @@ export function NotificationPoller() {
           // Registering is what makes the Có / Không buttons possible: only the worker can show and handle them.
           const reg = "serviceWorker" in navigator ? await navigator.serviceWorker.register("/sw.js", { scope: "/" }).then(() => navigator.serviceWorker.ready) : undefined;
           if (reg) {
-            const commandId = n.category === "harvest-command" ? n.data?.commandId : undefined;
+            const commandId = n.category === "harvest_command" ? n.data?.commandId : undefined;
             const options: NotificationOptions & { actions?: { action: string; title: string }[] } = { body: n.body, icon: "/icon.png", badge: "/icon.png", tag: n.id, requireInteraction: !!commandId, data: { url: n.url, commandId: commandId ?? null } };
             if (commandId) options.actions = [{ action: "confirm", title: "Có, xác nhận" }, { action: "decline", title: "Không" }];
             await reg.showNotification(n.title, options);

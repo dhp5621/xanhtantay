@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { View, Text, StyleSheet, ScrollView, RefreshControl } from "react-native";
+import { View, Text, StyleSheet, ScrollView, RefreshControl, KeyboardAvoidingView, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { apiFetch, ApiError } from "../../constants/api";
@@ -7,6 +7,7 @@ import { colors, shape, type, useStyles, type Colors } from "../../constants/the
 import { formatVND } from "../../constants/format";
 import type { OrderTrace } from "../../constants/types";
 import { useLiveRefresh } from "../../hooks/useLive";
+import { useSession } from "../../hooks/useSession";
 import { AnimIn } from "../../components/motion";
 import { Button, EmptyState, SectionHead } from "../../components/ui";
 import { TraceView } from "../../components/TraceView";
@@ -22,6 +23,7 @@ export default function OrderDetailScreen() {
   const styles = useStyles(makeStyles);
   const insets = useSafeAreaInsets();
   const { alert } = useDialog();
+  const { user } = useSession();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [order, setOrder] = useState<OrderTrace | null>(null);
   const [loading, setLoading] = useState(true);
@@ -80,75 +82,81 @@ export default function OrderDetailScreen() {
 
   const mine = order.mine;
   const cancellable = mine && order.status === "placed" && !order.allocated;
+  // Only the buyer changes the menu of an order, and not once it is cancelled.
+  const menuTarget = mine && order.status !== "cancelled" && user?.role !== "farmer" ? { orderId: order.id } : undefined;
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={{ padding: 16, paddingBottom: 32 + insets.bottom }}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={async () => {
-            setRefreshing(true);
-            await load();
-            setRefreshing(false);
-          }}
-          colors={[colors.primary]}
-          tintColor={colors.primary}
-        />
-      }
-    >
-      <TraceView
-        trace={order}
-        lead={
-          mine && order.care_message ? (
-            <AnimIn delay={40}>
-              <CareMessage message={order.care_message} />
-            </AnimIn>
-          ) : null
+    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.container}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={{ padding: 16, paddingBottom: 32 + insets.bottom }}
+        keyboardShouldPersistTaps="handled"
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={async () => {
+              setRefreshing(true);
+              await load();
+              setRefreshing(false);
+            }}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
+          />
         }
       >
-        {mine ? (
+        <TraceView
+          trace={order}
+          menuTarget={menuTarget}
+          lead={
+            mine && order.care_message ? (
+              <AnimIn delay={40}>
+                <CareMessage message={order.care_message} />
+              </AnimIn>
+            ) : null
+          }
+        >
+          {mine ? (
+            <AnimIn>
+              <SectionHead icon="receipt_long" title="Thanh toán" />
+              <View style={styles.card}>
+                <Row label={`${order.quantity} hộp`} value={formatVND(order.subtotal ?? 0)} />
+                <Row label="Phí giao" value={order.ship_fee ? formatVND(order.ship_fee) : "Miễn phí"} accent={!order.ship_fee} />
+                <View style={styles.divider} />
+                <Row label="Tổng cộng" value={formatVND(order.total ?? 0)} strong />
+                {order.address ? (
+                  <View style={styles.extra}>
+                    <Icon name="location_on" size={16} color={colors.onSurfaceVariant} />
+                    <EmojiText style={styles.extraText}>{order.address}</EmojiText>
+                  </View>
+                ) : null}
+                {order.note ? (
+                  <View style={styles.extra}>
+                    <Icon name="sticky_note_2" size={16} color={colors.onSurfaceVariant} />
+                    <EmojiText style={styles.extraText}>{order.note}</EmojiText>
+                  </View>
+                ) : null}
+                {order.group_order_id ? <Button label="Xem nhóm gom đơn" icon="groups" variant="tonal" small onPress={() => router.push(`/tabs/gom-don/${order.group_order_id}`)} style={{ marginTop: 12 }} /> : null}
+              </View>
+            </AnimIn>
+          ) : null}
+
           <AnimIn>
-            <SectionHead icon="receipt_long" title="Thanh toán" />
-            <View style={styles.card}>
-              <Row label={`${order.quantity} hộp`} value={formatVND(order.subtotal ?? 0)} />
-              <Row label="Phí giao" value={order.ship_fee ? formatVND(order.ship_fee) : "Miễn phí"} accent={!order.ship_fee} />
-              <View style={styles.divider} />
-              <Row label="Tổng cộng" value={formatVND(order.total ?? 0)} strong />
-              {order.address ? (
-                <View style={styles.extra}>
-                  <Icon name="location_on" size={16} color={colors.onSurfaceVariant} />
-                  <EmojiText style={styles.extraText}>{order.address}</EmojiText>
-                </View>
-              ) : null}
-              {order.note ? (
-                <View style={styles.extra}>
-                  <Icon name="sticky_note_2" size={16} color={colors.onSurfaceVariant} />
-                  <EmojiText style={styles.extraText}>{order.note}</EmojiText>
-                </View>
-              ) : null}
-              {order.group_order_id ? <Button label="Xem nhóm gom đơn" icon="groups" variant="tonal" small onPress={() => router.push(`/tabs/gom-don/${order.group_order_id}`)} style={{ marginTop: 12 }} /> : null}
+            <SectionHead icon="qr_code_2" title="Mã QR truy xuất" />
+            <View style={[styles.card, { alignItems: "center" }]}>
+              <QrImage orderId={order.id} size={170} />
+              <Text style={[styles.muted, { textAlign: "center", marginTop: 10 }]}>Ai quét mã này cũng xem được vườn trồng, giờ thu hoạch và hành trình của hộp rau. Mã không hiện thông tin người mua.</Text>
             </View>
           </AnimIn>
-        ) : null}
 
-        <AnimIn>
-          <SectionHead icon="qr_code_2" title="Mã QR truy xuất" />
-          <View style={[styles.card, { alignItems: "center" }]}>
-            <QrImage orderId={order.id} size={170} />
-            <Text style={[styles.muted, { textAlign: "center", marginTop: 10 }]}>Ai quét mã này cũng xem được vườn trồng, giờ thu hoạch và hành trình của hộp rau. Mã không hiện thông tin người mua.</Text>
-          </View>
-        </AnimIn>
-
-        {cancellable ? (
-          <AnimIn style={{ alignItems: "center" }}>
-            <Button label="Huỷ đơn" icon="cancel" variant="error" onPress={cancel} loading={busy} />
-            <Text style={[styles.muted, { textAlign: "center", marginTop: 8 }]}>Huỷ được cho tới khi chốt sổ lúc 18h00.</Text>
-          </AnimIn>
-        ) : null}
-      </TraceView>
-    </ScrollView>
+          {cancellable ? (
+            <AnimIn style={{ alignItems: "center" }}>
+              <Button label="Huỷ đơn" icon="cancel" variant="error" onPress={cancel} loading={busy} />
+              <Text style={[styles.muted, { textAlign: "center", marginTop: 8 }]}>Huỷ được cho tới khi chốt sổ lúc 18h00.</Text>
+            </AnimIn>
+          ) : null}
+        </TraceView>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 

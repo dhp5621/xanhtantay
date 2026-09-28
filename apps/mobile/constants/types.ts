@@ -1,4 +1,4 @@
-import type { Box, BoxMealDay, Cluster, Farm, FarmCapacity, GroupOrder, HarvestCommand, Order, OrderStatus, OrderType, User } from "@xanhtantay/types";
+import type { Box, BoxMeal, BoxMealDay, Cluster, Farm, FarmCapacity, GroupOrder, HarvestCommand, Order, OrderStatus, OrderType, User } from "@xanhtantay/types";
 
 /** JSON shapes returned by the API on top of the shared types (see docs/API.md). */
 
@@ -70,7 +70,7 @@ export interface OrderTrace {
   cutoff_at: string | null;
   allocated: boolean;
   cluster: { name: string; district: string } | null;
-  box: (Pick<Box, "id" | "slug" | "name" | "size" | "weight_kg" | "image_url" | "days" | "servings"> & { meal_plan: BoxMealDay[] }) | null;
+  box: (Pick<Box, "id" | "slug" | "name" | "size" | "weight_kg" | "image_url" | "days" | "servings"> & { meal_plan: BoxMealDay[]; customised?: boolean }) | null;
   contents: TraceContent[];
   farms: TraceFarm[];
   mine: boolean;
@@ -118,4 +118,15 @@ export interface FarmerCommands {
   farm: { id: string; name: string; location: string } | null;
   current: HarvestCommand | null;
   commands: HarvestCommand[];
+}
+
+/** Where a changed menu belongs: saved on an order, or only on screen for a box not bought yet. */
+export type MenuTarget = { orderId: string } | { box: string };
+
+/** `POST /menu`. */
+export interface MenuResponse {
+  plan: BoxMealDay[];
+  meal?: BoxMeal;
+  customised: boolean;
+  ai: boolean;
 }

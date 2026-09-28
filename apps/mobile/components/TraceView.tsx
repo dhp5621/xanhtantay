@@ -4,7 +4,7 @@ import { router } from "expo-router";
 import { colors, shape, type, elevation, useStyles, type Colors } from "../constants/theme";
 import { ORDER_TYPE_ICONS, ORDER_TYPE_LABELS, SIZE_LABELS } from "../constants/commerce";
 import { formatDateTime, formatDay, formatKg } from "../constants/format";
-import type { OrderTrace } from "../constants/types";
+import type { MenuTarget, OrderTrace } from "../constants/types";
 import { AnimIn, AnimInScale, PressableScale } from "./motion";
 import { Chip, SectionHead } from "./ui";
 import { SmartImage } from "./SmartImage";
@@ -17,7 +17,7 @@ import { BoxMenu } from "./BoxMenu";
  * The journey of one box, shared by the order detail and the public QR trace: which farms cut it and
  * when, how it travelled, what is inside and the menu that comes with it. Never shows who bought it.
  */
-export function TraceView({ trace, linkFarms = true, lead, children }: { trace: OrderTrace; linkFarms?: boolean; lead?: ReactNode; children?: ReactNode }) {
+export function TraceView({ trace, linkFarms = true, lead, menuTarget, children }: { trace: OrderTrace; linkFarms?: boolean; lead?: ReactNode; /** set on the buyer's own order; the public trace keeps the menu read-only */ menuTarget?: MenuTarget; children?: ReactNode }) {
   const styles = useStyles(makeStyles);
   const farmer = trace.farms?.find((f) => f.farmer)?.farmer ?? null;
   const box = trace.box;
@@ -100,7 +100,7 @@ export function TraceView({ trace, linkFarms = true, lead, children }: { trace: 
       {box?.meal_plan?.length ? (
         <AnimIn delay={180}>
           <SectionHead icon="menu_book" title={`Thực đơn ${box.days} ngày kèm hộp`} />
-          <BoxMenu mealPlan={box.meal_plan} />
+          <BoxMenu key={trace.id} mealPlan={box.meal_plan} target={menuTarget} customised={box.customised} />
         </AnimIn>
       ) : null}
 

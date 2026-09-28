@@ -5,7 +5,7 @@ import { useFocusEffect } from "expo-router";
 import type { HarvestCommand } from "@xanhtantay/types";
 import { apiFetch, ApiError } from "../../constants/api";
 import { colors, shape, type, elevation, useStyles, type Colors } from "../../constants/theme";
-import { formatClockDay, formatDay, formatKg } from "../../constants/format";
+import { formatClock, formatClockDay, formatDay, formatKg } from "../../constants/format";
 import type { FarmerCommands } from "../../constants/types";
 import { useLiveRefresh } from "../../hooks/useLive";
 import { AnimIn, AnimInScale, PressableScale, Skeleton } from "../../components/motion";
@@ -15,7 +15,7 @@ import { Icon } from "../../components/Icon";
 
 /**
  * The farmer's only screen: today's harvest command in very large type, the amounts to cut,
- * and one button. Everything else was removed on purpose.
+ * and two buttons: Có or Không. Everything else was removed on purpose.
  */
 export default function FarmerScreen() {
   const styles = useStyles(makeStyles);
@@ -23,7 +23,7 @@ export default function FarmerScreen() {
   const [data, setData] = useState<FarmerCommands | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<"confirm" | "decline" | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -41,24 +41,29 @@ export default function FarmerScreen() {
     }, [load])
   );
 
-  const confirm = async (cmd: HarvestCommand) => {
-    setBusy(true);
+  const answer = async (cmd: HarvestCommand, choice: "confirm" | "decline") => {
+    setBusy(choice);
     try {
-      await apiFetch(`/farmer/commands/${cmd.id}/confirm`, { method: "POST" });
-      if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-      // Show the confirmed state at once; the reload brings the server's own timestamp.
-      setData((d) => (d && d.current?.id === cmd.id ? { ...d, current: { ...d.current, status: "confirmed", confirmed_at: new Date().toISOString() } } : d));
+      await apiFetch(`/farmer/commands/${cmd.id}/${choice}`, { method: "POST" });
+      if (Platform.OS !== "web") Haptics.notificationAsync(choice === "confirm" ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Warning).catch(() => {});
+      // Show the answer at once; the reload brings the server's own timestamp.
+      const now = new Date().toISOString();
+      const next: Partial<HarvestCommand> = choice === "confirm" ? { status: "confirmed", confirmed_at: now, declined_at: null } : { status: "declined", declined_at: now };
+      setData((d) => (d && d.current?.id === cmd.id ? { ...d, current: { ...d.current, ...next } } : d));
       await load();
     } catch (e) {
-      alert("Chưa xác nhận được", e instanceof ApiError ? e.message : "Mạng đang yếu, bác bấm lại giúp nhé.");
+      alert(choice === "confirm" ? "Chưa xác nhận được" : "Chưa gửi được", e instanceof ApiError ? e.message : "Mạng đang yếu, bác bấm lại giúp nhé.");
+      // The command may have been answered elsewhere (e.g. from the notification) in the meantime.
+      load();
     } finally {
-      setBusy(false);
+      setBusy(null);
     }
   };
 
   const current = data?.current ?? null;
   const history = (data?.commands ?? []).filter((c) => c.id !== current?.id);
   const confirmed = current?.status === "confirmed";
+  const declined = current?.status === "declined";
 
   return (
     <ScrollView
@@ -155,11 +160,41 @@ export default function FarmerScreen() {
               </View>
             </AnimInScale>
           ) : (
-            <AnimIn delay={160}>
-              <PressableScale haptic={Haptics.ImpactFeedbackStyle.Medium} scaleTo={0.97} disabled={busy} style={[styles.confirmBtn, elevation[3]]} onPress={() => confirm(current)} accessibilityRole="button" accessibilityLabel="Đã hiểu và xác nhận">
-                {busy ? <Loader size={32} color={colors.onPrimary} /> : <Icon name="check_circle" size={34} filled color={colors.onPrimary} />}
-                <Text style={styles.confirmText}>{busy ? "Đang gửi…" : "Đã hiểu & Xác nhận"}</Text>
+            <AnimIn delay={160} style={{ gap: 12 }}>
+              {declined ? (
+                <View style={styles.declined} accessibilityRole="alert">
+                  <Icon name="cancel" size={32} filled color={colors.onErrorContainer} />
+                  <Text style={styles.declinedText}>Bác đã báo không cắt được{current.declined_at ? ` lúc ${formatClock(current.declined_at)}` : ""}</Text>
+                </View>
+              ) : null}
+              <PressableScale
+                haptic={Haptics.ImpactFeedbackStyle.Medium}
+                scaleTo={0.97}
+                disabled={!!busy}
+                style={[styles.confirmBtn, elevation[3]]}
+                onPress={() => answer(current, "confirm")}
+                accessibilityRole="button"
+                accessibilityLabel={declined ? "Tôi cắt được, xác nhận lại" : "Có, đã hiểu và xác nhận"}
+                accessibilityState={{ disabled: !!busy, busy: busy === "confirm" }}
+              >
+                {busy === "confirm" ? <Loader size={32} color={colors.onPrimary} /> : <Icon name="thumb_up" size={34} filled color={colors.onPrimary} />}
+                <Text style={styles.confirmText}>{busy === "confirm" ? "Đang gửi…" : declined ? "Tôi cắt được, xác nhận lại" : "Có · Đã hiểu & Xác nhận"}</Text>
               </PressableScale>
+              {!declined ? (
+                <PressableScale
+                  haptic
+                  scaleTo={0.97}
+                  disabled={!!busy}
+                  style={[styles.confirmBtn, styles.declineBtn]}
+                  onPress={() => answer(current, "decline")}
+                  accessibilityRole="button"
+                  accessibilityLabel="Không, tôi không cắt được"
+                  accessibilityState={{ disabled: !!busy, busy: busy === "decline" }}
+                >
+                  {busy === "decline" ? <Loader size={28} color={colors.onSurfaceVariant} /> : <Icon name="cancel" size={30} color={colors.onSurfaceVariant} />}
+                  <Text style={[styles.confirmText, styles.declineText]}>{busy === "decline" ? "Đang gửi…" : "Không · Tôi không cắt được"}</Text>
+                </PressableScale>
+              ) : null}
             </AnimIn>
           )}
         </>
@@ -180,6 +215,9 @@ export default function FarmerScreen() {
           <Text style={styles.sectionTitle}>Các lệnh trước</Text>
           {history.map((c, i) => {
             const ok = c.status === "confirmed";
+            const no = c.status === "declined";
+            const bg = ok ? colors.primaryContainer : no ? colors.errorContainer : colors.surfaceContainerHighest;
+            const fg = ok ? colors.onPrimaryContainer : no ? colors.onErrorContainer : colors.onSurfaceVariant;
             return (
               <AnimIn key={c.id} index={Math.min(i, 6)} delay={200}>
                 <View style={styles.historyRow}>
@@ -187,9 +225,9 @@ export default function FarmerScreen() {
                     <Text style={styles.historyDate}>{formatDay(c.delivery_date)}</Text>
                     <Text style={styles.historyKg}>{formatKg(c.total_kg)}</Text>
                   </View>
-                  <View style={[styles.historyState, { backgroundColor: ok ? colors.primaryContainer : colors.surfaceContainerHighest }]}>
-                    <Icon name={ok ? "check_circle" : "schedule"} size={20} filled={ok} color={ok ? colors.onPrimaryContainer : colors.onSurfaceVariant} />
-                    <Text style={[styles.historyStateText, { color: ok ? colors.onPrimaryContainer : colors.onSurfaceVariant }]}>{ok ? "Đã xác nhận" : "Chưa xác nhận"}</Text>
+                  <View style={[styles.historyState, { backgroundColor: bg }]}>
+                    <Icon name={ok ? "check_circle" : no ? "cancel" : "schedule"} size={20} filled={ok || no} color={fg} />
+                    <Text style={[styles.historyStateText, { color: fg }]}>{ok ? "Đã xác nhận" : no ? "Không cắt được" : "Chưa xác nhận"}</Text>
                   </View>
                 </View>
               </AnimIn>
@@ -224,7 +262,12 @@ const makeStyles = (c: Colors) =>
     totalKg: { ...type.titleLarge, color: c.onSurface, fontSize: 22 },
 
     confirmBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 12, backgroundColor: c.primary, borderRadius: shape.full, minHeight: 84, paddingVertical: 20, paddingHorizontal: 24 },
-    confirmText: { color: c.onPrimary, fontSize: 24, lineHeight: 32, fontWeight: "800", includeFontPadding: false },
+    confirmText: { color: c.onPrimary, fontSize: 24, lineHeight: 32, fontWeight: "800", includeFontPadding: false, flexShrink: 1 },
+    // Same size as "Có", but outlined and grey so it never competes with it.
+    declineBtn: { backgroundColor: "transparent", borderWidth: 2, borderColor: c.outline },
+    declineText: { color: c.onSurfaceVariant, fontSize: 21, fontWeight: "700" },
+    declined: { flexDirection: "row", alignItems: "center", gap: 14, backgroundColor: c.errorContainer, borderRadius: shape.xl, padding: 18 },
+    declinedText: { color: c.onErrorContainer, fontSize: 19, lineHeight: 27, fontWeight: "700", flex: 1, includeFontPadding: false },
     confirmed: { flexDirection: "row", alignItems: "center", gap: 16, backgroundColor: c.primaryContainer, borderRadius: shape.xlIncreased, padding: 22 },
     confirmedTitle: { color: c.onPrimaryContainer, fontSize: 24, lineHeight: 32, fontWeight: "800", includeFontPadding: false },
     confirmedSub: { ...type.bodyLarge, color: c.onPrimaryContainer, fontSize: 17, lineHeight: 25 },

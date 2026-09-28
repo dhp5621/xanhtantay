@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { push_devices } from "@/db/schema";
 
 export type PushTarget = "mobile" | "web" | "all";
-export interface PushMessage { title: string; body: string; url?: string; /** Action buttons the clients know by name ("harvest-command" = Có / Không). */ category?: string; data?: Record<string, string> }
+export interface PushMessage { title: string; body: string; url?: string; /** Action buttons the clients know by name ("harvest_command" = Có / Không). */ category?: string; data?: Record<string, string> }
 export interface PushResult { mobile: { sent: number; failed: number }; web: { sent: number; failed: number }; removed: number; webConfigured: boolean }
 
 const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";

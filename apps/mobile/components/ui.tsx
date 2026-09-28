@@ -111,7 +111,7 @@ export function Button({ label, onPress, variant = "filled", disabled, loading, 
     error: { bg: "transparent", fg: colors.error, border: colors.error },
   }[variant];
   return (
-    <PressableScale onPress={onPress} disabled={disabled || loading} haptic style={[styles.btn, small && styles.btnSmall, { backgroundColor: v.bg, borderColor: v.border, borderWidth: v.border === "transparent" ? 0 : 1.5 }, style]}>
+    <PressableScale onPress={onPress} disabled={disabled || loading} haptic accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled: !!(disabled || loading), busy: !!loading }} style={[styles.btn, small && styles.btnSmall, { backgroundColor: v.bg, borderColor: v.border, borderWidth: v.border === "transparent" ? 0 : 1.5 }, style]}>
       {icon && !loading ? <Icon name={icon} size={small ? 18 : 20} color={v.fg} filled={variant === "filled"} style={{ flexShrink: 0 }} /> : null}
       <Text numberOfLines={1} style={[styles.btnText, small && styles.btnTextSmall, { color: v.fg }]}>{loading ? "Đang xử lý…" : label}</Text>
     </PressableScale>

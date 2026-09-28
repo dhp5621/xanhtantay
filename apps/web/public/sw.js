@@ -10,7 +10,7 @@ self.addEventListener("push", (event) => {
   let msg = {};
   try { msg = event.data ? event.data.json() : {}; } catch { msg = { body: event.data && event.data.text() }; }
   const commandId = msg.data && msg.data.commandId;
-  const isCommand = msg.category === "harvest-command" && commandId;
+  const isCommand = msg.category === "harvest_command" && commandId;
   event.waitUntil(
     self.registration.showNotification(msg.title || "Xanh Tận Tay", {
       body: msg.body || "",

@@ -11,6 +11,7 @@ import { SHIP_FEE, SIZE_LABELS, sizesOf, type OrderMode } from "../../constants/
 import { formatDay, formatKg, formatVND } from "../../constants/format";
 import type { BoxesResponse, PlacedOrder } from "../../constants/types";
 import { useLiveRefresh } from "../../hooks/useLive";
+import { useSession } from "../../hooks/useSession";
 import { AnimIn, AnimInScale, HeroBlob, Skeleton } from "../../components/motion";
 import { Button, Chip, EmptyState, SectionHead, StatTile } from "../../components/ui";
 import { SmartImage } from "../../components/SmartImage";
@@ -30,6 +31,7 @@ const MODES: OrderMode[] = ["single", "subscription", "group"];
 export default function BoxDetailScreen() {
   const styles = useStyles(makeStyles);
   const insets = useSafeAreaInsets();
+  const { user } = useSession();
   const { slug, mode } = useLocalSearchParams<{ slug: string; mode?: string }>();
   const [box, setBox] = useState<Box | null>(null);
   const [sizes, setSizes] = useState<Box[]>([]);
@@ -142,7 +144,8 @@ export default function BoxDetailScreen() {
 
         <AnimIn delay={180}>
           <SectionHead icon="menu_book" title={`Thực đơn ${box.days} ngày kèm hộp`} />
-          <BoxMenu mealPlan={box.meal_plan ?? []} />
+          {/* Keyed by box: another size starts from its own menu. Farmers only read it. */}
+          <BoxMenu key={box.id} mealPlan={box.meal_plan ?? []} target={user?.role === "farmer" ? undefined : { box: box.slug }} />
         </AnimIn>
 
         <View>

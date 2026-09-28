@@ -4,7 +4,7 @@ import { farms, harvest_commands } from "@/db/schema";
 import { pushToUsers } from "./push";
 
 /** Notification category the clients attach "Có" / "Không" buttons to. */
-export const COMMAND_CATEGORY = "harvest-command";
+export const COMMAND_CATEGORY = "harvest_command";
 
 export type AnswerResult = { ok: true; command: typeof harvest_commands.$inferSelect } | { ok: false; status: number; error: string };
 
