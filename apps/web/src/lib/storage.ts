@@ -5,8 +5,7 @@ import { boxes, broadcasts, change_requests, farms, produce, refund_requests, us
 
 /**
  * Keeps the database and the file store from filling up. Nothing is removed on a schedule: the
- * operator looks at the list in /admin/dung-luong and deletes by hand. The one exception is the
- * evidence of a refund request its own customer withdrew. Only data nothing shows any more is
+ * operator looks at the list in /admin/dung-luong and deletes by hand. Only data nothing shows any more is
  * ever offered for removal: orders, harvest runs, commands and verdicts are history people still look up,
  * so they are never touched here, however old.
  */
@@ -26,8 +25,8 @@ export const DB_LIMIT_BYTES = Number(process.env.DB_LIMIT_MB ?? 512) * 1024 * 10
 export type CleanupKey = "orphans" | "evidence" | "requests" | "broadcasts";
 export interface CleanupItem { key: CleanupKey; label: string; what: string; count: number; bytes: number | null; examples: string[]; available: boolean }
 
-/** Best-effort: a failed delete is picked up by the next clean-up. */
-export async function removeFiles(urls: (string | null | undefined)[]) {
+/** Best-effort: a file that could not be deleted is offered again as unused. Only called from a clean-up the operator confirmed. */
+async function removeFiles(urls: (string | null | undefined)[]) {
   const mine = urls.filter(isStored);
   if (!mine.length || !token()) return 0;
   try {
