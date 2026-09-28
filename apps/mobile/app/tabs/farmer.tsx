@@ -299,7 +299,7 @@ const makeStyles = (c: Colors) =>
     sectionTitle: { ...type.titleLarge, color: c.onSurface, fontSize: 20 },
     item: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, backgroundColor: c.surfaceContainerLow, borderRadius: shape.xl, paddingVertical: 18, paddingHorizontal: 20 },
     itemName: { color: c.onSurface, fontSize: 24, lineHeight: 32, fontWeight: "700", flex: 1, includeFontPadding: false },
-    itemKg: { color: c.primary, fontSize: 30, lineHeight: 38, fontWeight: "800", includeFontPadding: false, fontVariant: ["tabular-nums"] },
+    itemKg: { color: c.primary, fontSize: 30, lineHeight: 38, fontWeight: "800", includeFontPadding: false },
     totalRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingTop: 4 },
     totalLabel: { ...type.titleMedium, color: c.onSurfaceVariant, fontSize: 18 },
     totalKg: { ...type.titleLarge, color: c.onSurface, fontSize: 22 },

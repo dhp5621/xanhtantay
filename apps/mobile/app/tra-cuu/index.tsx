@@ -68,12 +68,12 @@ export default function TraCuuScreen() {
       </AnimIn>
 
       <AnimIn delay={60}>
-        <Text style={styles.orLabel}>hoặc nhập mã</Text>
+        <Text style={styles.orLabel}>hoặc nhập mã đơn, dán đường link</Text>
         <View style={styles.search}>
           <Icon name="search" size={22} color={colors.onSurfaceVariant} />
           <TextInput
             style={styles.input}
-            placeholder="Mã đơn hàng hoặc đường link trên mã QR…"
+            placeholder="Nhập mã đơn hàng"
             placeholderTextColor={colors.onSurfaceVariant}
             value={code}
             onChangeText={setCode}

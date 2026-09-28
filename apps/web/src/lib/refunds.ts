@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { callName, orders, refund_requests, users } from "@/db/schema";
 import { pushToUsers } from "./push";
 import { refundNotice } from "./messages";
+import { removeFiles } from "./storage";
 import { countWords, evidenceRequired, REFUND_MAX_WORDS, REFUND_METHODS, REFUND_PHOTOS, REFUND_REASONS, REFUND_WINDOW_DAYS } from "./refund-config";
 
 export type Refund = typeof refund_requests.$inferSelect;
@@ -49,6 +50,8 @@ export async function withdrawRefund(orderId: string, userId: string): Promise<R
   if (!r || r.user_id !== userId) return { ok: false, status: 404, error: "Không tìm thấy yêu cầu" };
   if (r.status !== "pending") return { ok: false, status: 409, error: "Yêu cầu đã được xử lý nên không rút được nữa" };
   await db.delete(refund_requests).where(eq(refund_requests.id, r.id));
+  // Nothing shows the evidence any more: free the space right away.
+  await removeFiles([...r.photos, r.video_url]);
   return { ok: true, value: null };
 }
 

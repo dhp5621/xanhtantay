@@ -102,14 +102,22 @@ export const KeyboardScroll = forwardRef<ScrollView, Props>(function KeyboardScr
     const input = TextInput.State.currentlyFocusedInput();
     const host = box.current;
     if (!input || !host || !height.current) return;
-    // Fails quietly when the focused field lives in another scroll view.
+    // measureLayout only tells whether the field lives inside this scroll view (it fails otherwise).
+    // Its numbers are not used: depending on the renderer they ignore how far the list is scrolled.
+    // Positions on screen always include it.
     input.measureLayout(
       host,
-      (_x, y, _w, h) => {
-        const visible = height.current - covered.current;
-        const bottom = y + h + GAP;
-        if (bottom > visible) scroll.current?.scrollTo({ y: offset.current + bottom - visible, animated: true });
-        else if (y < GAP) scroll.current?.scrollTo({ y: Math.max(0, offset.current + y - GAP), animated: true });
+      () => {
+        host.measureInWindow((_hx, hostY) => {
+          input.measureInWindow((_x, inputY, _w, h) => {
+            const y = inputY - hostY;
+            const visible = height.current - covered.current;
+            // A field taller than the room left (a long note) is aligned by its top instead.
+            const bottom = Math.min(y + h, y + visible - 2 * GAP) + GAP;
+            if (bottom > visible) scroll.current?.scrollTo({ y: Math.max(0, offset.current + bottom - visible), animated: true });
+            else if (y < GAP) scroll.current?.scrollTo({ y: Math.max(0, offset.current + y - GAP), animated: true });
+          });
+        });
       },
       () => {}
     );

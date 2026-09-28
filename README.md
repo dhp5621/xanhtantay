@@ -104,6 +104,7 @@ Trang đăng nhập có nút một chạm cho cả hai. Quản trị: `/admin/lo
 - **Chốt sổ & gửi lệnh**: cộng tổng nhu cầu, chia cho từng nông hộ theo tỷ lệ năng suất đăng ký (bước 0,5 kg, không vượt năng suất), ghi lệnh và gửi thông báo. Tự chạy lúc 18h00 qua cron, quản trị có thể bấm tay.
 - Theo dõi chuyến: nông hộ nào đã xác nhận, chuyển trạng thái thu hoạch → lên xe lạnh → tới sảnh (khách nhận thông báo).
 - Quản lý mọi bảng: đơn, hộp rau, thành phần hộp, loại rau, năng suất, nông hộ, lệnh thu hoạch, gói định kỳ, gom đơn, cụm chung cư, người dùng. Xem được trên điện thoại.
+- **Dung lượng lưu trữ**: tệp được xoá ngay khi không còn nơi nào hiển thị (yêu cầu hoàn tiền đã rút), và mỗi ngày lúc 18h00 hệ thống tự dọn tệp tải lên mà không gửi, tệp không còn được tham chiếu, bằng chứng của yêu cầu đã xử lý quá 60 ngày. Tab Hoàn tiền có thẻ xem dung lượng và nút **Dọn ngay**.
 - **Tab Hoàn tiền** (`/admin/hoan-tien`): xem ảnh, video bằng chứng, chọn hoàn tiền (kèm số tiền) hoặc giao bù, chấp nhận hoặc từ chối kèm lời nhắn; khách được báo kết quả.
 - **Yêu cầu chờ duyệt**: mỗi thay đổi nông hộ xin được hiện dạng cũ → mới, duyệt hoặc từ chối kèm lý do.
 - Gửi thông báo đẩy tới điện thoại và trình duyệt, kèm **mẫu gửi thử** cho từng loại thông báo (lệnh thu hoạch có nút Có / Không, đơn mới, các bước hành trình, nhắc chốt sổ, nhóm đủ nhà, thực đơn).

@@ -11,6 +11,7 @@ import { GROUP_MIN_MEMBERS, SIZE_LABELS } from "../../../constants/commerce";
 import { formatDay, formatVND } from "../../../constants/format";
 import type { BoxesResponse, Me } from "../../../constants/types";
 import { useLiveRefresh } from "../../../hooks/useLive";
+import { useTabBarOverlap } from "../../../hooks/useTabBarOverlap";
 import { AnimIn, PressableScale, Skeleton } from "../../../components/motion";
 import { Button, Chip, EmptyState } from "../../../components/ui";
 import { GroupCard } from "../../../components/GroupCard";
@@ -26,6 +27,8 @@ export default function GomDonScreen() {
   const { alert } = useDialog();
   const styles = useStyles(makeStyles);
   const insets = useSafeAreaInsets();
+  // The floating button must clear the tab bar when this screen is laid out underneath it.
+  const bar = useTabBarOverlap();
   const [scope, setScope] = useState<Scope>("mine");
   const [groups, setGroups] = useState<GroupOrder[] | null>(null);
   const [me, setMe] = useState<Me | null>(null);
@@ -108,7 +111,7 @@ export default function GomDonScreen() {
   const noCluster = scope === "mine" && !!me && !me.cluster_id;
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} ref={bar.ref} onLayout={bar.onLayout}>
       <FlatList
         data={groups ?? []}
         keyExtractor={(g) => g.id}
@@ -124,7 +127,7 @@ export default function GomDonScreen() {
             tintColor={colors.primary}
           />
         }
-        contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
+        contentContainerStyle={{ padding: 16, paddingBottom: 100 + bar.overlap }}
         ListHeaderComponent={
           <View style={{ marginBottom: 14 }}>
             <Text style={styles.eyebrow}>Cùng toà nhà, chung một chuyến xe</Text>
@@ -177,7 +180,7 @@ export default function GomDonScreen() {
       />
 
       {(groups?.length ?? 0) > 0 && (
-        <AnimIn style={styles.fabWrap}>
+        <AnimIn style={[styles.fabWrap, { bottom: 20 + bar.overlap }]}>
           <PressableScale haptic style={[styles.fab, elevation[3]]} onPress={openDialog}>
             <Icon name="add" size={20} color={colors.onPrimary} />
             <Text style={styles.fabText}>Tạo nhóm mới</Text>

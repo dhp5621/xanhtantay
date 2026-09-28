@@ -268,7 +268,7 @@ function Line({ icon, text, color }: { icon: string; text: string; color: string
   return (
     <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 8 }}>
       <Icon name={icon} size={16} color={color} style={{ marginTop: 1, opacity: 0.85 }} />
-      <Text style={[styles.body, { color, opacity: 0.85, flex: 1, fontVariant: ["tabular-nums"] }]}>{text}</Text>
+      <Text style={[styles.body, { color, opacity: 0.85, flex: 1 }]}>{text}</Text>
     </View>
   );
 }

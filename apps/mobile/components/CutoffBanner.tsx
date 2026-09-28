@@ -33,5 +33,5 @@ const makeStyles = (c: Colors) =>
     wrap: { flexDirection: "row", alignItems: "center", gap: 14, backgroundColor: c.tertiaryContainer, borderRadius: shape.xl, padding: 16 },
     icon: { width: 44, height: 44, borderRadius: 22, backgroundColor: c.tertiary, alignItems: "center", justifyContent: "center" },
     title: { ...type.titleMedium, color: c.onTertiaryContainer, fontSize: 15, lineHeight: 21 },
-    sub: { ...type.bodyMedium, color: c.onTertiaryContainer, fontSize: 13, opacity: 0.85, marginTop: 2, fontVariant: ["tabular-nums"] },
+    sub: { ...type.bodyMedium, color: c.onTertiaryContainer, fontSize: 13, opacity: 0.85, marginTop: 2 },
   });

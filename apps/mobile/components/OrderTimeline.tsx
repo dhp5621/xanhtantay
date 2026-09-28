@@ -93,7 +93,7 @@ const makeStyles = (c: Colors) =>
     dotDone: { backgroundColor: c.primary },
     dotActive: { backgroundColor: c.primaryContainer, borderWidth: 2, borderColor: c.primary },
     line: { flex: 1, width: 3, minHeight: 10, borderRadius: 2, backgroundColor: c.surfaceContainerHighest, marginVertical: 2 },
-    time: { ...type.titleMedium, color: c.onSurfaceVariant, fontSize: 15, lineHeight: 30, width: 50, fontVariant: ["tabular-nums"] },
+    time: { ...type.titleMedium, color: c.onSurfaceVariant, fontSize: 15, lineHeight: 30, width: 50 },
     copy: { flex: 1, minWidth: 0, paddingTop: 5 },
     short: { ...type.labelLarge, color: c.onSurfaceVariant, fontSize: 13 },
     label: { ...type.bodyMedium, color: c.onSurfaceVariant, fontSize: 13, lineHeight: 18, marginTop: 1 },

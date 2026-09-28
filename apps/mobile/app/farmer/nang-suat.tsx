@@ -387,7 +387,7 @@ const makeStyles = (c: Colors) =>
     rejectedText: { ...type.bodyLarge, color: c.onErrorContainer, fontSize: 17, lineHeight: 25 },
 
     summary: { flexDirection: "row", alignItems: "center", gap: 16, backgroundColor: c.primaryContainer, borderRadius: shape.xlIncreased, padding: 20 },
-    summaryValue: { color: c.onPrimaryContainer, fontSize: 26, lineHeight: 34, fontWeight: "800", includeFontPadding: false, fontVariant: ["tabular-nums"] },
+    summaryValue: { color: c.onPrimaryContainer, fontSize: 26, lineHeight: 34, fontWeight: "800", includeFontPadding: false },
     summaryLabel: { ...type.bodyLarge, color: c.onPrimaryContainer, fontSize: 17, lineHeight: 24 },
 
     sectionTitle: { ...type.titleLarge, color: c.onSurface, fontSize: 21, marginTop: 4 },
