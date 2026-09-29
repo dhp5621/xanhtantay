@@ -116,7 +116,7 @@ export function OrderPanel({ box, deliveryDate, shipFee = SHIP_FEE, initialMode 
     try {
       await apiFetch("/subscriptions", {
         method: "POST",
-        body: JSON.stringify({ box_id: box.id, quantity, frequency, cluster_id: clusterId, address: address.trim() || undefined }),
+        body: JSON.stringify({ box_id: box.id, quantity, frequency, cluster_id: clusterId, address: address.trim() || undefined, care_message }),
       });
       alert("Đã đăng ký gói định kỳ", `${FREQUENCY_LABELS[frequency]} ${pronoun} sẽ nhận ${quantity} ${box.name}, miễn phí giao. Đổi số lượng hay tạm dừng lúc nào cũng được.`, [
         { text: "Đóng", style: "cancel" },
@@ -209,12 +209,8 @@ export function OrderPanel({ box, deliveryDate, shipFee = SHIP_FEE, initialMode 
         </>
       )}
 
-      {mode !== "subscription" && (
-        <>
-          <Text style={styles.label}>Lời nhắn từ quê (không bắt buộc)</Text>
-          <TextInput style={[styles.input, { minHeight: 72, textAlignVertical: "top" }]} placeholder="Để trống thì hộp rau kèm một lời nhắn của mẹ" placeholderTextColor={colors.onSurfaceVariant} value={careMessage} onChangeText={setCareMessage} maxLength={300} multiline />
-        </>
-      )}
+      <Text style={styles.label}>Lời nhắn từ quê (không bắt buộc)</Text>
+      <TextInput style={[styles.input, { minHeight: 72, textAlignVertical: "top" }]} placeholder={mode === "subscription" ? "Để trống thì mỗi hộp kèm một lời nhắn của mẹ" : "Để trống thì hộp rau kèm một lời nhắn của mẹ"} placeholderTextColor={colors.onSurfaceVariant} value={careMessage} onChangeText={setCareMessage} maxLength={300} multiline />
 
       <View style={styles.summary}>
         <Row label={`${quantity} × ${formatVND(box.price)}`} value={formatVND(subtotal)} />

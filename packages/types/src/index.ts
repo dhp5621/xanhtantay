@@ -49,7 +49,7 @@ export interface Order {
 export type SubscriptionFrequency = "weekly" | "biweekly" | "monthly";
 export interface Subscription {
   id: string; user_id: string; box_id: string; quantity: number; frequency: SubscriptionFrequency;
-  next_delivery: string; cluster_id: string | null; address: string | null; active: boolean;
+  next_delivery: string; cluster_id: string | null; address: string | null; care_message: string | null; active: boolean;
   box?: Pick<Box, "id" | "slug" | "name" | "size" | "price" | "image_url">; cluster?: Cluster | null;
 }
 

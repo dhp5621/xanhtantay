@@ -115,6 +115,7 @@ export const SECTIONS: Section[] = [
       { key: "frequency", label: "Tần suất", type: "select", options: FREQUENCIES },
       { key: "quantity", label: "Số hộp", type: "number", min: 1 },
       { key: "next_delivery", label: "Hộp tiếp theo", type: "day" },
+      { key: "care_message", label: "Lời nhắn quan tâm (để trống: chọn ngẫu nhiên mỗi kỳ)", type: "textarea" },
     ],
     createFields: [],
   },

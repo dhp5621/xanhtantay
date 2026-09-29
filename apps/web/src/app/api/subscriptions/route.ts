@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { boxes, clusters, subscriptions, users } from "@/db/schema";
 import { getSessionUser } from "@/lib/session";
 import { getSubscriptionsForUser } from "@/lib/queries";
-import { nextDeliveryDate, FREQUENCY_DAYS } from "@/lib/commerce";
+import { nextDeliveryDate, FREQUENCY_DAYS, CARE_MESSAGE_MAX } from "@/lib/commerce";
 
 export async function GET() {
   const user = await getSessionUser();
@@ -12,12 +12,15 @@ export async function GET() {
   return NextResponse.json(await getSubscriptionsForUser(user.id));
 }
 
-/** POST { box_id, quantity?, frequency?, cluster_id?, address? } — first box arrives on the next delivery day. */
+/**
+ * POST { box_id, quantity?, frequency?, cluster_id?, address?, care_message? } — first box arrives on the next delivery day.
+ * care_message rides with every box; without one each box gets one from the list.
+ */
 export async function POST(req: Request) {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Chưa đăng nhập" }, { status: 401 });
   if (user.role === "farmer") return NextResponse.json({ error: "Tài khoản nhà vườn không đăng ký hộp rau" }, { status: 403 });
-  const body = (await req.json().catch(() => ({}))) as { box_id?: string; quantity?: number; frequency?: string; cluster_id?: string; address?: string };
+  const body = (await req.json().catch(() => ({}))) as { box_id?: string; quantity?: number; frequency?: string; cluster_id?: string; address?: string; care_message?: string };
   const qty = Math.round(Number(body.quantity ?? 1));
   const frequency = (body.frequency ?? "weekly") as "weekly" | "biweekly" | "monthly";
   if (!body.box_id) return NextResponse.json({ error: "Chưa chọn hộp rau" }, { status: 400 });
@@ -33,7 +36,8 @@ export async function POST(req: Request) {
   const [dup] = await db.select({ id: subscriptions.id }).from(subscriptions).where(and(eq(subscriptions.user_id, user.id), eq(subscriptions.box_id, box.id), eq(subscriptions.active, true)));
   if (dup) return NextResponse.json({ error: "Bạn đã có gói định kỳ cho hộp này rồi" }, { status: 409 });
   const address = (body.address ?? me?.address ?? "").toString().trim().slice(0, 120) || null;
-  const [sub] = await db.insert(subscriptions).values({ user_id: user.id, box_id: box.id, quantity: qty, frequency, next_delivery: nextDeliveryDate(), cluster_id: cluster.id, address }).returning();
+  const care_message = (typeof body.care_message === "string" ? body.care_message.trim().slice(0, CARE_MESSAGE_MAX) : "") || null;
+  const [sub] = await db.insert(subscriptions).values({ user_id: user.id, box_id: box.id, quantity: qty, frequency, next_delivery: nextDeliveryDate(), cluster_id: cluster.id, address, care_message }).returning();
   if (me && (me.cluster_id !== cluster.id || (address && me.address !== address))) await db.update(users).set({ cluster_id: cluster.id, address: address ?? me.address }).where(eq(users.id, user.id));
   return NextResponse.json({ ...sub, box: { name: box.name, size: box.size, slug: box.slug, price: box.price }, cluster }, { status: 201 });
 }

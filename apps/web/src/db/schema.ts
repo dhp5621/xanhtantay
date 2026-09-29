@@ -131,6 +131,8 @@ export const subscriptions = pgTable("subscriptions", {
   next_delivery: date("next_delivery").notNull(),
   cluster_id: text("cluster_id").references(() => clusters.id, { onDelete: "set null" }),
   address: text("address"),
+  /** The buyer's own "lời nhắn quan tâm" for every box; null picks one from the list each time. */
+  care_message: text("care_message"),
   active: boolean("active").notNull().default(true),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });

@@ -70,7 +70,7 @@ export function OrderPanel({ box, clusters, groups, me, deliveryDate, cutoffAt }
       if (mode === "single") {
         setPlaced(await post("/api/orders", { box_id: box.id, quantity: qty, cluster_id: clusterId, address, note: note.trim() || undefined, care_message }));
       } else if (mode === "subscription") {
-        await post("/api/subscriptions", { box_id: box.id, quantity: qty, frequency, cluster_id: clusterId, address });
+        await post("/api/subscriptions", { box_id: box.id, quantity: qty, frequency, cluster_id: clusterId, address, care_message });
         show("Đã tạo gói định kỳ. Hộp đầu tiên sẽ vào sổ ở lần chốt tới.", { kind: "success" });
         router.push("/dinh-ky");
       } else if (group) {
@@ -162,12 +162,10 @@ export function OrderPanel({ box, clusters, groups, me, deliveryDate, cutoffAt }
           </div>
         )}
 
-        {mode !== "subscription" && (
-          <div className="m3-field">
-            <label className="m3-field-label" htmlFor="op-care">Lời nhắn từ quê (không bắt buộc)</label>
-            <textarea id="op-care" className="m3-textarea" rows={2} placeholder="Để trống thì hộp rau kèm một lời nhắn của mẹ" value={careMessage} onChange={(e) => setCareMessage(e.target.value)} maxLength={CARE_MESSAGE_MAX} />
-          </div>
-        )}
+        <div className="m3-field">
+          <label className="m3-field-label" htmlFor="op-care">Lời nhắn từ quê (không bắt buộc)</label>
+          <textarea id="op-care" className="m3-textarea" rows={2} placeholder={mode === "subscription" ? "Để trống thì mỗi hộp kèm một lời nhắn của mẹ" : "Để trống thì hộp rau kèm một lời nhắn của mẹ"} value={careMessage} onChange={(e) => setCareMessage(e.target.value)} maxLength={CARE_MESSAGE_MAX} />
+        </div>
 
         <div className="flex items-center justify-between">
           <span className="m3-label">Số hộp</span>

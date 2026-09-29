@@ -6,7 +6,7 @@ PULL model. Customers in **Hà Nội apartment clusters** pre-order seasonal **b
 Removed for good: buying single vegetables, cart, product catalog, recipes/AI kitchen, meal-plan generator, farm diary, livestream, loyalty points/tree, farmer product/stock/diary management, ads.
 Kept: subscription, group buying (per cluster), emotional order tracking, QR traceability, avatars, push notifications, light/dark theme, the Material 3 Expressive design.
 
-Each box carries its own **day-by-day menu** (`meal_plan`: days × Trưa/Tối, each dish with ingredients and steps). Each order carries a **care message** (`care_message`, "lời nhắn quan tâm") shown after purchase and on the order. The buyer may write their own (`care_message`, up to 300 characters) on `POST /orders`, `POST /groups` and `POST /groups/{id}/join`; left out or blank, one is picked from the built-in list.
+Each box carries its own **day-by-day menu** (`meal_plan`: days × Trưa/Tối, each dish with ingredients and steps). Each order carries a **care message** (`care_message`, "lời nhắn quan tâm") shown after purchase and on the order. The buyer may write their own (`care_message`, up to 300 characters) on `POST /orders`, `POST /subscriptions`, `POST /groups` and `POST /groups/{id}/join`; left out or blank, one is picked from the built-in list.
 
 ## Auth
 NextAuth credentials (unchanged). `POST /api/auth/callback/credentials` etc. Demo: `lan@gmail.com` (customer), `bacba@xanhtantay.vn` (farmer), password `demo123`. Session user: `{ id, name, email, role: "customer" | "farmer", image }`.
@@ -42,7 +42,7 @@ Emotional tracking copy (use `ORDER_TIMELINE`):
 
 ### Subscriptions ("Gói định kỳ")
 - `GET /subscriptions` → `Subscription[]` with `box`, `cluster`.
-- `POST /subscriptions` `{ box_id, quantity?, frequency?: "weekly"|"biweekly"|"monthly", cluster_id?, address? }` → 201. Free delivery. 409 if an active one exists for the same box.
+- `POST /subscriptions` `{ box_id, quantity?, frequency?: "weekly"|"biweekly"|"monthly", cluster_id?, address?, care_message? }` → 201. Free delivery. `care_message` goes with every box; left out, each box gets one from the list. 409 if an active one exists for the same box.
 - `PATCH /subscriptions` `{ id, active?, quantity?, frequency?, box_id? }`.
 
 ### Group buying ("Gom đơn chung", per cluster)

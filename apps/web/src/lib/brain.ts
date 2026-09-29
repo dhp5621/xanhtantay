@@ -1,7 +1,7 @@
 import { and, eq, inArray, lte, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { boxes, box_items, farm_capacity, farms, group_orders, harvest_commands, harvest_runs, orders, produce, subscriptions, users, type CommandItem, callName } from "@/db/schema";
-import { addDays, careMessageFor, commandMessage, FREQUENCY_DAYS, formatKg, formatYMD, SHIP_FEE, vnInstant, HARVEST_TIME, PICKUP_TIME, ARRIVAL_TIME } from "./commerce";
+import { addDays, careMessageOr, commandMessage, FREQUENCY_DAYS, formatKg, formatYMD, SHIP_FEE, vnInstant, HARVEST_TIME, PICKUP_TIME, ARRIVAL_TIME } from "./commerce";
 import { aiConfigured, chatJSON } from "./ai";
 
 const STEP = 0.5; // kg granularity of a harvest command
@@ -113,7 +113,7 @@ export async function runCutoff(deliveryDate: string) {
       const [already] = await db.select({ id: orders.id }).from(orders).where(and(eq(orders.subscription_id, s.id), eq(orders.delivery_date, deliveryDate)));
       if (!already) {
         const subtotal = (priceOf.get(s.box_id) ?? 0) * s.quantity;
-        await db.insert(orders).values({ user_id: s.user_id, box_id: s.box_id, quantity: s.quantity, type: "subscription", status: "placed", subtotal, ship_fee: 0, total: subtotal, cluster_id: s.cluster_id, address: s.address, delivery_date: deliveryDate, subscription_id: s.id, care_message: careMessageFor(s.id + deliveryDate), note: "Đơn tự động từ gói định kỳ" });
+        await db.insert(orders).values({ user_id: s.user_id, box_id: s.box_id, quantity: s.quantity, type: "subscription", status: "placed", subtotal, ship_fee: 0, total: subtotal, cluster_id: s.cluster_id, address: s.address, delivery_date: deliveryDate, subscription_id: s.id, care_message: careMessageOr(s.care_message, s.id + deliveryDate), note: "Đơn tự động từ gói định kỳ" });
       }
       let next = s.next_delivery;
       while (next <= deliveryDate) next = addDays(next, FREQUENCY_DAYS[s.frequency] ?? 7);
