@@ -110,6 +110,10 @@ export const careMessageFor = (seed: string) => {
   for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
   return CARE_MESSAGES[h % CARE_MESSAGES.length];
 };
+export const CARE_MESSAGE_MAX = 300;
+/** The buyer's own note when they wrote one, otherwise one from the list. */
+export const careMessageOr = (custom: unknown, seed: string) =>
+  (typeof custom === "string" ? custom.trim().slice(0, CARE_MESSAGE_MAX) : "") || careMessageFor(seed);
 
 /** Friendly facts shown right after ordering. */
 export function impactFor(subtotal: number, weightKg: number, servings: number, days: number) {

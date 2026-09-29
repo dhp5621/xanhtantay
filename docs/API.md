@@ -6,7 +6,7 @@ PULL model. Customers in **Hà Nội apartment clusters** pre-order seasonal **b
 Removed for good: buying single vegetables, cart, product catalog, recipes/AI kitchen, meal-plan generator, farm diary, livestream, loyalty points/tree, farmer product/stock/diary management, ads.
 Kept: subscription, group buying (per cluster), emotional order tracking, QR traceability, avatars, push notifications, light/dark theme, the Material 3 Expressive design.
 
-Each box carries its own **day-by-day menu** (`meal_plan`: days × Trưa/Tối, each dish with ingredients and steps). Each order carries a **care message** (`care_message`, "lời nhắn quan tâm") shown after purchase and on the order.
+Each box carries its own **day-by-day menu** (`meal_plan`: days × Trưa/Tối, each dish with ingredients and steps). Each order carries a **care message** (`care_message`, "lời nhắn quan tâm") shown after purchase and on the order. The buyer may write their own (`care_message`, up to 300 characters) on `POST /orders`, `POST /groups` and `POST /groups/{id}/join`; left out or blank, one is picked from the built-in list.
 
 ## Auth
 NextAuth credentials (unchanged). `POST /api/auth/callback/credentials` etc. Demo: `lan@gmail.com` (customer), `bacba@xanhtantay.vn` (farmer), password `demo123`. Session user: `{ id, name, email, role: "customer" | "farmer", image }`.
@@ -36,7 +36,7 @@ Emotional tracking copy (use `ORDER_TIMELINE`):
 
 ### Orders
 - `GET /orders` (auth) → `Order[]`, newest delivery first. Each has `box` (brief), `cluster`, `allocated: boolean` (cut-off done), `farmers: { farm, slug, farmer, location, confirmed, items }[]`.
-- `POST /orders` `{ box_id, quantity?, cluster_id?, address?, note? }` → 201 `Order & { box, cluster, impact: { toFarmers, weightKg, meals, servings } }`. Ship fee 15,000₫ for one-off orders.
+- `POST /orders` `{ box_id, quantity?, cluster_id?, address?, note?, care_message? }` → 201 `Order & { box, cluster, impact: { toFarmers, weightKg, meals, servings } }`. Ship fee 15,000₫ for one-off orders.
 - `GET /orders/{id}` public trace → `{ id, status, type, quantity, delivery_date, created_at, harvested_at, loaded_at, delivered_at, cutoff_at, allocated, cluster: { name, district } | null, box: { id, slug, name, size, weight_kg, image_url, days, servings, meal_plan }, contents: { name, image_url, quantity_kg, farms: { name, slug, location, farmer }[] }[], farms: { name, slug, location, farmer, confirmed }[], mine: boolean }` and, when `mine`, also `{ total, subtotal, ship_fee, note, care_message, address, group_order_id }`.
 - `POST /orders/{id}/cancel` — only while `status === "placed"` and not `allocated`.
 
@@ -47,9 +47,9 @@ Emotional tracking copy (use `ORDER_TIMELINE`):
 
 ### Group buying ("Gom đơn chung", per cluster)
 - `GET /groups?cluster_id=` → open `GroupOrder[]` with `box`, `cluster`.
-- `POST /groups` `{ box_id, cluster_id?, title, min_members, delivery_date?, quantity?, address? }` → 201 (creator joins).
+- `POST /groups` `{ box_id, cluster_id?, title, min_members, delivery_date?, quantity?, address?, care_message? }` → 201 (creator joins).
 - `GET /groups/{id}` → group + `{ cutoff_at, closed, joined, members: { id, name, avatar_url, quantity, me }[] }`
-- `POST /groups/{id}/join` `{ quantity?, address? }` → 201 Order. `POST /groups/{id}/leave`.
+- `POST /groups/{id}/join` `{ quantity?, address?, care_message? }` → 201 Order. `POST /groups/{id}/leave`.
   Enough members at cut-off ⇒ everyone's ship fee becomes 0.
 
 ### Farmer (extremely minimal)

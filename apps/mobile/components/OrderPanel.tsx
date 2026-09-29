@@ -34,6 +34,7 @@ export function OrderPanel({ box, deliveryDate, shipFee = SHIP_FEE, initialMode 
   const [clusterId, setClusterId] = useState<string | null>(null);
   const [address, setAddress] = useState("");
   const [note, setNote] = useState("");
+  const [careMessage, setCareMessage] = useState("");
   const [frequency, setFrequency] = useState<SubscriptionFrequency>("weekly");
   const [groups, setGroups] = useState<GroupOrder[] | null>(null);
   const [groupTitle, setGroupTitle] = useState("");
@@ -81,6 +82,7 @@ export function OrderPanel({ box, deliveryDate, shipFee = SHIP_FEE, initialMode 
   const subtotal = box.price * quantity;
   const fee = shipFeeFor(mode, { fee: shipFee });
   const total = subtotal + fee;
+  const care_message = careMessage.trim() || undefined;
 
   const requireCluster = () => {
     if (clusterId) return true;
@@ -96,9 +98,10 @@ export function OrderPanel({ box, deliveryDate, shipFee = SHIP_FEE, initialMode 
     try {
       const order: PlacedOrder = await apiFetch("/orders", {
         method: "POST",
-        body: JSON.stringify({ box_id: box.id, quantity, cluster_id: clusterId, address: address.trim() || undefined, note: note.trim() || undefined }),
+        body: JSON.stringify({ box_id: box.id, quantity, cluster_id: clusterId, address: address.trim() || undefined, note: note.trim() || undefined, care_message }),
       });
       setNote("");
+      setCareMessage("");
       onPlaced(order);
     } catch (e) {
       fail("Không đặt được hộp rau", e);
@@ -134,7 +137,7 @@ export function OrderPanel({ box, deliveryDate, shipFee = SHIP_FEE, initialMode 
   const joinGroup = async (g: GroupOrder) => {
     setBusy(g.id);
     try {
-      await apiFetch(`/groups/${g.id}/join`, { method: "POST", body: JSON.stringify({ quantity, address: address.trim() || undefined }) });
+      await apiFetch(`/groups/${g.id}/join`, { method: "POST", body: JSON.stringify({ quantity, address: address.trim() || undefined, care_message }) });
       router.push(`/tabs/gom-don/${g.id}`);
     } catch (e) {
       fail("Không tham gia được", e);
@@ -150,7 +153,7 @@ export function OrderPanel({ box, deliveryDate, shipFee = SHIP_FEE, initialMode 
     try {
       const created: GroupOrder = await apiFetch("/groups", {
         method: "POST",
-        body: JSON.stringify({ box_id: box.id, cluster_id: clusterId, title, min_members: minMembers, delivery_date: groupDay ?? undefined, quantity, address: address.trim() || undefined }),
+        body: JSON.stringify({ box_id: box.id, cluster_id: clusterId, title, min_members: minMembers, delivery_date: groupDay ?? undefined, quantity, address: address.trim() || undefined, care_message }),
       });
       setGroupTitle("");
       router.push(`/tabs/gom-don/${created.id}`);
@@ -203,6 +206,13 @@ export function OrderPanel({ box, deliveryDate, shipFee = SHIP_FEE, initialMode 
         <>
           <Text style={styles.label}>Lời nhắn cho nhà vườn (không bắt buộc)</Text>
           <TextInput style={[styles.input, { minHeight: 72, textAlignVertical: "top" }]} placeholder="Ví dụ: nhà có bé nhỏ, cho con xin rau non" placeholderTextColor={colors.onSurfaceVariant} value={note} onChangeText={setNote} maxLength={300} multiline />
+        </>
+      )}
+
+      {mode !== "subscription" && (
+        <>
+          <Text style={styles.label}>Lời nhắn từ quê (không bắt buộc)</Text>
+          <TextInput style={[styles.input, { minHeight: 72, textAlignVertical: "top" }]} placeholder="Để trống thì hộp rau kèm một lời nhắn của mẹ" placeholderTextColor={colors.onSurfaceVariant} value={careMessage} onChangeText={setCareMessage} maxLength={300} multiline />
         </>
       )}
 

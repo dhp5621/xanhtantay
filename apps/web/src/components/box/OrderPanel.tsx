@@ -9,7 +9,7 @@ import { Portal } from "@/components/ui/Portal";
 import { useSnackbar } from "@/components/ui/Snackbar";
 import { CutoffBanner } from "@/components/ui/CutoffBanner";
 import { formatVND } from "@/lib/format";
-import { FREQUENCY_LABELS, SHIP_FEE, formatKg, formatYMD, addDays } from "@/lib/commerce";
+import { CARE_MESSAGE_MAX, FREQUENCY_LABELS, SHIP_FEE, formatKg, formatYMD, addDays } from "@/lib/commerce";
 
 interface Cluster { id: string; name: string; address: string; district: string }
 interface Group { id: string; title: string; cluster_id: string; min_members: number; current_members: number; delivery_date: string }
@@ -37,6 +37,7 @@ export function OrderPanel({ box, clusters, groups, me, deliveryDate, cutoffAt }
   const [clusterId, setClusterId] = useState(me?.cluster_id ?? clusters[0]?.id ?? "");
   const [address, setAddress] = useState(me?.address ?? "");
   const [note, setNote] = useState("");
+  const [careMessage, setCareMessage] = useState("");
   const [frequency, setFrequency] = useState<"weekly" | "biweekly" | "monthly">("weekly");
   const [groupId, setGroupId] = useState<string>("new");
   const [groupTitle, setGroupTitle] = useState("");
@@ -52,6 +53,7 @@ export function OrderPanel({ box, clusters, groups, me, deliveryDate, cutoffAt }
   const subtotal = box.price * qty;
   const ship = mode === "subscription" ? 0 : SHIP_FEE;
   const clusterName = clusters.find((c) => c.id === clusterId)?.name ?? "";
+  const care_message = careMessage.trim() || undefined;
 
   const post = async (url: string, body: unknown) => {
     const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -66,17 +68,17 @@ export function OrderPanel({ box, clusters, groups, me, deliveryDate, cutoffAt }
     setBusy(true);
     try {
       if (mode === "single") {
-        setPlaced(await post("/api/orders", { box_id: box.id, quantity: qty, cluster_id: clusterId, address, note: note.trim() || undefined }));
+        setPlaced(await post("/api/orders", { box_id: box.id, quantity: qty, cluster_id: clusterId, address, note: note.trim() || undefined, care_message }));
       } else if (mode === "subscription") {
         await post("/api/subscriptions", { box_id: box.id, quantity: qty, frequency, cluster_id: clusterId, address });
         show("Đã tạo gói định kỳ. Hộp đầu tiên sẽ vào sổ ở lần chốt tới.", { kind: "success" });
         router.push("/dinh-ky");
       } else if (group) {
-        await post(`/api/groups/${group.id}/join`, { quantity: qty, address });
+        await post(`/api/groups/${group.id}/join`, { quantity: qty, address, care_message });
         show("Bạn đã vào nhóm. Rủ thêm hàng xóm để cả nhóm miễn ship!", { kind: "success" });
         router.push(`/gom-don/${group.id}`);
       } else {
-        const g = await post("/api/groups", { box_id: box.id, cluster_id: clusterId, title: groupTitle.trim() || `Gom hộp rau ${clusterName}`, min_members: minMembers, delivery_date: groupDate, quantity: qty, address });
+        const g = await post("/api/groups", { box_id: box.id, cluster_id: clusterId, title: groupTitle.trim() || `Gom hộp rau ${clusterName}`, min_members: minMembers, delivery_date: groupDate, quantity: qty, address, care_message });
         show("Đã tạo nhóm. Chia sẻ link cho hàng xóm nhé!", { kind: "success" });
         router.push(`/gom-don/${g.id}`);
       }
@@ -157,6 +159,13 @@ export function OrderPanel({ box, clusters, groups, me, deliveryDate, cutoffAt }
           <div className="m3-field">
             <label className="m3-field-label" htmlFor="op-note">Ghi chú</label>
             <input id="op-note" className="m3-input" placeholder="Ví dụ: gửi lễ tân giúp em" value={note} onChange={(e) => setNote(e.target.value)} maxLength={200} />
+          </div>
+        )}
+
+        {mode !== "subscription" && (
+          <div className="m3-field">
+            <label className="m3-field-label" htmlFor="op-care">Lời nhắn từ quê (không bắt buộc)</label>
+            <textarea id="op-care" className="m3-textarea" rows={2} placeholder="Để trống thì hộp rau kèm một lời nhắn của mẹ" value={careMessage} onChange={(e) => setCareMessage(e.target.value)} maxLength={CARE_MESSAGE_MAX} />
           </div>
         )}
 
