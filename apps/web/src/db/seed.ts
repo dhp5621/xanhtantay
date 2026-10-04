@@ -13,7 +13,7 @@ if (!process.env.DATABASE_URL) for (const f of [".env.local", ".env"]) {
 
 const C = (f: string) => `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(f)}?width=640`;
 const U = (p: string) => `https://images.unsplash.com/${p}?w=1000&q=70&auto=format`;
-// Box photos live in apps/web/public/boxes. The mobile app loads images by absolute URL, so they
+// Box photos live in apps/web/public/boxes, one per mix and size (me-gui-s.jpg ...). The mobile app loads images by absolute URL, so they
 // are addressed on the deployed site (the same default the app uses for its API).
 const B = (f: string) => `https://xanhtantay.vercel.app/boxes/${f}`;
 
@@ -90,9 +90,9 @@ async function seed() {
   const SIZES = { S: { label: "Nhỏ", slug: "nho", kg: 3, servings: 1, who: "1 người ở một mình" }, M: { label: "Vừa", slug: "vua", kg: 6, servings: 2, who: "phòng 2 người" }, L: { label: "Lớn", slug: "lon", kg: 12, servings: 4, who: "phòng 3–4 người nấu chung" } } as const;
   const PRICE = { S: 190000, M: 320000, L: 520000 };
   type Size = keyof typeof SIZES;
-  const MIXES: { mix: string; name: string; idPrefix: string; slugPrefix: string; image: string; menu: typeof MENU_ME_GUI; blurb: string; price: Record<Size, number>; items: Record<Size, [string, number][]> }[] = [
+  const MIXES: { mix: string; name: string; idPrefix: string; slugPrefix: string; menu: typeof MENU_ME_GUI; blurb: string; price: Record<Size, number>; items: Record<Size, [string, number][]> }[] = [
     {
-      mix: "me-gui", name: "Thùng rau mẹ gửi", idPrefix: "box", slugPrefix: "hop", image: B("me-gui.jpg"), menu: MENU_ME_GUI,
+      mix: "me-gui", name: "Thùng rau mẹ gửi", idPrefix: "box", slugPrefix: "hop", menu: MENU_ME_GUI,
       blurb: "Mix cân bằng giữa rau lá và củ quả, như thùng rau mẹ gửi từ quê lên.",
       price: PRICE,
       // 3, 6 and 12 kg in 0.5 kg steps. A 3 kg box holds six kinds; the seventh joins from size M.
@@ -103,7 +103,7 @@ async function seed() {
       },
     },
     {
-      mix: "vung-cao", name: "Nương rau vùng cao", idPrefix: "box-vc", slugPrefix: "vung-cao", image: B("vung-cao.jpg"), menu: MENU_VUNG_CAO,
+      mix: "vung-cao", name: "Nương rau vùng cao", idPrefix: "box-vc", slugPrefix: "vung-cao", menu: MENU_VUNG_CAO,
       blurb: "Nhiều rau xanh: cải mèo, cải ngọt, súp lơ, đậu cô ve hái trên nương.",
       price: PRICE,
       items: {
@@ -113,7 +113,7 @@ async function seed() {
       },
     },
     {
-      mix: "cu-qua", name: "Củ quả hầm canh", idPrefix: "box-cq", slugPrefix: "cu-qua", image: B("cu-qua.jpg"), menu: MENU_CU_QUA,
+      mix: "cu-qua", name: "Củ quả hầm canh", idPrefix: "box-cq", slugPrefix: "cu-qua", menu: MENU_CU_QUA,
       blurb: "Củ quả chắc tay để hầm, kho, nấu canh; để được lâu nhất trong ba mix.",
       price: PRICE,
       items: {
@@ -127,7 +127,7 @@ async function seed() {
   const boxId = (m: (typeof MIXES)[number], z: Size) => `${m.idPrefix}-${z.toLowerCase()}`;
   await db.insert(s.boxes).values(MIXES.flatMap((m) => sizes.map((z) => ({
     id: boxId(m, z), slug: `${m.slugPrefix}-${SIZES[z].slug}`, name: `${m.name} · ${SIZES[z].label}`, mix: m.mix, mix_name: m.name, size: z,
-    weight_kg: String(SIZES[z].kg), price: m.price[z], season: "Thu 2026", servings: SIZES[z].servings, days: 7, image_url: m.image, meal_plan: m.menu,
+    weight_kg: String(SIZES[z].kg), price: m.price[z], season: "Thu 2026", servings: SIZES[z].servings, days: 7, image_url: B(`${m.mix}-${z.toLowerCase()}.jpg`), meal_plan: m.menu,
     description: `${m.blurb} ${SIZES[z].kg} kg cho ${SIZES[z].who}, đủ nấu 7 ngày, mỗi ngày hai bữa. Rau lá ăn trước, củ quả để sau.`,
   })))).onConflictDoUpdate({ target: s.boxes.id, set: { name: sql`excluded.name`, slug: sql`excluded.slug`, mix: sql`excluded.mix`, mix_name: sql`excluded.mix_name`, size: sql`excluded.size`, price: sql`excluded.price`, weight_kg: sql`excluded.weight_kg`, season: sql`excluded.season`, servings: sql`excluded.servings`, days: sql`excluded.days`, image_url: sql`excluded.image_url`, meal_plan: sql`excluded.meal_plan`, description: sql`excluded.description`, active: sql`true` } });
 
