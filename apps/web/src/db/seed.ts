@@ -13,6 +13,9 @@ if (!process.env.DATABASE_URL) for (const f of [".env.local", ".env"]) {
 
 const C = (f: string) => `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(f)}?width=640`;
 const U = (p: string) => `https://images.unsplash.com/${p}?w=1000&q=70&auto=format`;
+// Box photos live in apps/web/public/boxes. The mobile app loads images by absolute URL, so they
+// are addressed on the deployed site (the same default the app uses for its API).
+const B = (f: string) => `https://xanhtantay.vercel.app/boxes/${f}`;
 
 async function seed() {
   const { db } = await import("./index");
@@ -89,7 +92,7 @@ async function seed() {
   type Size = keyof typeof SIZES;
   const MIXES: { mix: string; name: string; idPrefix: string; slugPrefix: string; image: string; menu: typeof MENU_ME_GUI; blurb: string; price: Record<Size, number>; items: Record<Size, [string, number][]> }[] = [
     {
-      mix: "me-gui", name: "Thùng rau mẹ gửi", idPrefix: "box", slugPrefix: "hop", image: C("June 19th Organic Vegetable Box.jpg"), menu: MENU_ME_GUI,
+      mix: "me-gui", name: "Thùng rau mẹ gửi", idPrefix: "box", slugPrefix: "hop", image: B("me-gui.jpg"), menu: MENU_ME_GUI,
       blurb: "Mix cân bằng giữa rau lá và củ quả, như thùng rau mẹ gửi từ quê lên.",
       price: PRICE,
       // 3, 6 and 12 kg in 0.5 kg steps. A 3 kg box holds six kinds; the seventh joins from size M.
@@ -100,7 +103,7 @@ async function seed() {
       },
     },
     {
-      mix: "vung-cao", name: "Nương rau vùng cao", idPrefix: "box-vc", slugPrefix: "vung-cao", image: C("Vegetable box 4.jpg"), menu: MENU_VUNG_CAO,
+      mix: "vung-cao", name: "Nương rau vùng cao", idPrefix: "box-vc", slugPrefix: "vung-cao", image: B("vung-cao.jpg"), menu: MENU_VUNG_CAO,
       blurb: "Nhiều rau xanh: cải mèo, cải ngọt, súp lơ, đậu cô ve hái trên nương.",
       price: PRICE,
       items: {
@@ -110,7 +113,7 @@ async function seed() {
       },
     },
     {
-      mix: "cu-qua", name: "Củ quả hầm canh", idPrefix: "box-cq", slugPrefix: "cu-qua", image: C("Organic Vegetable Boxes - 3085908608.jpg"), menu: MENU_CU_QUA,
+      mix: "cu-qua", name: "Củ quả hầm canh", idPrefix: "box-cq", slugPrefix: "cu-qua", image: B("cu-qua.jpg"), menu: MENU_CU_QUA,
       blurb: "Củ quả chắc tay để hầm, kho, nấu canh; để được lâu nhất trong ba mix.",
       price: PRICE,
       items: {
