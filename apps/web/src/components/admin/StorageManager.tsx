@@ -13,7 +13,7 @@ interface Data {
   removed?: { key: string; removed: number; bytes: number }[];
 }
 const size = (b: number) => (b >= 1024 ** 2 ? `${(b / 1024 ** 2).toLocaleString("vi-VN", { maximumFractionDigits: 1 })} MB` : `${Math.max(0, Math.round(b / 1024)).toLocaleString("vi-VN")} KB`);
-const TABLES: Record<string, string> = { orders: "Đơn hàng", users: "Người dùng", boxes: "Hộp rau", box_items: "Thành phần hộp", produce: "Loại rau củ", farms: "Nông hộ", farm_capacity: "Năng suất", harvest_runs: "Chuyến giao", harvest_commands: "Lệnh thu hoạch", subscriptions: "Gói định kỳ", group_orders: "Nhóm gom đơn", clusters: "Cụm chung cư", push_devices: "Thiết bị nhận thông báo", broadcasts: "Thông báo quản trị", change_requests: "Yêu cầu của nông hộ", refund_requests: "Yêu cầu hoàn tiền" };
+const TABLES: Record<string, string> = { orders: "Đơn hàng", users: "Người dùng", boxes: "Hộp rau", box_items: "Thành phần hộp", produce: "Loại rau củ", farms: "Nông hộ", farm_capacity: "Năng suất", harvest_runs: "Chuyến giao", harvest_commands: "Lệnh thu hoạch", subscriptions: "Gói định kỳ", group_orders: "Nhóm gom đơn", clusters: "Điểm nhận", push_devices: "Thiết bị nhận thông báo", broadcasts: "Thông báo quản trị", change_requests: "Yêu cầu của nông hộ", refund_requests: "Yêu cầu hoàn tiền" };
 const KEPT = ["Đơn hàng đã giao, đã huỷ", "Chuyến giao và lệnh thu hoạch", "Kết quả xử lý hoàn tiền (lý do, số tiền)", "Gói định kỳ, nhóm gom đơn", "Tài khoản, vườn, hộp rau"];
 
 function Meter({ icon, title, used, limit, note }: { icon: string; title: string; used: number; limit: number; note: string }) {

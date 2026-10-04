@@ -46,7 +46,7 @@ export async function PATCH(req: Request) {
   if (body.cluster_id === null) updates.cluster_id = null;
   else if (typeof body.cluster_id === "string") {
     const [c] = await db.select({ id: clusters.id }).from(clusters).where(eq(clusters.id, body.cluster_id));
-    if (!c) return NextResponse.json({ error: "Chung cư không hợp lệ" }, { status: 400 });
+    if (!c) return NextResponse.json({ error: "Điểm nhận không hợp lệ" }, { status: 400 });
     updates.cluster_id = c.id;
   }
   if (!Object.keys(updates).length) return NextResponse.json({ error: "Không có gì để cập nhật" }, { status: 400 });

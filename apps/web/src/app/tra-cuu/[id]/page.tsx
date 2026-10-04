@@ -29,7 +29,7 @@ export default async function TraCuuPage({ params }: { params: Promise<{ id: str
         <div style={{ position: "absolute", bottom: 22, left: 24, right: 24, zIndex: 1, color: "#fff" }}>
           <p className="label-md" style={{ opacity: 0.85, display: "inline-flex", gap: 4, alignItems: "center" }}><Icon name="qr_code_2" size={16} /> Hộp rau #{code}</p>
           <h1 className="headline-md" style={{ color: "#fff" }}>{o.box.name}</h1>
-          <p className="body-sm" style={{ opacity: 0.85 }}>{SIZE_LABELS[o.box.size]} · {formatKg(o.box.weight_kg * o.quantity)} · giao {formatYMD(o.delivery_date)}{o.cluster ? ` · sảnh ${o.cluster.name}` : ""}</p>
+          <p className="body-sm" style={{ opacity: 0.85 }}>{SIZE_LABELS[o.box.size]} · {formatKg(o.box.weight_kg * o.quantity)} · giao {formatYMD(o.delivery_date)}{o.cluster ? ` · nhận tại ${o.cluster.name}` : ""}</p>
         </div>
       </div>
 

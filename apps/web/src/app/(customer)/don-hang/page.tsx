@@ -20,9 +20,9 @@ export default async function DonHangPage() {
 
   return (
     <div>
-      <PageHeader icon="package_2" eyebrow="Hành trình hộp rau" title="Đơn hàng của tôi" subtitle="4h thu hoạch, 6h lên xe lạnh, 16h có tại sảnh" />
+      <PageHeader icon="package_2" eyebrow="Hành trình hộp rau" title="Đơn hàng của tôi" subtitle="4h thu hoạch, 6h lên xe lạnh, 16h có tại điểm nhận" />
       {orders.length === 0 ? (
-        <EmptyState icon="inventory_2" title="Chưa có hộp rau nào" description="Chọn một hộp theo mùa, đặt trước 18h00 là mai có rau." action={<Link href="/hop-rau" className="m3-btn m3-btn-filled"><Icon name="inventory_2" /><span>Chọn hộp rau</span></Link>} />
+        <EmptyState icon="inventory_2" title="Chưa có hộp rau nào" description="Chọn một hộp theo mùa. Rau giao thứ Tư và Chủ nhật, đặt trước 18h00 hôm trước." action={<Link href="/hop-rau" className="m3-btn m3-btn-filled"><Icon name="inventory_2" /><span>Chọn hộp rau</span></Link>} />
       ) : (
         <div className="flex flex-col gap-4 stagger">
           {orders.map((o) => (

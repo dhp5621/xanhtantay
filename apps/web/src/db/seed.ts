@@ -1,5 +1,5 @@
 /**
- * Demo data for the pilot: Hà Nội apartment clusters, farms in Bắc Kạn and Tuyên Quang, seasonal boxes.
+ * Demo data for the pilot: Hà Nội pickup points for students and young renters (dormitories, areas of rented rooms), farms in Bắc Kạn and Tuyên Quang, seasonal boxes.
  *   pnpm --filter web db:seed
  * Master data is upserted. Transactional demo data (orders, runs, groups, subscriptions) is REBUILT
  * relative to today, so re-seeding always gives a fresh, demo-ready state.
@@ -18,7 +18,7 @@ async function seed() {
   const { db } = await import("./index");
   const s = await import("./schema");
   const { MENU_ME_GUI, MENU_VUNG_CAO, MENU_CU_QUA } = await import("./menu");
-  const { addDays, todayVN, nextDeliveryDate, careMessageFor, vnInstant, SHIP_FEE } = await import("../lib/commerce");
+  const { addDays, todayVN, nextDeliveryDate, deliveryDayOnOrAfter, deliveryDayOnOrBefore, careMessageFor, vnInstant, shipFeeFor } = await import("../lib/commerce");
   const { runCutoff, advanceRun } = await import("../lib/brain");
   const { sql, inArray } = await import("drizzle-orm");
 
@@ -26,13 +26,14 @@ async function seed() {
   // Transactional data is rebuilt from scratch.
   await db.execute(sql`TRUNCATE harvest_commands, orders, harvest_runs, group_orders, subscriptions RESTART IDENTITY CASCADE`);
 
+  // Pickup points where students and young workers away from home live: dormitories and areas of rented rooms.
   await db.insert(s.clusters).values([
-    { id: "cl-times-city", name: "Times City", address: "458 Minh Khai", district: "Hai Bà Trưng" },
-    { id: "cl-royal-city", name: "Royal City", address: "72A Nguyễn Trãi", district: "Thanh Xuân" },
-    { id: "cl-smart-city", name: "Vinhomes Smart City", address: "Đại lộ Thăng Long, Tây Mỗ", district: "Nam Từ Liêm" },
-    { id: "cl-goldmark", name: "Goldmark City", address: "136 Hồ Tùng Mậu", district: "Bắc Từ Liêm" },
-    { id: "cl-linh-dam", name: "HH Linh Đàm", address: "Khu đô thị Linh Đàm", district: "Hoàng Mai" },
-  ]).onConflictDoNothing();
+    { id: "cl-ktx-bach-khoa", name: "Ký túc xá Bách Khoa", address: "Phố Trần Đại Nghĩa", district: "Hai Bà Trưng" },
+    { id: "cl-ktx-me-tri", name: "Ký túc xá Mễ Trì", address: "182 Lương Thế Vinh", district: "Thanh Xuân" },
+    { id: "cl-tro-cau-giay", name: "Khu trọ Cầu Giấy", address: "Quanh ngõ 165 Cầu Giấy, Dịch Vọng", district: "Cầu Giấy" },
+    { id: "cl-tro-dong-da", name: "Khu trọ Đống Đa", address: "Quanh phố Chùa Láng", district: "Đống Đa" },
+    { id: "cl-tro-thanh-xuan", name: "Khu trọ Thanh Xuân", address: "Quanh ngõ 72 Nguyễn Trãi", district: "Thanh Xuân" },
+  ]).onConflictDoUpdate({ target: s.clusters.id, set: { name: sql`excluded.name`, address: sql`excluded.address`, district: sql`excluded.district` } });
 
   const up = { password_hash: "$2b$10$example" };
   await db.insert(s.users).values([
@@ -40,13 +41,16 @@ async function seed() {
     { id: "farmer-co-tu", gender: "female", salutation: null, short_name: "Tư", name: "Cô Tư Lê", phone: "0912345678", email: "cotu@xanhtantay.vn", role: "farmer", ...up },
     { id: "farmer-u-tham", gender: "female", salutation: "u", short_name: "Thắm", name: "U Thắm Trần", phone: "0923456789", email: "utham@xanhtantay.vn", role: "farmer", ...up },
     { id: "farmer-bac-tu", gender: "male", salutation: null, short_name: "Tư", name: "Bác Tư Hoàng", phone: "0967890123", email: "bactu@xanhtantay.vn", role: "farmer", ...up },
-    { id: "customer-demo", gender: "female", salutation: null, short_name: "Lan", name: "Nguyễn Thị Lan", phone: "0934567890", email: "lan@gmail.com", role: "customer", cluster_id: "cl-times-city", address: "T5 · căn 1208", ...up },
-    { id: "customer-minh", gender: "male", salutation: null, short_name: "Minh", name: "Trần Văn Minh", phone: "0945678901", email: "minh@gmail.com", role: "customer", cluster_id: "cl-times-city", address: "T8 · căn 0915", ...up },
-    { id: "customer-hoa", gender: "female", salutation: null, short_name: "Hoa", name: "Lê Thị Hoa", phone: "0956789012", email: "hoa@gmail.com", role: "customer", cluster_id: "cl-royal-city", address: "R2 · căn 2104", ...up },
-    { id: "customer-quan", gender: "male", salutation: null, short_name: "Quân", name: "Phạm Anh Quân", phone: "0978901234", email: "quan@gmail.com", role: "customer", cluster_id: "cl-smart-city", address: "S2.05 · căn 1611", ...up },
-    { id: "customer-mai", gender: "female", salutation: null, short_name: "Mai", name: "Đỗ Thanh Mai", phone: "0989012345", email: "mai@gmail.com", role: "customer", cluster_id: "cl-times-city", address: "T2 · căn 0707", ...up },
-    { id: "customer-son", gender: "male", salutation: null, short_name: "Sơn", name: "Vũ Hồng Sơn", phone: "0990123456", email: "son@gmail.com", role: "customer", cluster_id: "cl-goldmark", address: "Ruby 2 · căn 1803", ...up },
+    // Customers are students and young workers living away from home, addressed as "bạn".
+    { id: "customer-demo", gender: "female", salutation: "bạn", short_name: "Lan", name: "Nguyễn Thị Lan", phone: "0934567890", email: "lan@gmail.com", role: "customer", cluster_id: "cl-ktx-bach-khoa", address: "Nhà B6 · phòng 412", ...up },
+    { id: "customer-minh", gender: "male", salutation: "bạn", short_name: "Minh", name: "Trần Văn Minh", phone: "0945678901", email: "minh@gmail.com", role: "customer", cluster_id: "cl-ktx-bach-khoa", address: "Nhà B9 · phòng 207", ...up },
+    { id: "customer-hoa", gender: "female", salutation: "bạn", short_name: "Hoa", name: "Lê Thị Hoa", phone: "0956789012", email: "hoa@gmail.com", role: "customer", cluster_id: "cl-ktx-me-tri", address: "Nhà C2 · phòng 305", ...up },
+    { id: "customer-quan", gender: "male", salutation: "bạn", short_name: "Quân", name: "Phạm Anh Quân", phone: "0978901234", email: "quan@gmail.com", role: "customer", cluster_id: "cl-tro-cau-giay", address: "Ngõ 165 Cầu Giấy · phòng 3", ...up },
+    { id: "customer-mai", gender: "female", salutation: "bạn", short_name: "Mai", name: "Đỗ Thanh Mai", phone: "0989012345", email: "mai@gmail.com", role: "customer", cluster_id: "cl-ktx-bach-khoa", address: "Nhà B3 · phòng 118", ...up },
+    { id: "customer-son", gender: "male", salutation: "bạn", short_name: "Sơn", name: "Vũ Hồng Sơn", phone: "0990123456", email: "son@gmail.com", role: "customer", cluster_id: "cl-tro-thanh-xuan", address: "Ngõ 72 Nguyễn Trãi · phòng 201", ...up },
   ]).onConflictDoUpdate({ target: s.users.id, set: { cluster_id: sql`excluded.cluster_id`, address: sql`excluded.address`, name: sql`excluded.name`, phone: sql`excluded.phone`, gender: sql`excluded.gender`, salutation: sql`excluded.salutation`, short_name: sql`excluded.short_name` } });
+  // The apartment complexes of the earlier demo are gone (an account that still pointed at one loses its pickup point).
+  await db.delete(s.clusters).where(inArray(s.clusters.id, ["cl-times-city", "cl-royal-city", "cl-smart-city", "cl-goldmark", "cl-linh-dam"]));
 
   await db.insert(s.farms).values([
     { id: "farm-bac-ba", owner_id: "farmer-bac-ba", name: "Vườn nhà bác Ba", slug: "vuon-bac-ba", location: "Ba Bể, Bắc Kạn", province: "Bắc Kạn", cover_url: U("photo-1625246333195-78d9c38ad449"), description: "Nương rau trên triền đồi ven hồ Ba Bể. Bác Ba trồng củ quả theo lối cũ của người Tày: ủ phân chuồng, tưới nước suối, không thuốc trừ sâu." },
@@ -78,38 +82,41 @@ async function seed() {
     ...cap("bac-tu", [["su-su", 30], ["cai-meo", 20], ["khoai-tay", 50], ["bi-do", 40], ["su-hao", 20], ["cu-cai", 25], ["sup-lo", 15]]),
   ]).onConflictDoUpdate({ target: s.farm_capacity.id, set: { daily_kg: sql`excluded.daily_kg` } });
 
-  // Three mixes a season, each in three sizes (like clothing). Every box feeds its household for 7 days.
-  const SIZES = { S: { label: "Nhỏ", slug: "nho", kg: 4, servings: 2, who: "nhà 1–2 người" }, M: { label: "Vừa", slug: "vua", kg: 7, servings: 4, who: "gia đình 3–4 người" }, L: { label: "Lớn", slug: "lon", kg: 10, servings: 6, who: "nhà 5–6 người hoặc hai nhà chung nhau" } } as const;
+  // Three mixes a season, each in three sizes (like clothing). Every box feeds its room for 7 days.
+  // Every mix has the same price per size.
+  const SIZES = { S: { label: "Nhỏ", slug: "nho", kg: 3, servings: 1, who: "1 người ở một mình" }, M: { label: "Vừa", slug: "vua", kg: 6, servings: 2, who: "phòng 2 người" }, L: { label: "Lớn", slug: "lon", kg: 12, servings: 4, who: "phòng 3–4 người nấu chung" } } as const;
+  const PRICE = { S: 190000, M: 320000, L: 520000 };
   type Size = keyof typeof SIZES;
   const MIXES: { mix: string; name: string; idPrefix: string; slugPrefix: string; image: string; menu: typeof MENU_ME_GUI; blurb: string; price: Record<Size, number>; items: Record<Size, [string, number][]> }[] = [
     {
       mix: "me-gui", name: "Thùng rau mẹ gửi", idPrefix: "box", slugPrefix: "hop", image: C("June 19th Organic Vegetable Box.jpg"), menu: MENU_ME_GUI,
       blurb: "Mix cân bằng giữa rau lá và củ quả, như thùng rau mẹ gửi từ quê lên.",
-      price: { S: 159000, M: 259000, L: 359000 },
+      price: PRICE,
+      // 3, 6 and 12 kg in 0.5 kg steps. A 3 kg box holds six kinds; the seventh joins from size M.
       items: {
-        S: [["bap-cai", 1], ["ca-rot", 0.5], ["ca-chua", 0.5], ["cai-ngot", 0.5], ["su-su", 0.5], ["khoai-tay", 0.5], ["bi-do", 0.5]],
-        M: [["bap-cai", 1.5], ["ca-rot", 1], ["ca-chua", 1], ["cai-ngot", 0.5], ["su-su", 1], ["khoai-tay", 1], ["bi-do", 1]],
-        L: [["bap-cai", 2], ["ca-rot", 1.5], ["ca-chua", 1.5], ["cai-ngot", 1], ["su-su", 1.5], ["khoai-tay", 1.5], ["bi-do", 1]],
+        S: [["bap-cai", 0.5], ["ca-rot", 0.5], ["ca-chua", 0.5], ["cai-ngot", 0.5], ["su-su", 0.5], ["khoai-tay", 0.5]],
+        M: [["bap-cai", 1], ["ca-rot", 1], ["ca-chua", 1], ["cai-ngot", 0.5], ["su-su", 1], ["khoai-tay", 0.5], ["bi-do", 1]],
+        L: [["bap-cai", 2.5], ["ca-rot", 2], ["ca-chua", 2], ["cai-ngot", 1], ["su-su", 1.5], ["khoai-tay", 1.5], ["bi-do", 1.5]],
       },
     },
     {
       mix: "vung-cao", name: "Nương rau vùng cao", idPrefix: "box-vc", slugPrefix: "vung-cao", image: C("Vegetable box 4.jpg"), menu: MENU_VUNG_CAO,
       blurb: "Nhiều rau xanh: cải mèo, cải ngọt, súp lơ, đậu cô ve hái trên nương.",
-      price: { S: 169000, M: 279000, L: 379000 },
+      price: PRICE,
       items: {
-        S: [["bap-cai", 1], ["cai-meo", 0.5], ["cai-ngot", 0.5], ["sup-lo", 0.5], ["dau-co-ve", 0.5], ["su-su", 0.5], ["ca-chua", 0.5]],
-        M: [["bap-cai", 1.5], ["cai-meo", 1], ["cai-ngot", 1], ["sup-lo", 1], ["dau-co-ve", 1], ["su-su", 1], ["ca-chua", 0.5]],
-        L: [["bap-cai", 2], ["cai-meo", 1.5], ["cai-ngot", 1.5], ["sup-lo", 1.5], ["dau-co-ve", 1.5], ["su-su", 1], ["ca-chua", 1]],
+        S: [["bap-cai", 0.5], ["cai-meo", 0.5], ["cai-ngot", 0.5], ["sup-lo", 0.5], ["dau-co-ve", 0.5], ["ca-chua", 0.5]],
+        M: [["bap-cai", 1], ["cai-meo", 1], ["cai-ngot", 1], ["sup-lo", 1], ["dau-co-ve", 1], ["su-su", 0.5], ["ca-chua", 0.5]],
+        L: [["bap-cai", 2.5], ["cai-meo", 2], ["cai-ngot", 2], ["sup-lo", 2], ["dau-co-ve", 1.5], ["su-su", 1], ["ca-chua", 1]],
       },
     },
     {
       mix: "cu-qua", name: "Củ quả hầm canh", idPrefix: "box-cq", slugPrefix: "cu-qua", image: C("Organic Vegetable Boxes - 3085908608.jpg"), menu: MENU_CU_QUA,
       blurb: "Củ quả chắc tay để hầm, kho, nấu canh; để được lâu nhất trong ba mix.",
-      price: { S: 149000, M: 249000, L: 339000 },
+      price: PRICE,
       items: {
-        S: [["bi-do", 1], ["ca-rot", 0.5], ["khoai-tay", 0.5], ["su-hao", 0.5], ["cu-cai", 0.5], ["ca-chua", 0.5], ["bap-cai", 0.5]],
-        M: [["bi-do", 1.5], ["ca-rot", 1], ["khoai-tay", 1], ["su-hao", 1], ["cu-cai", 1], ["bap-cai", 1], ["ca-chua", 0.5]],
-        L: [["bi-do", 2], ["ca-rot", 1.5], ["khoai-tay", 1.5], ["su-hao", 1.5], ["cu-cai", 1.5], ["bap-cai", 1], ["ca-chua", 1]],
+        S: [["bi-do", 0.5], ["ca-rot", 0.5], ["khoai-tay", 0.5], ["su-hao", 0.5], ["cu-cai", 0.5], ["ca-chua", 0.5]],
+        M: [["bi-do", 1], ["ca-rot", 1], ["khoai-tay", 1], ["su-hao", 1], ["cu-cai", 1], ["bap-cai", 0.5], ["ca-chua", 0.5]],
+        L: [["bi-do", 2.5], ["ca-rot", 2], ["khoai-tay", 2], ["su-hao", 2], ["cu-cai", 1.5], ["bap-cai", 1], ["ca-chua", 1]],
       },
     },
   ];
@@ -129,26 +136,32 @@ async function seed() {
     if (kg !== SIZES[z].kg) throw new Error(`${boxId(m, z)}: contents weigh ${kg} kg, box says ${SIZES[z].kg} kg`);
   }
 
-  // ── Demo activity, relative to today ───────────────────────────────────────
+  // ── Demo activity, relative to today. Every delivery date is a delivery day (Wednesday or Sunday). ──
   const today = todayVN();
   const price = Object.fromEntries(MIXES.flatMap((m) => sizes.map((z) => [boxId(m, z), m.price[z]]))) as Record<string, number>;
-  const who = { "customer-demo": ["cl-times-city", "T5 · căn 1208"], "customer-minh": ["cl-times-city", "T8 · căn 0915"], "customer-hoa": ["cl-royal-city", "R2 · căn 2104"], "customer-quan": ["cl-smart-city", "S2.05 · căn 1611"], "customer-mai": ["cl-times-city", "T2 · căn 0707"], "customer-son": ["cl-goldmark", "Ruby 2 · căn 1803"] } as Record<string, [string, string]>;
+  const sizeOf = Object.fromEntries(MIXES.flatMap((m) => sizes.map((z) => [boxId(m, z), z]))) as Record<string, Size>;
+  const who = { "customer-demo": ["cl-ktx-bach-khoa", "Nhà B6 · phòng 412"], "customer-minh": ["cl-ktx-bach-khoa", "Nhà B9 · phòng 207"], "customer-hoa": ["cl-ktx-me-tri", "Nhà C2 · phòng 305"], "customer-quan": ["cl-tro-cau-giay", "Ngõ 165 Cầu Giấy · phòng 3"], "customer-mai": ["cl-ktx-bach-khoa", "Nhà B3 · phòng 118"], "customer-son": ["cl-tro-thanh-xuan", "Ngõ 72 Nguyễn Trãi · phòng 201"] } as Record<string, [string, string]>;
+  // Every order pays the delivery fee of its size per box; a group that fills gets it back to 0 at cut-off.
   const order = (id: string, user: string, box: string, qty: number, date: string, type: "single" | "subscription" | "group" = "single", extra: Partial<typeof s.orders.$inferInsert> = {}) => {
-    const subtotal = price[box] * qty, ship = type === "single" ? SHIP_FEE : 0;
-    return { id, user_id: user, box_id: box, quantity: qty, type, status: "placed" as const, subtotal, ship_fee: ship, total: subtotal + ship, cluster_id: who[user][0], address: who[user][1], delivery_date: date, care_message: careMessageFor(id), ...extra };
+    const subtotal = price[box] * qty, ship = shipFeeFor(sizeOf[box], qty);
+    return { id, user_id: user, box_id: box, quantity: qty, type, status: "placed" as const, subtotal, ship_fee: ship, total: subtotal + ship, cluster_id: who[user][0], address: who[user][1], delivery_date: date, care_message: careMessageFor(id), payment_method: "transfer", payment_status: "pending", ...extra };
   };
+
+  const dB = deliveryDayOnOrBefore(today);            // the latest delivery day up to today
+  const dA = deliveryDayOnOrBefore(addDays(dB, -1));  // the delivery day before it
+  const dC = nextDeliveryDate();                      // the open book
+  const dD = deliveryDayOnOrAfter(addDays(dC, 1)), dE = deliveryDayOnOrAfter(addDays(dD, 1));
 
   // Subscriptions
   await db.insert(s.subscriptions).values([
-    { id: "sub-demo-1", user_id: "customer-demo", box_id: "box-m", quantity: 1, frequency: "weekly", next_delivery: addDays(today, -3), cluster_id: "cl-times-city", address: "T5 · căn 1208" },
-    { id: "sub-hoa-1", user_id: "customer-hoa", box_id: "box-s", quantity: 1, frequency: "weekly", next_delivery: addDays(today, 1), cluster_id: "cl-royal-city", address: "R2 · căn 2104" },
-    { id: "sub-son-1", user_id: "customer-son", box_id: "box-l", quantity: 1, frequency: "biweekly", next_delivery: addDays(today, 4), cluster_id: "cl-goldmark", address: "Ruby 2 · căn 1803" },
+    { id: "sub-demo-1", user_id: "customer-demo", box_id: "box-m", quantity: 1, frequency: "weekly", next_delivery: dA, cluster_id: "cl-ktx-bach-khoa", address: "Nhà B6 · phòng 412" },
+    { id: "sub-hoa-1", user_id: "customer-hoa", box_id: "box-s", quantity: 1, frequency: "weekly", next_delivery: dC, cluster_id: "cl-ktx-me-tri", address: "Nhà C2 · phòng 305" },
+    { id: "sub-son-1", user_id: "customer-son", box_id: "box-l", quantity: 1, frequency: "biweekly", next_delivery: dD, cluster_id: "cl-tro-thanh-xuan", address: "Ngõ 72 Nguyễn Trãi · phòng 201" },
   ]);
 
-  // Run A: delivered three days ago
-  const dA = addDays(today, -3);
+  // Run A: the delivery day before the latest one, delivered
   await db.insert(s.orders).values([
-    order("o-a1", "customer-minh", "box-s", 1, dA, "single", { created_at: vnInstant(addDays(dA, -1), "10:20") }),
+    order("o-a1", "customer-minh", "box-s", 1, dA, "single", { created_at: vnInstant(addDays(dA, -1), "10:20"), payment_method: "cod" }),
     order("o-a2", "customer-quan", "box-cq-l", 1, dA, "single", { created_at: vnInstant(addDays(dA, -1), "15:05") }),
   ]);
   const a = await runCutoff(dA); // also materialises Lan's subscription order for that day
@@ -156,12 +169,12 @@ async function seed() {
   await db.execute(sql`UPDATE harvest_commands SET status = 'confirmed', confirmed_at = ${vnInstant(addDays(dA, -1), "18:40").toISOString()}, created_at = ${vnInstant(addDays(dA, -1), "18:00").toISOString()} WHERE run_id = ${a.run_id}`);
   for (let i = 0; i < 3; i++) await advanceRun(a.run_id);
   await db.execute(sql`UPDATE harvest_runs SET harvested_at = ${vnInstant(dA, "4:00").toISOString()}, loaded_at = ${vnInstant(dA, "6:00").toISOString()}, delivered_at = ${vnInstant(dA, "16:00").toISOString()} WHERE id = ${a.run_id}`);
-  await db.execute(sql`UPDATE orders SET harvested_at = ${vnInstant(dA, "4:00").toISOString()}, loaded_at = ${vnInstant(dA, "6:00").toISOString()}, delivered_at = ${vnInstant(dA, "16:00").toISOString()} WHERE run_id = ${a.run_id}`);
+  await db.execute(sql`UPDATE orders SET payment_status = 'paid', harvested_at = ${vnInstant(dA, "4:00").toISOString()}, loaded_at = ${vnInstant(dA, "6:00").toISOString()}, delivered_at = ${vnInstant(dA, "16:00").toISOString()} WHERE run_id = ${a.run_id}`);
 
-  // Run B: today's delivery, already cut off yesterday, on the truck now
-  const dB = today;
+  // Run B: the latest delivery day. On the truck when that is today, delivered when it was earlier this week.
+  // Lan's box here was ordered for a relative ("Đặt cho người thân"): prepaid, with the sender's own note.
   await db.insert(s.orders).values([
-    order("o-b1", "customer-demo", "box-s", 1, dB, "single", { created_at: vnInstant(addDays(dB, -1), "9:12"), note: "Gửi lễ tân giúp em" }),
+    order("o-b1", "customer-demo", "box-s", 1, dB, "single", { created_at: vnInstant(addDays(dB, -1), "9:12"), note: "Gửi phòng bảo vệ ký túc xá giúp em", cluster_id: "cl-ktx-me-tri", address: "Nhà C1 · phòng 210", recipient_name: "Nguyễn Văn Nam", recipient_phone: "0961234567", care_message: "Chị gửi rau quê cho em, nhớ nấu cơm chứ đừng ăn mì mãi nhé." }),
     order("o-b2", "customer-mai", "box-vc-s", 1, dB, "single", { created_at: vnInstant(addDays(dB, -1), "11:40") }),
     order("o-b3", "customer-son", "box-m", 2, dB, "single", { created_at: vnInstant(addDays(dB, -1), "16:30") }),
   ]);
@@ -170,28 +183,32 @@ async function seed() {
   await db.execute(sql`UPDATE harvest_commands SET status = 'confirmed', confirmed_at = ${vnInstant(addDays(dB, -1), "19:05").toISOString()}, created_at = ${vnInstant(addDays(dB, -1), "18:00").toISOString()} WHERE run_id = ${b.run_id}`);
   await advanceRun(b.run_id); await advanceRun(b.run_id);
   await db.execute(sql`UPDATE harvest_runs SET harvested_at = ${vnInstant(dB, "4:00").toISOString()}, loaded_at = ${vnInstant(dB, "6:00").toISOString()} WHERE id = ${b.run_id}`);
-  await db.execute(sql`UPDATE orders SET harvested_at = ${vnInstant(dB, "4:00").toISOString()}, loaded_at = ${vnInstant(dB, "6:00").toISOString()} WHERE run_id = ${b.run_id}`);
+  await db.execute(sql`UPDATE orders SET payment_status = 'paid', harvested_at = ${vnInstant(dB, "4:00").toISOString()}, loaded_at = ${vnInstant(dB, "6:00").toISOString()} WHERE run_id = ${b.run_id}`);
+  if (dB !== today) {
+    await advanceRun(b.run_id);
+    await db.execute(sql`UPDATE harvest_runs SET delivered_at = ${vnInstant(dB, "16:00").toISOString()} WHERE id = ${b.run_id}`);
+    await db.execute(sql`UPDATE orders SET delivered_at = ${vnInstant(dB, "16:00").toISOString()} WHERE run_id = ${b.run_id}`);
+  }
 
-  // Open book: pre-orders for the next delivery, waiting for the 18:00 cut-off (admin can close it live)
-  const dC = nextDeliveryDate();
+  // Open book: pre-orders for the next delivery day, waiting for its 18:00 cut-off (admin can close it live)
   await db.insert(s.group_orders).values([
-    { id: "g-times", cluster_id: "cl-times-city", box_id: "box-m", title: "Hội rau sạch Times City T5–T8", min_members: 4, current_members: 3, delivery_date: dC, created_by: "customer-demo" },
-    { id: "g-royal", cluster_id: "cl-royal-city", box_id: "box-s", title: "Mẹ bỉm Royal City", min_members: 3, current_members: 1, delivery_date: addDays(dC, 1), created_by: "customer-hoa" },
-    { id: "g-smart", cluster_id: "cl-smart-city", box_id: "box-l", title: "Smart City S2 gom hộp lớn", min_members: 3, current_members: 1, delivery_date: addDays(dC, 2), created_by: "customer-quan" },
+    { id: "g-bach-khoa", cluster_id: "cl-ktx-bach-khoa", box_id: "box-m", title: "Hội nấu cơm nhà B6–B9 Bách Khoa", min_members: 4, current_members: 3, delivery_date: dC, created_by: "customer-demo" },
+    { id: "g-me-tri", cluster_id: "cl-ktx-me-tri", box_id: "box-s", title: "Phòng nữ nhà C2 Mễ Trì", min_members: 3, current_members: 1, delivery_date: dD, created_by: "customer-hoa" },
+    { id: "g-cau-giay", cluster_id: "cl-tro-cau-giay", box_id: "box-l", title: "Xóm trọ ngõ 165 gom hộp lớn", min_members: 3, current_members: 1, delivery_date: dE, created_by: "customer-quan" },
   ]);
   await db.insert(s.orders).values([
-    order("o-c1", "customer-demo", "box-m", 1, dC, "group", { group_order_id: "g-times", ship_fee: SHIP_FEE, total: price["box-m"] + SHIP_FEE }),
-    order("o-c2", "customer-minh", "box-m", 1, dC, "group", { group_order_id: "g-times", ship_fee: SHIP_FEE, total: price["box-m"] + SHIP_FEE }),
-    order("o-c3", "customer-mai", "box-m", 2, dC, "group", { group_order_id: "g-times", ship_fee: SHIP_FEE, total: price["box-m"] * 2 + SHIP_FEE }),
+    order("o-c1", "customer-demo", "box-m", 1, dC, "group", { group_order_id: "g-bach-khoa" }),
+    order("o-c2", "customer-minh", "box-m", 1, dC, "group", { group_order_id: "g-bach-khoa", payment_method: "cod" }),
+    order("o-c3", "customer-mai", "box-m", 2, dC, "group", { group_order_id: "g-bach-khoa" }),
     order("o-c4", "customer-quan", "box-vc-m", 1, dC, "single"),
-    order("o-c5", "customer-son", "box-cq-s", 2, dC, "single"),
-    order("o-c6", "customer-hoa", "box-s", 1, addDays(dC, 1), "group", { group_order_id: "g-royal", ship_fee: SHIP_FEE, total: price["box-s"] + SHIP_FEE }),
-    order("o-c7", "customer-quan", "box-l", 1, addDays(dC, 2), "group", { group_order_id: "g-smart", ship_fee: SHIP_FEE, total: price["box-l"] + SHIP_FEE }),
+    order("o-c5", "customer-son", "box-cq-s", 2, dC, "single", { payment_method: "cod" }),
+    order("o-c6", "customer-hoa", "box-s", 1, dD, "group", { group_order_id: "g-me-tri" }),
+    order("o-c7", "customer-quan", "box-l", 1, dE, "group", { group_order_id: "g-cau-giay" }),
   ]);
 
   const res = (await db.execute(sql`SELECT count(*)::int AS n FROM orders`)) as unknown as { rows?: { n: number }[] } | { n: number }[];
   const orderCount = Array.isArray(res) ? res[0]?.n : res.rows?.[0]?.n;
-  console.log(`Seed completed: ${orderCount ?? "?"} orders. Open book for ${dC}; run for today (${dB}) is on the truck.`);
+  console.log(`Seed completed: ${orderCount ?? "?"} orders. Open book for ${dC}; the run for ${dB} is ${dB === today ? "on the truck" : "delivered"}; the run for ${dA} is delivered.`);
   console.log("Demo login: lan@gmail.com / demo123 (customer), bacba@xanhtantay.vn / demo123 (farmer)");
   process.exit(0);
 }

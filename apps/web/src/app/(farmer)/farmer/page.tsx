@@ -40,7 +40,7 @@ export default async function FarmerPage() {
         <section className="m3-command confirmed anim-in-scale" style={{ textAlign: "center" }}>
           <Icon name="bedtime" size={56} filled className="text-primary" />
           <p className="m3-command-text" style={{ marginTop: 12 }}>Chưa có lệnh thu hoạch.</p>
-          <p className="body-lg text-on-surface-variant" style={{ marginTop: 8 }}>18h00 mỗi ngày hệ thống sẽ gửi lệnh cho sáng hôm sau.</p>
+          <p className="body-lg text-on-surface-variant" style={{ marginTop: 8 }}>Hàng giao thứ Tư và Chủ nhật: 18h00 hôm trước (thứ Ba, thứ Bảy) hệ thống sẽ gửi lệnh cho sáng hôm sau, khi chuyến đủ số hộp tối thiểu.</p>
         </section>
       )}
 

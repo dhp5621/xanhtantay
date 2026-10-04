@@ -6,6 +6,7 @@ import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { apiFetch, ApiError } from "../../constants/api";
 import { colors, shape, type, useStyles, type Colors } from "../../constants/theme";
 import { formatVND } from "../../constants/format";
+import { PAYMENT_METHOD_LABELS, PAYMENT_STATUS_LABELS } from "../../constants/commerce";
 import type { OrderTrace, RefundState } from "../../constants/types";
 import { useLiveRefresh } from "../../hooks/useLive";
 import { useSession } from "../../hooks/useSession";
@@ -117,7 +118,7 @@ export default function OrderDetailScreen() {
           lead={
             mine && order.care_message ? (
               <AnimIn delay={40}>
-                <CareMessage message={order.care_message} />
+                <CareMessage message={order.care_message} label={order.recipient_name ? "Lời nhắn của người gửi, do người nhà viết" : undefined} />
               </AnimIn>
             ) : null
           }
@@ -130,6 +131,13 @@ export default function OrderDetailScreen() {
                 <Row label="Phí giao" value={order.ship_fee ? formatVND(order.ship_fee) : "Miễn phí"} accent={!order.ship_fee} />
                 <View style={styles.divider} />
                 <Row label="Tổng cộng" value={formatVND(order.total ?? 0)} strong />
+                {order.payment_method ? <Row label={PAYMENT_METHOD_LABELS[order.payment_method] ?? order.payment_method} value={PAYMENT_STATUS_LABELS[order.payment_status ?? "pending"] ?? ""} accent={order.payment_status === "paid"} /> : null}
+                {order.recipient_name ? (
+                  <View style={styles.extra}>
+                    <Icon name="favorite" size={16} color={colors.onSurfaceVariant} />
+                    <EmojiText style={styles.extraText}>{`Đặt cho người thân: ${order.recipient_name}${order.recipient_phone ? ` · ${order.recipient_phone}` : ""}`}</EmojiText>
+                  </View>
+                ) : null}
                 {order.address ? (
                   <View style={styles.extra}>
                     <Icon name="location_on" size={16} color={colors.onSurfaceVariant} />
@@ -158,7 +166,7 @@ export default function OrderDetailScreen() {
             <SectionHead icon="qr_code_2" title="Mã QR truy xuất" />
             <View style={[styles.card, { alignItems: "center" }]}>
               <QrImage orderId={order.id} size={170} />
-              <Text style={[styles.muted, { textAlign: "center", marginTop: 10 }]}>Ai quét mã này cũng xem được vườn trồng, giờ thu hoạch và hành trình của hộp rau. Mã không hiện thông tin người mua.</Text>
+              <Text style={[styles.muted, { textAlign: "center", marginTop: 10 }]}>Ai quét mã này cũng xem được vườn trồng, giờ thu hoạch và hành trình của hộp rau. Mã không hiện thông tin người mua hay người nhận.</Text>
             </View>
           </AnimIn>
 

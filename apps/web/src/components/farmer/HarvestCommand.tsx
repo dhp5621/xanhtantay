@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/ui/Icon";
 import { useSnackbar } from "@/components/ui/Snackbar";
-import { formatKg } from "@/lib/commerce";
+import { formatKg, PAYOUT_RULE } from "@/lib/commerce";
 import { formatClock } from "@/lib/format";
 
 export interface Command { id: string; message: string; items: { name: string; kg: number }[]; total_kg: number; status: "sent" | "confirmed" | "declined"; confirmed_at: string | Date | null; declined_at?: string | Date | null; delivery_date: string }
@@ -46,6 +46,9 @@ export function HarvestCommand({ command, dateLabel, you = "bác" }: { command: 
         ))}
         <div className="m3-command-row" style={{ background: "transparent", boxShadow: "inset 0 0 0 2px currentColor" }}><span>Tổng cộng</span><span className="tabular">{formatKg(command.total_kg)}</span></div>
       </div>
+
+      {/* How the farm is paid for this batch. Text only: payouts are settled outside the app. */}
+      <p className="body-lg" style={{ display: "flex", gap: 10, alignItems: "flex-start", margin: "0 0 22px", opacity: 0.9 }}><Icon name="payments" filled /> <span>{PAYOUT_RULE}</span></p>
 
       {confirmed ? (
         <div className="m3-command-row" style={{ justifyContent: "center", background: "var(--md-primary)", color: "var(--md-on-primary)" }}>

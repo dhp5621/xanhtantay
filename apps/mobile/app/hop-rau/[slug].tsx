@@ -8,7 +8,7 @@ import { Stack, router, useLocalSearchParams } from "expo-router";
 import type { Box } from "@xanhtantay/types";
 import { apiFetch } from "../../constants/api";
 import { colors, shape, type, useStyles, type Colors } from "../../constants/theme";
-import { SHIP_FEE, SIZE_LABELS, sizesOf, type OrderMode } from "../../constants/commerce";
+import { PAYMENT_METHOD_LABELS, SIZE_LABELS, sizesOf, type OrderMode } from "../../constants/commerce";
 import { formatDay, formatKg, formatVND } from "../../constants/format";
 import type { BoxesResponse, PlacedOrder } from "../../constants/types";
 import { useLiveRefresh } from "../../hooks/useLive";
@@ -48,7 +48,7 @@ export default function BoxDetailScreen() {
       setBox(row);
       // The other sizes of this mix come from the list; without it the box stands alone.
       setSizes(list ? sizesOf(row, list.boxes ?? []) : []);
-      if (list) setMeta({ delivery_date: list.delivery_date, cutoff_at: list.cutoff_at, ship_fee: list.ship_fee });
+      if (list) setMeta({ delivery_date: list.delivery_date, cutoff_at: list.cutoff_at, ship_fee: list.ship_fee, ship_fees: list.ship_fees });
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Không tải được dữ liệu");
@@ -154,7 +154,7 @@ export default function BoxDetailScreen() {
           <OrderPanel
             box={box}
             deliveryDate={meta?.delivery_date ?? null}
-            shipFee={meta?.ship_fee ?? SHIP_FEE}
+            shipFees={meta?.ship_fees}
             initialMode={initialMode}
             onPlaced={(order) => {
               if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
@@ -183,14 +183,14 @@ function PlacedView({ box, order, onAgain }: { box: Box; order: PlacedOrder; onA
           </View>
           <Text style={styles.doneTitle}>Đơn đã vào sổ!</Text>
           <Text style={styles.doneBody}>
-            {order.quantity} × {order.box?.name ?? box.name}, giao {formatDay(order.delivery_date)} lúc 16h00 tại sảnh{order.cluster ? ` ${order.cluster.name}` : " chung cư nhà bạn"}.
+            {order.quantity} × {order.box?.name ?? box.name}, giao {formatDay(order.delivery_date)} lúc 16h00 tại {order.cluster ? order.cluster.name : "điểm nhận của bạn"}.{order.recipient_name ? ` Người nhận: ${order.recipient_name}.` : ""}
           </Text>
         </View>
       </AnimInScale>
 
       {order.care_message ? (
         <AnimIn delay={80}>
-          <CareMessage message={order.care_message} />
+          <CareMessage message={order.care_message} label={order.recipient_name ? "Lời nhắn của người gửi" : undefined} />
         </AnimIn>
       ) : null}
 
@@ -203,7 +203,7 @@ function PlacedView({ box, order, onAgain }: { box: Box; order: PlacedOrder; onA
           <SectionHead icon="eco" title="Hộp rau này làm được gì" />
           <View style={{ gap: 8 }}>
             <View style={{ flexDirection: "row", gap: 8 }}>
-              <StatTile icon="payments" value={formatVND(impact.toFarmers)} label="Về tay bác nông dân" tone="primary" />
+              <StatTile icon="payments" value={formatVND(impact.toFarmers)} label="Tiền mua rau tại vườn, về tay nông hộ" tone="primary" />
               <StatTile icon="monitor_weight" value={formatKg(impact.weightKg)} label="Rau cắt đúng lượng" tone="tertiary" />
             </View>
             <View style={{ flexDirection: "row", gap: 8 }}>
@@ -219,6 +219,12 @@ function PlacedView({ box, order, onAgain }: { box: Box; order: PlacedOrder; onA
           <Text style={styles.muted}>Tổng thanh toán{order.ship_fee ? ` (gồm ${formatVND(order.ship_fee)} phí giao)` : ""}</Text>
           <Text style={styles.barPrice}>{formatVND(order.total)}</Text>
         </View>
+        {order.payment_method ? (
+          <Text style={[styles.muted, { marginTop: 6 }]}>
+            {PAYMENT_METHOD_LABELS[order.payment_method] ?? order.payment_method}
+            {order.payment_method === "transfer" ? ": chuyển khoản trước giờ chốt sổ 18h00 hôm trước ngày giao." : "."}
+          </Text>
+        ) : null}
         <View style={{ gap: 10, marginTop: 14 }}>
           <Button label="Xem hành trình đơn hàng" icon="favorite" onPress={() => router.replace(`/don-hang/${order.id}`)} style={{ alignSelf: "stretch" }} />
           <Button label="Tất cả đơn hàng" icon="package_2" variant="tonal" onPress={() => router.replace("/tabs/don-hang")} style={{ alignSelf: "stretch" }} />

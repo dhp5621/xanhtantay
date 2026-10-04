@@ -30,7 +30,7 @@ export function CancelOrderButton({ orderId }: { orderId: string }) {
           <div className="m3-scrim" onClick={() => setConfirm(false)} aria-hidden />
           <div className="m3-dialog" role="alertdialog" aria-modal="true" style={{ width: "min(420px, calc(100vw - 32px))" }}>
             <h2 className="headline-sm" style={{ marginBottom: 6 }}>Huỷ hộp rau này?</h2>
-            <p className="body-md text-on-surface-variant">Chưa tới giờ chốt sổ nên huỷ không mất phí. Sau 18h00 lệnh thu hoạch đã gửi về vườn thì không huỷ được nữa.</p>
+            <p className="body-md text-on-surface-variant">Chưa tới giờ chốt sổ nên huỷ không mất phí. Sau 18h00 hôm trước ngày giao, lệnh thu hoạch đã gửi về vườn thì không huỷ được nữa.</p>
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 22 }}>
               <button className="m3-btn m3-btn-text" onClick={() => setConfirm(false)}>Giữ đơn</button>
               <button className="m3-btn m3-btn-error" onClick={cancel} disabled={busy}>{busy ? <span className="m3-loader sm" /> : <Icon name="cancel" />}<span>Huỷ đơn</span></button>

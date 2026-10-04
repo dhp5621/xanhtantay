@@ -1,10 +1,20 @@
 import { and, eq, inArray, lte, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { boxes, box_items, farm_capacity, farms, group_orders, harvest_commands, harvest_runs, orders, produce, subscriptions, users, type CommandItem, callName } from "@/db/schema";
-import { addDays, careMessageOr, commandMessage, FREQUENCY_DAYS, formatKg, formatYMD, SHIP_FEE, vnInstant, HARVEST_TIME, PICKUP_TIME, ARRIVAL_TIME } from "./commerce";
+import { addDays, careMessageOr, commandMessage, DEFAULT_MIN_BATCH_BOXES, FREQUENCY_DAYS, formatKg, formatYMD, shipFeeFor, vnInstant, HARVEST_TIME, PICKUP_TIME, ARRIVAL_TIME } from "./commerce";
 import { aiConfigured, chatJSON } from "./ai";
 
 const STEP = 0.5; // kg granularity of a harvest command
+
+/**
+ * A harvest batch is only opened automatically when at least this many boxes are in the book
+ * (env MIN_BATCH_BOXES, default 240). The operator's manual cut-off in /admin ignores it.
+ */
+export function minBatchBoxes() {
+  const raw = process.env.MIN_BATCH_BOXES;
+  const n = raw === undefined || raw.trim() === "" ? NaN : Number(raw);
+  return Number.isFinite(n) && n >= 0 ? Math.round(n) : DEFAULT_MIN_BATCH_BOXES;
+}
 const round = (n: number) => Math.round(n * 10) / 10;
 
 export interface DemandLine { produce_id: string; name: string; kg: number; capacity_kg: number; allocated_kg: number; shortage_kg: number }
@@ -96,7 +106,7 @@ export async function previewFor(deliveryDate: string) {
 }
 
 /**
- * The 18:00 cut-off for one delivery date: materialise due subscriptions, settle group orders,
+ * The 18:00 cut-off (the day before) for one delivery date: materialise due subscriptions, settle group orders,
  * aggregate demand, allocate to farms, write one harvest command per farm, attach orders to the run.
  * Re-running is allowed while the run has not started harvesting (commands are rebuilt).
  */
@@ -104,16 +114,18 @@ export async function runCutoff(deliveryDate: string) {
   const [existing] = await db.select().from(harvest_runs).where(eq(harvest_runs.delivery_date, deliveryDate));
   if (existing && existing.status !== "allocated") throw new Error("Chuyến này đã bắt đầu thu hoạch, không chốt lại được");
 
-  // 1. subscriptions due → orders (free delivery), then move their next date on
+  // 1. subscriptions due → orders (prepaid by transfer, delivery fee by size), then move their next date on
   const due = await db.select().from(subscriptions).where(and(eq(subscriptions.active, true), lte(subscriptions.next_delivery, deliveryDate)));
   if (due.length) {
-    const priced = await db.select({ id: boxes.id, price: boxes.price }).from(boxes).where(inArray(boxes.id, due.map((d) => d.box_id)));
+    const priced = await db.select({ id: boxes.id, price: boxes.price, size: boxes.size }).from(boxes).where(inArray(boxes.id, due.map((d) => d.box_id)));
     const priceOf = new Map(priced.map((b) => [b.id, b.price]));
+    const sizeOf = new Map(priced.map((b) => [b.id, b.size]));
     for (const s of due) {
       const [already] = await db.select({ id: orders.id }).from(orders).where(and(eq(orders.subscription_id, s.id), eq(orders.delivery_date, deliveryDate)));
       if (!already) {
         const subtotal = (priceOf.get(s.box_id) ?? 0) * s.quantity;
-        await db.insert(orders).values({ user_id: s.user_id, box_id: s.box_id, quantity: s.quantity, type: "subscription", status: "placed", subtotal, ship_fee: 0, total: subtotal, cluster_id: s.cluster_id, address: s.address, delivery_date: deliveryDate, subscription_id: s.id, care_message: careMessageOr(s.care_message, s.id + deliveryDate), note: "Đơn tự động từ gói định kỳ" });
+        const ship = shipFeeFor(sizeOf.get(s.box_id) ?? "M", s.quantity);
+        await db.insert(orders).values({ user_id: s.user_id, box_id: s.box_id, quantity: s.quantity, type: "subscription", status: "placed", subtotal, ship_fee: ship, total: subtotal + ship, cluster_id: s.cluster_id, address: s.address, delivery_date: deliveryDate, subscription_id: s.id, care_message: careMessageOr(s.care_message, s.id + deliveryDate), recipient_name: s.recipient_name, recipient_phone: s.recipient_phone, payment_method: "transfer", payment_status: "pending", note: "Đơn tự động từ gói định kỳ" });
       }
       let next = s.next_delivery;
       while (next <= deliveryDate) next = addDays(next, FREQUENCY_DAYS[s.frequency] ?? 7);
@@ -121,11 +133,14 @@ export async function runCutoff(deliveryDate: string) {
     }
   }
 
-  // 2. group orders for this date: enough members ⇒ free delivery for everyone in the group
+  // 2. group orders for this date: enough members ⇒ free delivery for everyone in the group;
+  //    otherwise each member pays the fee of the box size for every box they ordered
   const groups = await db.select().from(group_orders).where(and(eq(group_orders.delivery_date, deliveryDate), eq(group_orders.status, "open")));
   for (const g of groups) {
     const full = g.current_members >= g.min_members;
-    await db.update(orders).set(full ? { ship_fee: 0, total: sql`${orders.subtotal}` } : { ship_fee: SHIP_FEE, total: sql`${orders.subtotal} + ${SHIP_FEE}` }).where(and(eq(orders.group_order_id, g.id), eq(orders.status, "placed")));
+    const [gbox] = await db.select({ size: boxes.size }).from(boxes).where(eq(boxes.id, g.box_id));
+    const unit = shipFeeFor(gbox?.size ?? "M");
+    await db.update(orders).set(full ? { ship_fee: 0, total: sql`${orders.subtotal}` } : { ship_fee: sql`${orders.quantity} * ${unit}`, total: sql`${orders.subtotal} + ${orders.quantity} * ${unit}` }).where(and(eq(orders.group_order_id, g.id), eq(orders.status, "placed")));
     await db.update(group_orders).set({ status: "locked" }).where(eq(group_orders.id, g.id));
   }
 

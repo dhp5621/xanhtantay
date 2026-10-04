@@ -22,7 +22,7 @@ import { Icon } from "../../../components/Icon";
 
 type Scope = "mine" | "all";
 
-/** "Gom đơn chung": group orders per apartment cluster; enough homes at cut-off means free delivery for all. */
+/** "Gom đơn chung": group orders per pickup point (dormitory, area of rented rooms); enough members at cut-off means free delivery for all. */
 export default function GomDonScreen() {
   const { alert } = useDialog();
   const styles = useStyles(makeStyles);
@@ -81,7 +81,7 @@ export default function GomDonScreen() {
 
   const submit = async () => {
     if (!form.box_id || !form.cluster_id) {
-      alert("Thiếu thông tin", "Xin chọn hộp rau và cụm chung cư nhận hàng giúp ạ.");
+      alert("Thiếu thông tin", "Xin chọn hộp rau và điểm nhận hàng giúp ạ.");
       return;
     }
     setBusy(true);
@@ -130,13 +130,13 @@ export default function GomDonScreen() {
         contentContainerStyle={{ padding: 16, paddingBottom: 100 + bar.overlap }}
         ListHeaderComponent={
           <View style={{ marginBottom: 14 }}>
-            <Text style={styles.eyebrow}>Cùng toà nhà, chung một chuyến xe</Text>
+            <Text style={styles.eyebrow}>Cùng điểm nhận, chung một chuyến xe</Text>
             <Text style={styles.title}>Gom đơn chung</Text>
-            <Text style={styles.subtitle}>Rủ hàng xóm cùng đặt hộp rau. Đủ số nhà lúc chốt sổ 18h00 là cả nhóm miễn phí giao.</Text>
+            <Text style={styles.subtitle}>Rủ bạn cùng phòng, cùng ký túc xá hay khu trọ đặt hộp rau. Đủ người lúc chốt sổ 18h00 là cả nhóm miễn phí giao.</Text>
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 14 }}>
               <Chip
                 icon={scope === "mine" ? "check" : "apartment"}
-                label={me?.cluster?.name ? `Toà nhà của tôi · ${me.cluster.name}` : "Toà nhà của tôi"}
+                label={me?.cluster?.name ? `Điểm nhận của tôi · ${me.cluster.name}` : "Điểm nhận của tôi"}
                 selected={scope === "mine"}
                 onPress={() => {
                   setGroups(null);
@@ -162,12 +162,12 @@ export default function GomDonScreen() {
               <Skeleton height={140} radius={shape.xl} />
             </View>
           ) : noCluster ? (
-            <EmptyState icon="apartment" title="Bạn chưa chọn toà nhà" description="Lưu cụm chung cư trong mục Tài khoản để thấy các nhóm của hàng xóm." action={<Button label="Chọn cụm chung cư" icon="apartment" onPress={() => router.push("/tabs/tai-khoan")} />} />
+            <EmptyState icon="apartment" title="Bạn chưa chọn điểm nhận" description="Lưu ký túc xá hoặc khu trọ trong mục Tài khoản để thấy các nhóm cùng khu." action={<Button label="Chọn điểm nhận" icon="apartment" onPress={() => router.push("/tabs/tai-khoan")} />} />
           ) : (
             <EmptyState
               icon="groups"
-              title={scope === "mine" ? "Toà nhà bạn chưa có nhóm nào" : "Chưa có nhóm gom đơn nào"}
-              description="Hãy là người mở nhóm đầu tiên, hàng xóm vào cùng là cả nhà miễn phí giao."
+              title={scope === "mine" ? "Điểm nhận của bạn chưa có nhóm nào" : "Chưa có nhóm gom đơn nào"}
+              description="Hãy là người mở nhóm đầu tiên, bạn cùng khu vào cùng là cả nhóm miễn phí giao."
               action={<Button label="Tạo nhóm mới" icon="add" onPress={openDialog} />}
             />
           )
@@ -199,7 +199,7 @@ export default function GomDonScreen() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.sheetTitle}>Tạo nhóm gom đơn</Text>
-                  <Text style={styles.subtitle}>Đủ số nhà là cả nhóm miễn phí giao</Text>
+                  <Text style={styles.subtitle}>Đủ người là cả nhóm miễn phí giao</Text>
                 </View>
               </View>
 
@@ -211,16 +211,16 @@ export default function GomDonScreen() {
               </ScrollView>
               {box ? <Text style={[styles.subtitle, { marginTop: 6 }]}>{box.name}</Text> : !catalog ? <Text style={[styles.subtitle, { marginTop: 6 }]}>Đang tải các hộp rau…</Text> : null}
 
-              <Text style={styles.label}>Cụm chung cư</Text>
+              <Text style={styles.label}>Điểm nhận (ký túc xá / khu trọ)</Text>
               <ClusterPicker clusters={clusters} value={form.cluster_id} onChange={(id) => setForm({ ...form, cluster_id: id })} />
 
               <Text style={styles.label}>Tên nhóm</Text>
-              <TextInput style={styles.input} placeholder={defaultTitle || "Ví dụ: Rau sạch toà S2"} placeholderTextColor={colors.onSurfaceVariant} value={form.title} onChangeText={(v) => setForm({ ...form, title: v })} maxLength={80} />
+              <TextInput style={styles.input} placeholder={defaultTitle || "Ví dụ: Hội nấu cơm nhà B6"} placeholderTextColor={colors.onSurfaceVariant} value={form.title} onChangeText={(v) => setForm({ ...form, title: v })} maxLength={80} />
 
               <View style={{ flexDirection: "row", gap: 16, flexWrap: "wrap" }}>
                 <View>
-                  <Text style={styles.label}>Số nhà tối thiểu</Text>
-                  <QuantityStepper value={form.min_members} onChange={(n) => setForm((x) => ({ ...x, min_members: n }))} min={GROUP_MIN_MEMBERS.min} max={GROUP_MIN_MEMBERS.max} unit="nhà" />
+                  <Text style={styles.label}>Số người tối thiểu</Text>
+                  <QuantityStepper value={form.min_members} onChange={(n) => setForm((x) => ({ ...x, min_members: n }))} min={GROUP_MIN_MEMBERS.min} max={GROUP_MIN_MEMBERS.max} unit="người" />
                 </View>
                 <View>
                   <Text style={styles.label}>Phần của bạn</Text>
@@ -228,8 +228,8 @@ export default function GomDonScreen() {
                 </View>
               </View>
 
-              <Text style={styles.label}>Toà, tầng, số căn hộ của bạn</Text>
-              <TextInput style={styles.input} placeholder="Ví dụ: Toà S2, căn 1508" placeholderTextColor={colors.onSurfaceVariant} value={form.address} onChangeText={(v) => setForm({ ...form, address: v })} maxLength={160} />
+              <Text style={styles.label}>Nhà, phòng của bạn</Text>
+              <TextInput style={styles.input} placeholder="Ví dụ: Nhà B6, phòng 412" placeholderTextColor={colors.onSurfaceVariant} value={form.address} onChangeText={(v) => setForm({ ...form, address: v })} maxLength={160} />
 
               {catalog && deliveryDate ? (
                 <>
@@ -237,7 +237,7 @@ export default function GomDonScreen() {
                   <DeliveryDatePicker earliest={catalog.delivery_date} value={deliveryDate} onChange={(d) => setForm((x) => ({ ...x, delivery_date: d }))} />
                   <View style={styles.dateRow}>
                     <Icon name="event" size={16} color={colors.primary} />
-                    <Text style={styles.dateText}>Giao {formatDay(deliveryDate)}, 16h00 tại sảnh</Text>
+                    <Text style={styles.dateText}>Giao {formatDay(deliveryDate)}, 16h00 tại điểm nhận</Text>
                   </View>
                 </>
               ) : null}

@@ -20,7 +20,7 @@ export interface BoxRecipe { minutes?: number; ingredients: string[]; steps: str
 /** `source` is set on dishes the AI found online. */
 export interface BoxMeal { time: "Trưa" | "Tối"; title: string; uses: string[]; note?: string; recipe: BoxRecipe; source?: string }
 export interface BoxMealDay { day: number; meals: BoxMeal[] }
-export interface BoxItem { produce_id: string; name: string; image_url: string | null; quantity_kg: number; farms: { name: string; slug: string; province: string }[] }
+export interface BoxItem { produce_id: string; name: string; image_url: string | null; /** "rau_la" | "cu_qua": decides the storage guidance */ category?: string; quantity_kg: number; farms: { name: string; slug: string; province: string }[] }
 export type BoxSize = "S" | "M" | "L";
 
 export interface Box {
@@ -34,10 +34,16 @@ export interface Box {
 
 export type OrderStatus = "placed" | "harvesting" | "loaded" | "delivered" | "cancelled";
 export type OrderType = "single" | "subscription" | "group";
+/** "transfer": chuyển khoản trước · "cod": trả khi nhận. Subscription and gift orders are always "transfer". */
+export type PaymentMethod = "transfer" | "cod";
+export type PaymentStatus = "pending" | "paid";
 
 export interface Order {
   id: string; user_id: string; box_id: string; quantity: number; type: OrderType; status: OrderStatus;
   subtotal: number; ship_fee: number; total: number; note: string | null; care_message: string | null;
+  /** "Đặt cho người thân": who receives the box when it is not the buyer. */
+  recipient_name?: string | null; recipient_phone?: string | null;
+  payment_method?: PaymentMethod; payment_status?: PaymentStatus;
   cluster_id: string | null; address: string | null; delivery_date: string;
   group_order_id: string | null; subscription_id: string | null; run_id: string | null;
   harvested_at: string | null; loaded_at: string | null; delivered_at: string | null; created_at: string | Date;
@@ -49,7 +55,8 @@ export interface Order {
 export type SubscriptionFrequency = "weekly" | "biweekly" | "monthly";
 export interface Subscription {
   id: string; user_id: string; box_id: string; quantity: number; frequency: SubscriptionFrequency;
-  next_delivery: string; cluster_id: string | null; address: string | null; care_message: string | null; active: boolean;
+  next_delivery: string; cluster_id: string | null; address: string | null; care_message: string | null;
+  recipient_name?: string | null; recipient_phone?: string | null; active: boolean;
   box?: Pick<Box, "id" | "slug" | "name" | "size" | "price" | "image_url">; cluster?: Cluster | null;
 }
 
@@ -67,17 +74,17 @@ export interface HarvestCommand {
 
 /** Emotional tracking: the clock time is part of the message. */
 export const ORDER_TIMELINE: { status: Exclude<OrderStatus, "cancelled">; time: string; icon: string; short: string; label: (farmer?: string) => string }[] = [
-  { status: "placed", time: "18:00", icon: "inventory", short: "Đã nhận đơn", label: () => "Đơn đã vào sổ, 18h00 chốt và gửi lệnh về vườn" },
+  { status: "placed", time: "18:00", icon: "inventory", short: "Đã nhận đơn", label: () => "Đơn đã vào sổ, 18h00 hôm trước ngày giao chốt và gửi lệnh về vườn" },
   { status: "harvesting", time: "4:00", icon: "agriculture", short: "Đang thu hoạch", label: (f) => `Rau đang được ${f ?? "bác nông dân"} thu hoạch` },
   { status: "loaded", time: "6:00", icon: "local_shipping", short: "Lên xe lạnh", label: () => "Hàng lên xe lạnh về phố" },
-  { status: "delivered", time: "16:00", icon: "apartment", short: "Đã tới sảnh", label: () => "Rau quê đã có tại sảnh chung cư nhà bạn" },
+  { status: "delivered", time: "16:00", icon: "apartment", short: "Đã tới điểm nhận", label: () => "Rau quê đã có tại điểm nhận của bạn" },
 ];
 
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
-  placed: "Đơn đã vào sổ, chờ chốt lúc 18h00",
+  placed: "Đơn đã vào sổ, chờ chốt lúc 18h00 hôm trước ngày giao",
   harvesting: "4h00: Rau đang được bác nông dân thu hoạch",
   loaded: "6h00: Hàng lên xe lạnh về phố",
-  delivered: "16h00: Rau quê đã có tại sảnh chung cư nhà bạn",
+  delivered: "16h00: Rau quê đã có tại điểm nhận của bạn",
   cancelled: "Đơn đã huỷ",
 };
 

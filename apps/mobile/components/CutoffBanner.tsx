@@ -5,7 +5,7 @@ import { formatCountdown, formatDay, relativeDayOf } from "../constants/format";
 import { useCountdown } from "../hooks/useCountdown";
 import { Icon } from "./Icon";
 
-/** "Đặt trước 18h00 hôm nay, giao Thứ Ba, 29 tháng 9" with a live countdown to the cut-off. */
+/** "Đặt trước 18h00 ngày mai, giao Thứ Tư, 30 tháng 9" with a live countdown to the cut-off. Delivery is on Wednesdays and Sundays only. */
 export function CutoffBanner({ cutoffAt, deliveryDate, style }: { cutoffAt: string; deliveryDate: string; style?: StyleProp<ViewStyle> }) {
   const styles = useStyles(makeStyles);
   const left = useCountdown(cutoffAt);
@@ -21,7 +21,7 @@ export function CutoffBanner({ cutoffAt, deliveryDate, style }: { cutoffAt: stri
           Đặt trước {CUTOFF_LABEL} {relativeDayOf(cutoffAt)}, giao {formatDay(deliveryDate)}
         </Text>
         <Text style={[styles.sub, urgent && { color: colors.statusHarvestingFg }]}>
-          {countdown ? `Còn ${countdown} nữa là chốt sổ gửi lệnh về vườn` : "Đang chốt sổ, đơn đặt lúc này sẽ vào chuyến kế tiếp"}
+          {countdown ? `Còn ${countdown} nữa là chốt sổ gửi lệnh về vườn · giao thứ Tư và Chủ nhật` : "Đang chốt sổ, đơn đặt lúc này sẽ vào chuyến kế tiếp (thứ Tư hoặc Chủ nhật)"}
         </Text>
       </View>
     </View>

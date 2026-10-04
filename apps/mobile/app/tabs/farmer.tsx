@@ -6,6 +6,7 @@ import type { HarvestCommand } from "@xanhtantay/types";
 import { apiFetch, ApiError } from "../../constants/api";
 import { colors, shape, type, elevation, useStyles, type Colors } from "../../constants/theme";
 import { formatClock, formatClockDay, formatDay, formatKg, greetingOf } from "../../constants/format";
+import { PAYOUT_RULE } from "../../constants/commerce";
 import type { FarmerCapacity, FarmerCommands, FarmProfile } from "../../constants/types";
 import { useLiveRefresh } from "../../hooks/useLive";
 import { useAddress } from "../../hooks/useAddress";
@@ -167,6 +168,11 @@ export default function FarmerScreen() {
               <Text style={styles.totalLabel}>Tổng cộng</Text>
               <Text style={styles.totalKg}>{formatKg(current.total_kg)}</Text>
             </View>
+            {/* How the farm is paid for this batch. Text only: payouts are settled outside the app. */}
+            <View style={styles.dateRow}>
+              <Icon name="payments" size={22} color={colors.onSurfaceVariant} />
+              <Text style={[styles.dateText, { flex: 1 }]}>{PAYOUT_RULE}</Text>
+            </View>
           </View>
 
           {confirmed ? (
@@ -226,7 +232,7 @@ export default function FarmerScreen() {
               <Icon name="bedtime" size={40} filled color={colors.onSecondaryContainer} />
             </View>
             <Text style={styles.emptyTitle}>Chưa có lệnh thu hoạch.</Text>
-            <Text style={styles.emptyBody}>18h00 mỗi ngày hệ thống sẽ gửi lệnh cho sáng hôm sau.</Text>
+            <Text style={styles.emptyBody}>Hàng giao thứ Tư và Chủ nhật: 18h00 hôm trước (thứ Ba, thứ Bảy) hệ thống sẽ gửi lệnh cho sáng hôm sau, khi chuyến đủ số hộp tối thiểu.</Text>
           </View>
         </AnimInScale>
       ) : null}

@@ -3,7 +3,7 @@ import { View, Text, FlatList, StyleSheet, RefreshControl } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import { apiFetch } from "../../constants/api";
 import { colors, shape, type, useStyles, type Colors } from "../../constants/theme";
-import { SHIP_FEE, groupMixes } from "../../constants/commerce";
+import { SHIP_FEES, groupMixes } from "../../constants/commerce";
 import { formatVND } from "../../constants/format";
 import type { BoxesResponse } from "../../constants/types";
 import { useLiveRefresh } from "../../hooks/useLive";
@@ -40,7 +40,7 @@ export default function HopRauScreen() {
   );
 
   const mixes = groupMixes((data?.boxes ?? []).filter((b) => b.active !== false));
-  const fee = data?.ship_fee ?? SHIP_FEE;
+  const fees = data?.ship_fees ?? SHIP_FEES;
 
   return (
     <Screen>
@@ -88,7 +88,7 @@ export default function HopRauScreen() {
             <View style={styles.note}>
               <Icon name="local_shipping" size={20} color={colors.onSurfaceVariant} />
               <Text style={styles.noteText}>
-                Phí giao {formatVND(fee)} cho đơn mua một lần. Gói định kỳ và nhóm gom đơn đủ người được miễn phí giao.
+                Giao thứ Tư và Chủ nhật. Phí giao mỗi hộp theo size: S {formatVND(fees.S)}, M {formatVND(fees.M)}, L {formatVND(fees.L)}. Nhóm gom đơn đủ người được miễn phí giao.
               </Text>
             </View>
           ) : null

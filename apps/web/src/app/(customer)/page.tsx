@@ -44,11 +44,11 @@ export default async function HomePage() {
         <div style={{ position: "relative", maxWidth: 620 }}>
           <p className="m3-eyebrow anim-in" style={{ marginBottom: 12 }}>Chào {addressPerson(me?.call ?? user.name ?? "bạn").call.replace(/^./, (c) => c.toLowerCase())}{me?.cluster ? ` · ${me.cluster}` : ""}</p>
           <h1 className="display-md anim-in delay-1" style={{ color: "var(--md-on-primary-container)", marginBottom: 14 }}>Thùng rau mẹ gửi</h1>
-          <p className="body-lg anim-in delay-2" style={{ color: "var(--md-on-secondary-container)", maxWidth: 480, marginBottom: 20 }}>Hộp rau theo mùa từ nương đồi Bắc Kạn, Tuyên Quang. Đặt hôm nay, mai có tại sảnh.</p>
+          <p className="body-lg anim-in delay-2" style={{ color: "var(--md-on-secondary-container)", maxWidth: 480, marginBottom: 20 }}>Hộp rau theo mùa từ nương đồi Bắc Kạn, Tuyên Quang. Giao thứ Tư và Chủ nhật tới ký túc xá, khu trọ của bạn.</p>
           <div className="anim-in delay-3" style={{ marginBottom: 18 }}><CutoffBanner cutoffAt={cutoffAt} deliveryLabel={formatYMD(deliveryDate)} /></div>
           <div className="flex flex-wrap gap-3 anim-in delay-3">
             <Link href="/hop-rau" className="m3-btn m3-btn-filled m3-btn-lg"><Icon name="inventory_2" filled /><span>Chọn hộp rau</span></Link>
-            <Link href="/gom-don" className="m3-btn m3-btn-elevated m3-btn-lg"><Icon name="groups" /><span>Gom đơn cùng toà nhà</span></Link>
+            <Link href="/gom-don" className="m3-btn m3-btn-elevated m3-btn-lg"><Icon name="groups" /><span>Gom đơn cùng khu</span></Link>
           </div>
         </div>
       </section>
@@ -85,7 +85,7 @@ export default async function HomePage() {
                     {full && <span className="m3-chip m3-chip-primary sm round"><Icon name="local_shipping" size={16} filled /> Miễn ship</span>}
                   </div>
                   <div className={`m3-progress ${full ? "" : "m3-progress-wavy"}`}><div className={`m3-progress-bar ${full ? "" : "secondary"}`} style={{ width: `${pct}%` }} /></div>
-                  <div className="flex justify-between mt-2"><span className="body-sm text-on-surface-variant">{g.current_members}/{g.min_members} nhà</span><span className="body-sm text-on-surface-variant" style={{ fontWeight: 600 }}>Giao {formatYMD(g.delivery_date, { weekday: "short", day: "numeric", month: "numeric" })}</span></div>
+                  <div className="flex justify-between mt-2"><span className="body-sm text-on-surface-variant">{g.current_members}/{g.min_members} người</span><span className="body-sm text-on-surface-variant" style={{ fontWeight: 600 }}>Giao {formatYMD(g.delivery_date, { weekday: "short", day: "numeric", month: "numeric" })}</span></div>
                 </Link>
               );
             })}

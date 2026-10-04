@@ -6,8 +6,12 @@ import { Icon } from "@/components/ui/Icon";
 import { Portal } from "@/components/ui/Portal";
 import { useSnackbar } from "@/components/ui/Snackbar";
 
-/** "Chốt sổ & gửi lệnh": runs the 18:00 cut-off for one delivery date right now. */
-export function CutoffButton({ date, label, reallocate = false, disabled = false }: { date: string; label: string; reallocate?: boolean; disabled?: boolean }) {
+/**
+ * "Chốt sổ & gửi lệnh": runs the 18:00 cut-off for one delivery date right now.
+ * It is also the operator's override: the automatic cut-off leaves a batch below the minimum
+ * (`below`) alone, this button opens it anyway.
+ */
+export function CutoffButton({ date, label, reallocate = false, disabled = false, below }: { date: string; label: string; reallocate?: boolean; disabled?: boolean; below?: { boxes: number; min: number } }) {
   const [busy, setBusy] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const router = useRouter();
@@ -27,7 +31,7 @@ export function CutoffButton({ date, label, reallocate = false, disabled = false
     <>
       <button className={`m3-btn m3-btn-lg ${reallocate ? "m3-btn-tonal" : "m3-btn-filled"}`} onClick={() => setConfirm(true)} disabled={busy || disabled}>
         {busy ? <span className={`m3-loader sm ${reallocate ? "" : "on-primary"}`} /> : <Icon name={reallocate ? "refresh" : "psychology"} filled />}
-        <span>{reallocate ? "Phân bổ lại" : "Chốt sổ & gửi lệnh"}</span>
+        <span>{reallocate ? "Phân bổ lại" : below ? "Chốt sổ & gửi lệnh (dưới tối thiểu)" : "Chốt sổ & gửi lệnh"}</span>
       </button>
       {confirm && (
         <Portal>
@@ -35,7 +39,7 @@ export function CutoffButton({ date, label, reallocate = false, disabled = false
           <div className="m3-dialog" role="alertdialog" aria-modal="true" style={{ width: "min(460px, calc(100vw - 32px))" }}>
             <span className="m3-list-leading" style={{ marginBottom: 12 }}><Icon name="psychology" filled /></span>
             <h2 className="headline-sm" style={{ marginBottom: 6 }}>{reallocate ? "Phân bổ lại chuyến này?" : "Chốt sổ ngay bây giờ?"}</h2>
-            <p className="body-md text-on-surface-variant">Chuyến giao {label}. Hệ thống sẽ cộng tổng nhu cầu, chia lệnh thu hoạch cho từng nông hộ theo năng suất và gửi thông báo cho họ. Khách không huỷ được đơn sau bước này.{reallocate ? " Các lệnh cũ của chuyến này sẽ được thay bằng lệnh mới và cần xác nhận lại." : ""}</p>
+            <p className="body-md text-on-surface-variant">Chuyến giao {label}. Hệ thống sẽ cộng tổng nhu cầu, chia lệnh thu hoạch cho từng nông hộ theo năng suất và gửi thông báo cho họ. Khách không huỷ được đơn sau bước này.{below ? ` Chuyến này mới có ${below.boxes}/${below.min} hộp, dưới mức tối thiểu: hệ thống sẽ không tự chốt, bấm ở đây là mở chuyến bằng tay.` : ""}{reallocate ? " Các lệnh cũ của chuyến này sẽ được thay bằng lệnh mới và cần xác nhận lại." : ""}</p>
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 22 }}>
               <button className="m3-btn m3-btn-text" onClick={() => setConfirm(false)}>Để sau</button>
               <button className="m3-btn m3-btn-filled" onClick={run} disabled={busy}>{busy ? <span className="m3-loader sm on-primary" /> : <Icon name="send" />}<span>{reallocate ? "Phân bổ lại" : "Chốt sổ"}</span></button>
@@ -50,7 +54,7 @@ export function CutoffButton({ date, label, reallocate = false, disabled = false
 const NEXT: Record<string, { label: string; icon: string; time: string }> = {
   allocated: { label: "Bắt đầu thu hoạch", icon: "agriculture", time: "4h00" },
   harvesting: { label: "Xe lạnh đã lấy hàng", icon: "local_shipping", time: "6h00" },
-  loaded: { label: "Đã tới sảnh chung cư", icon: "apartment", time: "16h00" },
+  loaded: { label: "Đã tới điểm nhận", icon: "apartment", time: "16h00" },
 };
 
 /** Moves a run (and all its orders) to the next stage and notifies the customers. */

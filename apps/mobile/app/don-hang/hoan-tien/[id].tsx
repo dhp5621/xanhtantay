@@ -220,7 +220,7 @@ export default function RefundRequestScreen() {
           <Text style={[styles.muted, { marginBottom: 12 }]}>
             {needEvidence
               ? `Cần đủ ${REFUND_PHOTOS} ảnh chụp các mặt của hộp và 1 video quay hộp, dài không quá ${REFUND_VIDEO_SECONDS} giây.`
-              : `Chưa nhận được hàng thì không cần ảnh hay video ạ. Nếu có (ví dụ ảnh sảnh nhận hàng), ${pronoun} gửi kèm được đến ${REFUND_PHOTOS} ảnh và 1 video.`}
+              : `Chưa nhận được hàng thì không cần ảnh hay video ạ. Nếu có (ví dụ ảnh điểm nhận hàng), ${pronoun} gửi kèm được đến ${REFUND_PHOTOS} ảnh và 1 video.`}
           </Text>
 
           <View style={{ gap: 10 }}>

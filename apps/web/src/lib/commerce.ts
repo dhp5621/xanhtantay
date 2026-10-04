@@ -1,11 +1,22 @@
 /** Business rules shared by the order API, the brain and the UI. All clock logic is Vietnam time (UTC+7, no DST). */
 
-export const CUTOFF_HOUR = 18;          // daily cut-off: 18:00
+export const CUTOFF_HOUR = 18;          // the book for a delivery day closes at 18:00 the day before
 export const HARVEST_TIME = "4:00";     // farmers cut at 4 am
 export const PICKUP_TIME = "6:00";      // cold truck picks up
-export const ARRIVAL_TIME = "16:00";    // boxes reach the lobby
-export const SHIP_FEE = 15_000;         // single orders; subscriptions and full groups ship free
-export const FARMER_SHARE = 0.925;      // platform keeps 5–10 %, shown as the midpoint
+export const ARRIVAL_TIME = "16:00";    // boxes reach the pickup point
+/** Delivery fee per box, by size, paid by the customer on one-off orders and subscriptions. A group that fills ships free. */
+export const SHIP_FEES: Record<string, number> = { S: 15_000, M: 20_000, L: 30_000 };
+/** Paid to the farms at the garden for each box, by size. This is the "tiền về tay nông hộ" figure. */
+export const FARM_PAYOUT: Record<string, number> = { S: 65_000, M: 112_000, L: 185_000 };
+/** Allowance for the village team that sorts and packs each box, by size. */
+export const VILLAGE_ALLOWANCE: Record<string, number> = { S: 7_000, M: 12_000, L: 20_000 };
+/** Boxes are delivered twice a week on fixed days: Wednesday (3) and Sunday (0). */
+export const DELIVERY_WEEKDAYS = [3, 0];
+export const DELIVERY_DAYS_LABEL = "thứ Tư và Chủ nhật";
+/** A harvest batch is only opened automatically from this many boxes (env MIN_BATCH_BOXES, read on the server in lib/brain). */
+export const DEFAULT_MIN_BATCH_BOXES = 240;
+/** How farms are paid, shown with every harvest command. Payout accounting is done outside the app. */
+export const PAYOUT_RULE = "Thanh toán: 50% khi chuyến hàng được xác nhận, 50% còn lại trong 48 giờ sau khi giao xong.";
 export const PILOT_CITY = "Hà Nội";
 export const SOURCE_PROVINCES = ["Bắc Kạn", "Tuyên Quang"];
 
@@ -22,10 +33,30 @@ export function addDays(ymd: string, n: number) {
   return toYMD(d);
 }
 
-/** Order before 18:00 → delivered tomorrow; after 18:00 → the day after. */
+export const isDeliveryDay = (ymd: string) => DELIVERY_WEEKDAYS.includes(new Date(`${ymd}T00:00:00Z`).getUTCDay());
+/** The first delivery day (Wednesday or Sunday) on or after `ymd`. */
+export function deliveryDayOnOrAfter(ymd: string) {
+  let d = ymd;
+  while (!isDeliveryDay(d)) d = addDays(d, 1);
+  return d;
+}
+/** The last delivery day on or before `ymd`. */
+export function deliveryDayOnOrBefore(ymd: string) {
+  let d = ymd;
+  while (!isDeliveryDay(d)) d = addDays(d, -1);
+  return d;
+}
+
+/** The earliest delivery day still open: the first Wednesday or Sunday whose cut-off (18:00 the day before) has not passed. */
 export function nextDeliveryDate(at: Date = new Date()) {
   const vn = vnClock(at);
-  return addDays(toYMD(vn), vn.getUTCHours() < CUTOFF_HOUR ? 1 : 2);
+  return deliveryDayOnOrAfter(addDays(toYMD(vn), vn.getUTCHours() < CUTOFF_HOUR ? 1 : 2));
+}
+/** Every delivery day from `from` up to `days` days later: the days a group or a subscription may pick. */
+export function deliveryDates(from: string, days = 14) {
+  const out: string[] = [];
+  for (let i = 0; i <= days; i++) { const d = addDays(from, i); if (isDeliveryDay(d)) out.push(d); }
+  return out;
 }
 
 /** The instant (real UTC Date) at which orders for `deliveryDate` close: 18:00 VN the day before. */
@@ -50,8 +81,41 @@ export const SIZE_LABELS: Record<string, string> = { S: "Size S", M: "Size M", L
 export const SIZE_NAMES: Record<string, string> = { S: "Nhỏ", M: "Vừa", L: "Lớn" };
 export const SIZE_ORDER = ["S", "M", "L"];
 
-export function shipFeeFor(type: "single" | "subscription" | "group") {
-  return type === "subscription" ? 0 : SHIP_FEE;
+/** Delivery fee for `quantity` boxes of one size. Groups pay it too until they fill at cut-off. */
+export const shipFeeFor = (size: string, quantity = 1) => (SHIP_FEES[size] ?? SHIP_FEES.M) * quantity;
+/** What the farms are paid at the garden for `quantity` boxes of one size. */
+export const farmPayoutFor = (size: string, quantity = 1) => (FARM_PAYOUT[size] ?? 0) * quantity;
+
+/** A subscription's next box may be moved to another delivery day until this long before its cut-off. */
+export const MOVE_NOTICE_HOURS = 24;
+export const canMoveDelivery = (nextDelivery: string, at: Date = new Date()) => at.getTime() < cutoffInstant(nextDelivery).getTime() - MOVE_NOTICE_HOURS * 3_600_000;
+
+export const PAYMENT_METHOD_LABELS: Record<string, string> = { transfer: "Chuyển khoản trước", cod: "Trả khi nhận hàng" };
+export const PAYMENT_STATUS_LABELS: Record<string, string> = { pending: "Chưa thanh toán", paid: "Đã thanh toán" };
+
+export const RECIPIENT_NAME_MAX = 80;
+/**
+ * "Đặt cho người thân": who eats the box when the buyer orders for someone else. Both fields or neither.
+ * Nulls when no recipient was given; `error` when only one of the two is usable.
+ */
+export function recipientFrom(name: unknown, phone: unknown): { recipient_name: string | null; recipient_phone: string | null; error?: string } {
+  const n = typeof name === "string" ? name.trim().slice(0, RECIPIENT_NAME_MAX) : "";
+  const p = typeof phone === "string" ? phone.replace(/[^0-9+]/g, "") : "";
+  if (!n && !p) return { recipient_name: null, recipient_phone: null };
+  if (n.length < 2) return { recipient_name: null, recipient_phone: null, error: "Nhập tên người nhận" };
+  if (!/^(0|\+84)[0-9]{9,10}$/.test(p)) return { recipient_name: null, recipient_phone: null, error: "Số điện thoại người nhận chưa đúng" };
+  return { recipient_name: n, recipient_phone: p };
+}
+
+/** How to keep the vegetables fresh, from the produce categories in a box ("rau_la", "cu_qua"). */
+export function storageTips(categories: (string | null | undefined)[]) {
+  const has = (c: string) => categories.includes(c);
+  const tips: { icon: string; title: string; text: string }[] = [];
+  if (has("rau_la")) tips.push({ icon: "ac_unit", title: "Rau lá", text: "Để ráo, không rửa trước; bọc giấy hoặc túi kín rồi cất ngăn mát tủ lạnh 3–5°C. Nên ăn trong 3–4 ngày đầu." });
+  if (has("cu_qua")) tips.push({ icon: "air", title: "Củ quả", text: "Để nơi khô ráo, thoáng mát, tránh nắng; không cần tủ lạnh. Dùng dần tới cuối tuần." });
+  if (!tips.length) return tips;
+  tips.push({ icon: "lightbulb", title: "Mẹo nhỏ", text: "Nhận hộp là mở ra cho thoáng, nhặt bỏ lá dập. Chỉ rửa ngay trước khi nấu; cà chua và khoai tây để riêng, không cất chung với rau lá." });
+  return tips;
 }
 
 /** Follows from gender by default (farmers: bác / cô, and bác when not given; customers: anh / chị, and bạn when not given). These are offered when choosing by hand; anything else is typed. */
@@ -115,7 +179,7 @@ export const CARE_MESSAGE_MAX = 300;
 export const careMessageOr = (custom: unknown, seed: string) =>
   (typeof custom === "string" ? custom.trim().slice(0, CARE_MESSAGE_MAX) : "") || careMessageFor(seed);
 
-/** Friendly facts shown right after ordering. */
-export function impactFor(subtotal: number, weightKg: number, servings: number, days: number) {
-  return { toFarmers: Math.round(subtotal * FARMER_SHARE), weightKg, meals: days * 2, servings };
+/** Friendly facts shown right after ordering. `toFarmers` is what the farms are paid at the garden for these boxes. */
+export function impactFor(size: string, quantity: number, weightKg: number, servings: number, days: number) {
+  return { toFarmers: farmPayoutFor(size, quantity), toVillage: (VILLAGE_ALLOWANCE[size] ?? 0) * quantity, weightKg, meals: days * 2, servings };
 }

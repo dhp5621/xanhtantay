@@ -72,7 +72,7 @@ export default function DonHangScreen() {
   if (!sessionLoading && !user) {
     return (
       <Screen style={{ padding: 16 }}>
-        <PageHeader icon="package_2" title="Đơn hàng" subtitle="Theo dõi hộp rau từ vườn về sảnh chung cư" />
+        <PageHeader icon="package_2" title="Đơn hàng" subtitle="Theo dõi hộp rau từ vườn về ký túc xá, khu trọ" />
         <EmptyState icon="login" title="Đăng nhập để xem đơn hàng" description="Đơn lẻ, đơn định kỳ và đơn gom của bạn đều ở đây." action={<Button label="Đăng nhập" icon="login" onPress={() => router.push("/dang-nhap?next=/tabs/don-hang")} />} />
       </Screen>
     );
@@ -98,7 +98,7 @@ export default function DonHangScreen() {
         }
         ListHeaderComponent={
           <>
-            <PageHeader icon="package_2" eyebrow="Từ vườn về sảnh" title="Đơn hàng" subtitle="Mỗi chặng đều có giờ: 18h00 chốt sổ, 4h00 thu hoạch, 6h00 lên xe, 16h00 tới sảnh" />
+            <PageHeader icon="package_2" eyebrow="Từ vườn về điểm nhận" title="Đơn hàng" subtitle="Mỗi chặng đều có giờ: 18h00 hôm trước chốt sổ, 4h00 thu hoạch, 6h00 lên xe, 16h00 tới điểm nhận" />
             {error && (
               <View style={styles.errorBox}>
                 <Icon name="error" size={18} color={colors.onErrorContainer} />
@@ -114,7 +114,7 @@ export default function DonHangScreen() {
               <Skeleton height={320} radius={shape.xl} />
             </View>
           ) : (
-            <EmptyState icon="inventory_2" title="Chưa có đơn hàng nào" description="Chọn một hộp rau trước 18h00, chiều mai rau có ở sảnh nhà bạn." action={<Button label="Chọn hộp rau" icon="inventory_2" onPress={() => router.push("/tabs/hop-rau")} />} />
+            <EmptyState icon="inventory_2" title="Chưa có đơn hàng nào" description="Rau giao thứ Tư và Chủ nhật. Chọn một hộp trước 18h00 hôm trước là kịp chuyến." action={<Button label="Chọn hộp rau" icon="inventory_2" onPress={() => router.push("/tabs/hop-rau")} />} />
           )
         }
         renderItem={({ item, index }) => {
@@ -145,7 +145,7 @@ export default function DonHangScreen() {
                     <Icon name="event" size={16} color={colors.onSurfaceVariant} />
                     <Text style={styles.deliveryText} numberOfLines={1}>
                       Giao {formatDay(item.delivery_date)}
-                      {item.cluster ? ` · sảnh ${item.cluster.name}` : ""}
+                      {item.cluster ? ` · ${item.cluster.name}` : ""}
                     </Text>
                   </View>
 

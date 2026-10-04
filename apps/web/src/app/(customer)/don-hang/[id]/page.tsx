@@ -12,7 +12,7 @@ import { BoxMenu } from "@/components/box/BoxMenu";
 import { RefundSection } from "@/components/refund/RefundSection";
 import { refundFor, refundWindow } from "@/lib/refunds";
 import { formatVND, ORDER_TYPE_LABELS } from "@/lib/format";
-import { addressFarmer, formatYMD } from "@/lib/commerce";
+import { addressFarmer, formatYMD, PAYMENT_METHOD_LABELS, PAYMENT_STATUS_LABELS } from "@/lib/commerce";
 
 export const metadata = { title: "Hộp rau của tôi" };
 
@@ -29,9 +29,14 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   return (
     <div className="max-w-3xl mx-auto flex flex-col gap-6">
       <Link href="/don-hang" className="m3-btn m3-btn-text m3-btn-sm anim-in" style={{ alignSelf: "flex-start", marginLeft: -12, marginBottom: -12 }}><Icon name="arrow_back" size={18} /><span>Đơn hàng</span></Link>
-      <PageHeader icon="inventory_2" eyebrow={`${ORDER_TYPE_LABELS[o.type]} · giao ${formatYMD(o.delivery_date)}`} title={`${o.quantity} × ${o.box.name}`} subtitle={o.cluster ? `Nhận tại sảnh ${o.cluster.name}${o.address ? ` · ${o.address}` : ""}` : undefined} />
+      <PageHeader icon="inventory_2" eyebrow={`${ORDER_TYPE_LABELS[o.type]} · giao ${formatYMD(o.delivery_date)}`} title={`${o.quantity} × ${o.box.name}`} subtitle={o.cluster ? `Nhận tại ${o.cluster.name}${o.address ? ` · ${o.address}` : ""}` : undefined} />
 
-      {o.care_message && <p className="m3-care anim-in">{o.care_message}<small>Lời nhắn từ quê</small></p>}
+      {o.recipient_name && (
+        <p className="m3-chip round m3-chip-primary m3-chip-wrap anim-in" style={{ alignSelf: "flex-start", height: "auto", padding: "8px 14px" }}>
+          <Icon name="redeem" size={18} filled /> Đặt cho người thân: {o.recipient_name}{o.recipient_phone ? ` · ${o.recipient_phone}` : ""}
+        </p>
+      )}
+      {o.care_message && <p className="m3-care anim-in">{o.care_message}<small>{o.recipient_name ? "Lời nhắn của người gửi, do người nhà viết" : "Lời nhắn từ quê"}</small></p>}
 
       <section className="m3-card-filled anim-in delay-1" style={{ padding: 22, borderRadius: "var(--shape-xl)" }}>
         <p className="label-md text-on-surface-variant" style={{ textTransform: "uppercase", marginBottom: 14 }}>Hành trình</p>
@@ -53,8 +58,9 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
         </div>
         <div style={{ textAlign: "right", minWidth: 160 }}>
           <p className="body-sm text-on-surface-variant">Hộp rau {formatVND(o.subtotal)}</p>
-          <p className="body-sm text-on-surface-variant">Giao tới sảnh {o.ship_fee ? formatVND(o.ship_fee) : "miễn phí"}</p>
+          <p className="body-sm text-on-surface-variant">Phí giao {o.ship_fee ? formatVND(o.ship_fee) : "miễn phí"}</p>
           <p className="headline-sm text-primary tabular">{formatVND(o.total)}</p>
+          <p className="body-sm text-on-surface-variant" style={{ marginTop: 2 }}>{PAYMENT_METHOD_LABELS[o.payment_method] ?? o.payment_method} · <span style={{ fontWeight: 600, color: o.payment_status === "paid" ? "var(--md-primary)" : undefined }}>{PAYMENT_STATUS_LABELS[o.payment_status] ?? o.payment_status}</span></p>
           {o.status === "placed" && !o.allocated && <div style={{ marginTop: 8 }}><CancelOrderButton orderId={o.id} /></div>}
         </div>
       </section>

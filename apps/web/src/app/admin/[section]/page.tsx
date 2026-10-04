@@ -10,7 +10,7 @@ import { sectionByKey } from "@/lib/admin-config";
 import { AdminTable, type Column as ViewColumn } from "@/components/admin/AdminTable";
 import { Icon } from "@/components/ui/Icon";
 import { formatVND, ORDER_TYPE_LABELS } from "@/lib/format";
-import { FREQUENCY_LABELS, SIZE_LABELS, formatKg, formatYMD } from "@/lib/commerce";
+import { FREQUENCY_LABELS, PAYMENT_METHOD_LABELS, PAYMENT_STATUS_LABELS, SIZE_LABELS, formatKg, formatYMD, shipFeeFor } from "@/lib/commerce";
 
 export async function generateMetadata({ params }: { params: Promise<{ section: string }> }) {
   const { section } = await params;
@@ -34,11 +34,14 @@ async function load(key: string): Promise<{ rows: Row[]; columns: Column[]; hint
         rows: rows.map((r) => ({ ...r.o, box_name: r.box, customer_name: r.customer ?? "", phone: r.phone ?? "", cluster_name: r.cluster ?? "", allocated: r.o.run_id ? "Đã chốt" : "Chờ 18h" })) as Row[],
         columns: [
           { key: "customer_name", label: "Khách" }, { key: "box_name", label: "Hộp" }, { key: "quantity", label: "SL" },
-          { key: "cluster_name", label: "Chung cư" }, { key: "address", label: "Căn hộ" },
+          { key: "cluster_name", label: "Điểm nhận" }, { key: "address", label: "Phòng" },
+          { key: "recipient_name", label: "Người nhận", render: (v, r) => (v ? `${v}${r.recipient_phone ? ` · ${r.recipient_phone}` : ""}` : "") },
           { key: "delivery_date", label: "Giao", render: day }, { key: "type", label: "Loại", render: (v) => ORDER_TYPE_LABELS[String(v)] ?? String(v) },
-          { key: "total", label: "Tổng", render: (v) => formatVND(Number(v)) }, { key: "allocated", label: "Chốt sổ" },
+          { key: "total", label: "Tổng", render: (v) => formatVND(Number(v)) },
+          { key: "payment_status", label: "Thanh toán", render: (v, r) => `${PAYMENT_STATUS_LABELS[String(v)] ?? String(v)} · ${PAYMENT_METHOD_LABELS[String(r.payment_method)] ?? String(r.payment_method)}` },
+          { key: "allocated", label: "Chốt sổ" },
         ],
-        hint: "Trạng thái thường đổi theo chuyến ở trang Bộ não; sửa ở đây chỉ khi cần điều chỉnh riêng một đơn.",
+        hint: "Trạng thái thường đổi theo chuyến ở trang Bộ não; sửa ở đây chỉ khi cần điều chỉnh riêng một đơn. Khi đã nhận tiền, mở đơn và đổi “Thanh toán” sang “Đã thanh toán”.",
       };
     }
     case "boxes": {
@@ -101,17 +104,17 @@ async function load(key: string): Promise<{ rows: Row[]; columns: Column[]; hint
       };
     }
     case "subscriptions": {
-      const rows = await db.select({ s: subscriptions, box: boxes.name, price: boxes.price, customer: users.name, cluster: clusters.name }).from(subscriptions).innerJoin(boxes, eq(subscriptions.box_id, boxes.id)).leftJoin(users, eq(subscriptions.user_id, users.id)).leftJoin(clusters, eq(subscriptions.cluster_id, clusters.id));
+      const rows = await db.select({ s: subscriptions, box: boxes.name, price: boxes.price, size: boxes.size, customer: users.name, cluster: clusters.name }).from(subscriptions).innerJoin(boxes, eq(subscriptions.box_id, boxes.id)).leftJoin(users, eq(subscriptions.user_id, users.id)).leftJoin(clusters, eq(subscriptions.cluster_id, clusters.id));
       return {
-        rows: rows.map((r) => ({ ...r.s, box_name: r.box, customer_name: r.customer ?? "", cluster_name: r.cluster ?? "", per_cycle: r.price * r.s.quantity, freq_label: FREQUENCY_LABELS[r.s.frequency] })) as Row[],
-        columns: [{ key: "customer_name", label: "Khách" }, { key: "box_name", label: "Hộp" }, { key: "cluster_name", label: "Chung cư" }, { key: "next_delivery", label: "Hộp tiếp theo", render: day }, { key: "per_cycle", label: "Mỗi kỳ", render: (v) => formatVND(Number(v)) }],
+        rows: rows.map((r) => ({ ...r.s, box_name: r.box, customer_name: r.customer ?? "", cluster_name: r.cluster ?? "", per_cycle: r.price * r.s.quantity + shipFeeFor(r.size, r.s.quantity), freq_label: FREQUENCY_LABELS[r.s.frequency] })) as Row[],
+        columns: [{ key: "customer_name", label: "Khách" }, { key: "box_name", label: "Hộp" }, { key: "cluster_name", label: "Điểm nhận" }, { key: "recipient_name", label: "Người nhận", render: (v) => (v ? String(v) : "") }, { key: "next_delivery", label: "Hộp tiếp theo", render: day }, { key: "per_cycle", label: "Mỗi kỳ (gồm phí giao)", render: (v) => formatVND(Number(v)) }],
       };
     }
     case "group_orders": {
       const rows = await db.select({ g: group_orders, box: boxes.name, cluster: clusters.name }).from(group_orders).innerJoin(boxes, eq(group_orders.box_id, boxes.id)).innerJoin(clusters, eq(group_orders.cluster_id, clusters.id)).orderBy(desc(group_orders.delivery_date));
       return {
         rows: rows.map((r) => ({ ...r.g, box_name: r.box, cluster_name: r.cluster })) as Row[],
-        columns: [{ key: "title", label: "Nhóm" }, { key: "cluster_name", label: "Chung cư" }, { key: "box_name", label: "Hộp" }, { key: "current_members", label: "Số nhà", render: (v, r) => `${v}/${r.min_members}` }, { key: "delivery_date", label: "Giao", render: day }],
+        columns: [{ key: "title", label: "Nhóm" }, { key: "cluster_name", label: "Điểm nhận" }, { key: "box_name", label: "Hộp" }, { key: "current_members", label: "Số người", render: (v, r) => `${v}/${r.min_members}` }, { key: "delivery_date", label: "Giao", render: day }],
       };
     }
     case "clusters": {
@@ -121,7 +124,7 @@ async function load(key: string): Promise<{ rows: Row[]; columns: Column[]; hint
       for (const c of counts) if (c.id) n.set(c.id, (n.get(c.id) ?? 0) + 1);
       return {
         rows: rows.map((c) => ({ ...c, residents: n.get(c.id) ?? 0 })) as Row[],
-        columns: [{ key: "name", label: "Chung cư" }, { key: "address", label: "Địa chỉ" }, { key: "district", label: "Quận" }, { key: "residents", label: "Khách" }, { key: "id", label: "ID", mono: true }],
+        columns: [{ key: "name", label: "Điểm nhận" }, { key: "address", label: "Địa chỉ" }, { key: "district", label: "Quận" }, { key: "residents", label: "Khách" }, { key: "id", label: "ID", mono: true }],
       };
     }
     case "users": {
@@ -129,7 +132,7 @@ async function load(key: string): Promise<{ rows: Row[]; columns: Column[]; hint
       const cl = await db.select({ value: clusters.id, label: clusters.name }).from(clusters);
       return {
         rows: rows.map((r) => ({ ...r.u, avatar_url: undefined, password_hash: undefined, cluster_name: r.cluster ?? "" })) as unknown as Row[],
-        columns: [{ key: "name", label: "Tên" }, { key: "email", label: "Email" }, { key: "phone", label: "Điện thoại" }, { key: "cluster_name", label: "Chung cư" }, { key: "address", label: "Căn hộ" }, { key: "created_at", label: "Tạo lúc", render: dt }],
+        columns: [{ key: "name", label: "Tên" }, { key: "email", label: "Email" }, { key: "phone", label: "Điện thoại" }, { key: "cluster_name", label: "Điểm nhận" }, { key: "address", label: "Phòng" }, { key: "created_at", label: "Tạo lúc", render: dt }],
         lookups: { cluster_id: cl },
       };
     }

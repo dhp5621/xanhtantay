@@ -24,8 +24,8 @@ import { Loader } from "../../components/Loader";
 
 const CUSTOMER_MENU = [
   { href: "/tabs/don-hang", icon: "package_2", label: "Đơn hàng", desc: "Theo dõi hộp rau theo từng giờ" },
-  { href: "/dinh-ky", icon: "event_repeat", label: "Gói định kỳ", desc: "Tự lên đơn mỗi kỳ, miễn phí giao" },
-  { href: "/tabs/gom-don", icon: "groups", label: "Gom đơn", desc: "Đặt chung với hàng xóm cùng toà" },
+  { href: "/dinh-ky", icon: "event_repeat", label: "Gói định kỳ", desc: "Tự lên đơn mỗi kỳ, giao thứ Tư hoặc Chủ nhật" },
+  { href: "/tabs/gom-don", icon: "groups", label: "Gom đơn", desc: "Đặt chung với bạn cùng ký túc xá, khu trọ" },
   { href: "/tra-cuu", icon: "qr_code_2", label: "Quét mã QR", desc: "Xem vườn trồng và giờ thu hoạch của một hộp rau" },
   { href: "/farms", icon: "potted_plant", label: "Vườn rau", desc: "Những nhà vườn trồng rau cho bạn" },
 ];
@@ -273,7 +273,7 @@ export default function TaiKhoanScreen() {
               <Avatar name="?" size={72} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.heroName}>Chào bạn</Text>
-                <Text style={styles.heroSub}>Đăng nhập để đặt hộp rau, theo dõi đơn hàng và gom đơn cùng toà nhà.</Text>
+                <Text style={styles.heroSub}>Đăng nhập để đặt hộp rau, theo dõi đơn hàng và gom đơn cùng ký túc xá, khu trọ.</Text>
               </View>
             </View>
           </AnimInScale>
@@ -511,11 +511,11 @@ export default function TaiKhoanScreen() {
                     <Text style={styles.label}>Họ tên</Text>
                     <TextInput style={styles.input} value={form?.name ?? ""} onChangeText={(v) => setForm((f) => (f ? { ...f, name: v } : f))} placeholder={`Tên của ${used}`} placeholderTextColor={colors.onSurfaceVariant} maxLength={80} autoComplete="name" />
                     <Text style={styles.label}>Số điện thoại</Text>
-                    <TextInput style={styles.input} value={form?.phone ?? ""} onChangeText={(v) => setForm((f) => (f ? { ...f, phone: v } : f))} placeholder="Để người giao hàng gọi khi rau tới sảnh" placeholderTextColor={colors.onSurfaceVariant} keyboardType="phone-pad" maxLength={20} autoComplete="tel" />
-                    <Text style={styles.label}>Cụm chung cư</Text>
+                    <TextInput style={styles.input} value={form?.phone ?? ""} onChangeText={(v) => setForm((f) => (f ? { ...f, phone: v } : f))} placeholder="Để người giao hàng gọi khi rau tới điểm nhận" placeholderTextColor={colors.onSurfaceVariant} keyboardType="phone-pad" maxLength={20} autoComplete="tel" />
+                    <Text style={styles.label}>Điểm nhận (ký túc xá / khu trọ)</Text>
                     <ClusterPicker clusters={clusters} value={form?.cluster_id ?? null} onChange={(id) => setForm((f) => (f ? { ...f, cluster_id: id } : f))} />
-                    <Text style={styles.label}>Toà, tầng, số căn hộ</Text>
-                    <TextInput style={styles.input} value={form?.address ?? ""} onChangeText={(v) => setForm((f) => (f ? { ...f, address: v } : f))} placeholder="Ví dụ: Toà S2, căn 1508" placeholderTextColor={colors.onSurfaceVariant} maxLength={160} />
+                    <Text style={styles.label}>Nhà, phòng</Text>
+                    <TextInput style={styles.input} value={form?.address ?? ""} onChangeText={(v) => setForm((f) => (f ? { ...f, address: v } : f))} placeholder="Ví dụ: Nhà B6, phòng 412" placeholderTextColor={colors.onSurfaceVariant} maxLength={160} />
                     {addressFields}
                     <Button label="Lưu thông tin" icon="check" onPress={saveProfile} loading={saving} disabled={!dirty} style={{ alignSelf: "stretch", marginTop: 16 }} />
                   </View>

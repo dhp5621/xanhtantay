@@ -6,8 +6,8 @@ import { colors, shape, type, useStyles, type Colors } from "../constants/theme"
 import { PressableScale } from "./motion";
 import { Icon } from "./Icon";
 
-/** "Cụm chung cư" field that opens a bottom sheet listing the pilot clusters. */
-export function ClusterPicker({ clusters, value, onChange, placeholder = "Chọn cụm chung cư của bạn" }: { clusters: Cluster[]; value: string | null; onChange: (id: string) => void; placeholder?: string }) {
+/** "Điểm nhận" field that opens a bottom sheet listing the pilot pickup points (dormitories, areas of rented rooms). */
+export function ClusterPicker({ clusters, value, onChange, placeholder = "Chọn ký túc xá hoặc khu trọ" }: { clusters: Cluster[]; value: string | null; onChange: (id: string) => void; placeholder?: string }) {
   const styles = useStyles(makeStyles);
   const insets = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
@@ -26,7 +26,7 @@ export function ClusterPicker({ clusters, value, onChange, placeholder = "Chọn
               </Text>
             </>
           ) : (
-            <Text style={styles.placeholder}>{clusters.length ? placeholder : "Đang tải danh sách chung cư…"}</Text>
+            <Text style={styles.placeholder}>{clusters.length ? placeholder : "Đang tải danh sách điểm nhận…"}</Text>
           )}
         </View>
         <Icon name="expand_more" size={22} color={colors.onSurfaceVariant} />
@@ -37,8 +37,8 @@ export function ClusterPicker({ clusters, value, onChange, placeholder = "Chọn
           <Pressable style={StyleSheet.absoluteFill} onPress={() => setOpen(false)} />
           <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 16) + 12 }]}>
             <View style={styles.handle} />
-            <Text style={styles.title}>Cụm chung cư nhận rau</Text>
-            <Text style={styles.sub}>Hộp rau được giao tới sảnh toà nhà lúc 16h00.</Text>
+            <Text style={styles.title}>Điểm nhận rau</Text>
+            <Text style={styles.sub}>Hộp rau được giao tới ký túc xá, khu trọ lúc 16h00 thứ Tư và Chủ nhật.</Text>
             <ScrollView style={{ marginTop: 14 }} contentContainerStyle={{ gap: 8 }}>
               {clusters.map((c) => {
                 const sel = c.id === value;
@@ -63,7 +63,7 @@ export function ClusterPicker({ clusters, value, onChange, placeholder = "Chọn
                   </PressableScale>
                 );
               })}
-              {clusters.length === 0 && <Text style={styles.sub}>Chưa có cụm chung cư nào trong khu vực thí điểm.</Text>}
+              {clusters.length === 0 && <Text style={styles.sub}>Chưa có điểm nhận nào trong khu vực thí điểm.</Text>}
             </ScrollView>
           </View>
         </View>

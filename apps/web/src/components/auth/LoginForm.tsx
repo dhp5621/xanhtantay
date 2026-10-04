@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Icon } from "@/components/ui/Icon";
 
 const DEMO = {
-  customer: { email: "lan@gmail.com", label: "Khách hàng demo", who: "Chị Lan", icon: "shopping_basket", blurb: "Đặt hộp rau, gom đơn, theo dõi hành trình" },
+  customer: { email: "lan@gmail.com", label: "Khách hàng demo", who: "Bạn Lan", icon: "shopping_basket", blurb: "Sinh viên xa nhà: đặt hộp rau, gom đơn, theo dõi hành trình" },
   farmer: { email: "bacba@xanhtantay.vn", label: "Nông dân demo", who: "Bác Ba", icon: "agriculture", blurb: "Nhận lệnh thu hoạch và xác nhận" },
 } as const;
 type Role = "customer" | "farmer";

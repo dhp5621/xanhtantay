@@ -50,12 +50,12 @@ export function ProfileForm({ initial, clusters, showAddress, farmer = false }: 
       </div>
       {showAddress && (
         <>
-          <div className="m3-field"><label className="m3-field-label" htmlFor="pf-cluster">Chung cư</label>
+          <div className="m3-field"><label className="m3-field-label" htmlFor="pf-cluster">Điểm nhận (ký túc xá / khu trọ)</label>
             <select id="pf-cluster" className="m3-select" value={form.cluster_id} onChange={(e) => setForm({ ...form, cluster_id: e.target.value })}>
               <option value="">— chưa chọn —</option>
               {clusters.map((c) => <option key={c.id} value={c.id}>{c.name} · {c.district}</option>)}
             </select></div>
-          <div className="m3-field"><label className="m3-field-label" htmlFor="pf-addr">Toà · căn hộ</label><input id="pf-addr" className="m3-input" placeholder="Ví dụ: T5 · căn 1208" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} maxLength={120} /></div>
+          <div className="m3-field"><label className="m3-field-label" htmlFor="pf-addr">Nhà · phòng</label><input id="pf-addr" className="m3-input" placeholder="Ví dụ: Nhà B6 · phòng 412" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} maxLength={120} /></div>
         </>
       )}
       <fieldset className="m3-field" style={{ border: "none", padding: 0, margin: 0 }}>

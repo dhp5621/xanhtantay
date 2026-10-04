@@ -17,10 +17,10 @@ export function orderNotice(w: Who, status: "placed" | "harvesting" | "loaded" |
   const { call, pronoun } = to(w);
   const by = farmer ? addressPerson(farmer).call.replace(/^./, (c) => c.toLowerCase()) : "bác nông dân";
   const body = {
-    placed: `${call} ơi, đơn của ${pronoun} đã vào sổ rồi ạ. 18h00 chốt sổ, mai rau sẽ có tại sảnh. Cảm ơn ${pronoun} đã đặt rau!`,
+    placed: `${call} ơi, đơn của ${pronoun} đã vào sổ rồi ạ. Sổ chốt 18h00 hôm trước ngày giao, rau về điểm nhận vào thứ Tư hoặc Chủ nhật. Cảm ơn ${pronoun} đã đặt rau!`,
     harvesting: `${call} ơi, 4h00 sáng nay rau của ${pronoun} đang được ${by} thu hoạch ạ.`,
     loaded: `${call} ơi, 6h00 hộp rau của ${pronoun} đã lên xe lạnh về phố rồi ạ.`,
-    delivered: `${call} ơi, rau quê đã có tại sảnh chung cư nhà ${pronoun} rồi ạ. Chúc cả nhà ngon miệng!`,
+    delivered: `${call} ơi, rau quê đã có tại điểm nhận của ${pronoun} rồi ạ. Chúc ${pronoun} ngon miệng!`,
   }[status];
   return { title: "Hộp rau của bạn", body };
 }

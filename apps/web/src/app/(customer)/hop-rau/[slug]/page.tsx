@@ -60,7 +60,7 @@ export default async function BoxPage({ params }: { params: Promise<{ slug: stri
         <div className="m3-box-side anim-in delay-2 flex flex-col gap-4">
           <SizePicker sizes={sizes} current={box.id} />
           <OrderPanel
-            box={{ id: box.id, slug: box.slug, name: box.name, price: box.price, weight_kg: box.weight_kg, days: box.days }}
+            box={{ id: box.id, slug: box.slug, name: box.name, size: box.size, price: box.price, weight_kg: box.weight_kg, days: box.days }}
             clusters={clusters}
             groups={groups.filter((g) => g.box_id === box.id).map((g) => ({ id: g.id, title: g.title, cluster_id: g.cluster_id, min_members: g.min_members, current_members: g.current_members, delivery_date: g.delivery_date }))}
             me={me ?? null}

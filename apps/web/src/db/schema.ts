@@ -3,12 +3,13 @@ import { pgTable, text, timestamp, boolean, integer, numeric, jsonb, pgEnum, dat
 
 /**
  * Xanh Tận Tay — PULL model (pivot 28/9):
- * customers pre-order seasonal BOXES → daily 18:00 cut-off → the brain aggregates demand and
- * splits it into harvest commands per farm by registered capacity → farmers confirm and cut exactly that.
+ * customers pre-order seasonal BOXES → 18:00 cut-off the day before each delivery day (Wednesday, Sunday)
+ * → the brain aggregates demand and splits it into harvest commands per farm by registered capacity
+ * → farmers confirm and cut exactly that.
  */
 
 export const userRoleEnum = pgEnum("user_role", ["customer", "farmer"]);
-/** placed: waiting for the 18:00 cut-off · harvesting: 04:00 · loaded: 06:00 · delivered: 16:00 at the lobby */
+/** placed: waiting for the 18:00 cut-off · harvesting: 04:00 · loaded: 06:00 · delivered: 16:00 at the pickup point */
 export const orderStatusEnum = pgEnum("order_status", ["placed", "harvesting", "loaded", "delivered", "cancelled"]);
 export const orderTypeEnum = pgEnum("order_type", ["single", "subscription", "group"]);
 export const subscriptionFrequencyEnum = pgEnum("subscription_frequency", ["weekly", "biweekly", "monthly"]);
@@ -16,7 +17,7 @@ export const groupOrderStatusEnum = pgEnum("group_order_status", ["open", "locke
 export const runStatusEnum = pgEnum("run_status", ["allocated", "harvesting", "loaded", "delivered"]);
 export const commandStatusEnum = pgEnum("command_status", ["sent", "confirmed", "declined"]);
 
-/** Apartment clusters in Hà Nội: the unit of group buying and lobby delivery. */
+/** Pickup points in Hà Nội (dormitories, areas of rented rooms): the unit of group buying and delivery. */
 export const clusters = pgTable("clusters", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   name: text("name").notNull(),
@@ -33,7 +34,7 @@ export const users = pgTable("users", {
   role: userRoleEnum("role").notNull().default("customer"),
   avatar_url: text("avatar_url"),
   password_hash: text("password_hash"),
-  /** Customer's building and flat, prefilled at checkout. */
+  /** Customer's pickup point and room, prefilled at checkout. */
   cluster_id: text("cluster_id").references(() => clusters.id, { onDelete: "set null" }),
   address: text("address"),
   /** "male" | "female" | null. Decides the form of address when none was chosen: farmers bác (male, or not given) / cô (female); customers anh / chị, "bạn" when not given. */
@@ -133,11 +134,14 @@ export const subscriptions = pgTable("subscriptions", {
   address: text("address"),
   /** The buyer's own "lời nhắn quan tâm" for every box; null picks one from the list each time. */
   care_message: text("care_message"),
+  /** "Đặt cho người thân": who receives every box when the buyer (a parent) is not the one eating it. Both or neither. */
+  recipient_name: text("recipient_name"),
+  recipient_phone: text("recipient_phone"),
   active: boolean("active").notNull().default(true),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
-/** Neighbours of one cluster ordering the same box for the same day: enough members ⇒ free delivery. */
+/** People at one pickup point ordering the same box for the same day: enough members ⇒ free delivery. */
 export const group_orders = pgTable("group_orders", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   cluster_id: text("cluster_id").notNull().references(() => clusters.id),
@@ -200,8 +204,15 @@ export const orders = pgTable("orders", {
   note: text("note"),
   /** The customer's own menu for this order once they swap a dish or the whole week; null = the box's menu. */
   meal_plan: jsonb("meal_plan").$type<BoxMealDay[]>(),
-  /** "Lời nhắn quan tâm" shown to the customer with this order. */
+  /** "Lời nhắn quan tâm" shown with this order; on a gift order it is the sender's own note. */
   care_message: text("care_message"),
+  /** "Đặt cho người thân": who receives the box when it is not the buyer. Both or neither. Never shown on the public QR page. */
+  recipient_name: text("recipient_name"),
+  recipient_phone: text("recipient_phone"),
+  /** "transfer" (chuyển khoản trước) | "cod" (trả khi nhận). Subscription and gift orders are always "transfer". */
+  payment_method: text("payment_method").notNull().default("cod"),
+  /** "pending" | "paid". Set by the operator in /admin; there is no online payment. */
+  payment_status: text("payment_status").notNull().default("pending"),
   cluster_id: text("cluster_id").references(() => clusters.id, { onDelete: "set null" }),
   address: text("address"),
   delivery_date: date("delivery_date").notNull(),

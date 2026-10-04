@@ -6,17 +6,18 @@ import { router, useFocusEffect } from "expo-router";
 import type { Subscription, SubscriptionFrequency } from "@xanhtantay/types";
 import { apiFetch, ApiError } from "../../constants/api";
 import { colors, shape, type, elevation, useStyles, type Colors } from "../../constants/theme";
-import { FREQUENCIES, FREQUENCY_ICONS, FREQUENCY_LABELS, SIZE_LABELS } from "../../constants/commerce";
+import { FREQUENCIES, FREQUENCY_ICONS, FREQUENCY_LABELS, SIZE_LABELS, canMoveDelivery, shipFeeFor } from "../../constants/commerce";
 import { formatDay, formatVND } from "../../constants/format";
 import { useLiveRefresh } from "../../hooks/useLive";
 import { AnimIn, PressableScale, Skeleton } from "../../components/motion";
 import { Button, Chip, EmptyState, PageHeader } from "../../components/ui";
 import { SmartImage } from "../../components/SmartImage";
 import { QuantityStepper } from "../../components/QuantityStepper";
+import { DeliveryDatePicker } from "../../components/DeliveryDatePicker";
 import { useDialog } from "../../components/Dialog";
 import { Icon } from "../../components/Icon";
 
-/** "Gói định kỳ": boxes that order themselves every period, with free delivery. */
+/** "Gói định kỳ": boxes that order themselves every period. Quantity, frequency, pause / resume, and moving the next box to another delivery day. */
 export default function DinhKyScreen() {
   const { alert } = useDialog();
   const styles = useStyles(makeStyles);
@@ -27,6 +28,9 @@ export default function DinhKyScreen() {
   const [editing, setEditing] = useState<Subscription | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [frequency, setFrequency] = useState<SubscriptionFrequency>("weekly");
+  // The next box may be moved to another delivery day; `earliest` is the first one still open (`GET /boxes`).
+  const [nextDay, setNextDay] = useState<string | null>(null);
+  const [earliest, setEarliest] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -34,6 +38,9 @@ export default function DinhKyScreen() {
     } catch {
       setSubs((s) => s ?? []);
     }
+    apiFetch("/boxes")
+      .then((r: { delivery_date?: string }) => r?.delivery_date && setEarliest(r.delivery_date))
+      .catch(() => {});
   }, []);
 
   useLiveRefresh(load);
@@ -43,7 +50,7 @@ export default function DinhKyScreen() {
     }, [load])
   );
 
-  const patch = async (id: string, body: Partial<Pick<Subscription, "active" | "quantity" | "frequency">>) => {
+  const patch = async (id: string, body: Partial<Pick<Subscription, "active" | "quantity" | "frequency" | "next_delivery">>) => {
     setBusy(id);
     try {
       await apiFetch("/subscriptions", { method: "PATCH", body: JSON.stringify({ id, ...body }) });
@@ -65,13 +72,17 @@ export default function DinhKyScreen() {
   const openEdit = (s: Subscription) => {
     setQuantity(s.quantity);
     setFrequency(s.frequency);
+    setNextDay(s.next_delivery);
     setEditing(s);
   };
 
   const saveEdit = async () => {
     if (!editing) return;
-    if (await patch(editing.id, { quantity, frequency })) setEditing(null);
+    const moved = nextDay && nextDay !== editing.next_delivery ? { next_delivery: nextDay } : {};
+    if (await patch(editing.id, { quantity, frequency, ...moved })) setEditing(null);
   };
+  // Allowed while the subscription runs, until 24 hours before the cut-off of the box being moved.
+  const movable = !!editing && editing.active && canMoveDelivery(editing.next_delivery);
 
   return (
     <>
@@ -92,7 +103,7 @@ export default function DinhKyScreen() {
             tintColor={colors.primary}
           />
         }
-        ListHeaderComponent={<PageHeader icon="event_repeat" eyebrow="Tự động, đúng hẹn" title="Gói định kỳ" subtitle="Hộp rau tự lên đơn mỗi kỳ, miễn phí giao, nhà vườn biết trước để trồng vừa đủ" />}
+        ListHeaderComponent={<PageHeader icon="event_repeat" eyebrow="Tự động, đúng hẹn" title="Gói định kỳ" subtitle="Hộp rau tự lên đơn mỗi kỳ, giao thứ Tư hoặc Chủ nhật. Tạm dừng hay dời ngày giao trước giờ chốt sổ 24 giờ." />}
         ListEmptyComponent={
           subs === null ? (
             <View style={{ gap: 12 }}>
@@ -121,12 +132,13 @@ export default function DinhKyScreen() {
                 <Fact icon={FREQUENCY_ICONS[s.frequency] ?? "event_repeat"} label="Tần suất" value={FREQUENCY_LABELS[s.frequency] ?? s.frequency} />
                 <Fact icon="inventory_2" label="Số lượng" value={`${s.quantity} hộp mỗi kỳ`} />
                 <Fact icon="event" label={s.active ? "Kỳ giao tới" : "Kỳ giao khi bật lại"} value={formatDay(s.next_delivery)} />
-                {s.cluster ? <Fact icon="apartment" label="Điểm nhận" value={`Sảnh ${s.cluster.name}${s.address ? ` · ${s.address}` : ""}`} /> : null}
-                {s.box ? <Fact icon="payments" label="Mỗi kỳ" value={`${formatVND(s.box.price * s.quantity)} · miễn phí giao`} /> : null}
+                {s.cluster ? <Fact icon="apartment" label="Điểm nhận" value={`${s.cluster.name}${s.address ? ` · ${s.address}` : ""}`} /> : null}
+                {s.recipient_name ? <Fact icon="favorite" label="Người nhận" value={`${s.recipient_name}${s.recipient_phone ? ` · ${s.recipient_phone}` : ""}`} /> : null}
+                {s.box ? <Fact icon="payments" label="Mỗi kỳ" value={`${formatVND(s.box.price * s.quantity + shipFeeFor(s.box.size, s.quantity))} · gồm ${formatVND(shipFeeFor(s.box.size, s.quantity))} phí giao`} /> : null}
               </View>
 
               <View style={styles.actions}>
-                <Button label="Đổi số lượng, tần suất" icon="tune" variant="outlined" small onPress={() => openEdit(s)} disabled={busy === s.id} />
+                <Button label="Đổi số lượng, ngày giao" icon="tune" variant="outlined" small onPress={() => openEdit(s)} disabled={busy === s.id} />
                 <Button label={s.active ? "Tạm dừng" : "Chạy lại"} icon={s.active ? "pause_circle" : "play_circle"} variant={s.active ? "error" : "tonal"} small loading={busy === s.id && !editing} onPress={() => toggleActive(s)} />
               </View>
             </View>
@@ -158,9 +170,16 @@ export default function DinhKyScreen() {
               ))}
             </View>
 
+            <Text style={styles.label}>Dời kỳ giao tới</Text>
+            {movable && earliest && nextDay ? (
+              <DeliveryDatePicker earliest={earliest} value={nextDay} onChange={setNextDay} days={28} hint="Dời sang thứ Tư hoặc Chủ nhật khác trong 4 tuần tới. Các kỳ sau tính tiếp từ ngày mới." />
+            ) : (
+              <Text style={styles.muted}>{editing && !editing.active ? "Gói đang tạm dừng, bật lại rồi mới dời ngày giao được." : movable ? "Đang tải các ngày giao…" : "Chỉ dời được ngày giao trước giờ chốt sổ ít nhất 24 giờ."}</Text>
+            )}
+
             {editing?.box ? (
               <Text style={[styles.muted, { marginTop: 16 }]}>
-                Mỗi kỳ <Text style={{ fontWeight: "800", color: colors.primary }}>{formatVND(editing.box.price * quantity)}</Text>, miễn phí giao. Thay đổi áp dụng từ kỳ giao kế tiếp chưa chốt sổ.
+                Mỗi kỳ <Text style={{ fontWeight: "800", color: colors.primary }}>{formatVND(editing.box.price * quantity + shipFeeFor(editing.box.size, quantity))}</Text>, gồm {formatVND(shipFeeFor(editing.box.size, quantity))} phí giao. Thay đổi áp dụng từ kỳ giao kế tiếp chưa chốt sổ.
               </Text>
             ) : null}
 

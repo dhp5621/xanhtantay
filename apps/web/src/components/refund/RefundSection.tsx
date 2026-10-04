@@ -174,7 +174,7 @@ export function RefundSection({ orderId, initial, canRequest, until, blocked }: 
 
               <div className="m3-field">
                 <span className="m3-field-label">Hình ảnh / video bằng chứng</span>
-                <p className="body-sm text-on-surface-variant" style={{ marginBottom: 8 }}>{need ? `Bắt buộc: ${REFUND_PHOTOS} ảnh chụp đủ các góc của hộp rau và 1 video (tối đa ${REFUND_VIDEO_SECONDS} giây).` : "Chưa nhận được hàng thì không bắt buộc ảnh hay video. Có ảnh sảnh hoặc tủ nhận hàng thì càng dễ xác minh."} Ảnh và video được nén trước khi gửi.</p>
+                <p className="body-sm text-on-surface-variant" style={{ marginBottom: 8 }}>{need ? `Bắt buộc: ${REFUND_PHOTOS} ảnh chụp đủ các góc của hộp rau và 1 video (tối đa ${REFUND_VIDEO_SECONDS} giây).` : "Chưa nhận được hàng thì không bắt buộc ảnh hay video. Có ảnh điểm nhận hoặc tủ nhận hàng thì càng dễ xác minh."} Ảnh và video được nén trước khi gửi.</p>
                 <input ref={pick} type="file" accept="image/*" hidden onChange={(e) => { void addPhoto(slot.current, e.target.files?.[0]); e.target.value = ""; }} />
                 <input ref={pickVideo} type="file" accept="video/*" hidden onChange={(e) => { void addVideo(e.target.files?.[0]); e.target.value = ""; }} />
                 <div className="m3-refund-slots">

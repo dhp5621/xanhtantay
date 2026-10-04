@@ -10,26 +10,26 @@ import { groupMixes, type BoxView } from "@/lib/queries";
 interface FarmCard { id: string; name: string; slug: string; location: string; province: string; cover_url: string | null; farmer: string | null }
 
 const STEPS = [
-  { icon: "inventory_2", time: "Trước 18h00", title: "Bạn đặt hộp rau", text: "Chọn hộp theo mùa, đặt lẻ, định kỳ hoặc gom cùng toà nhà." },
+  { icon: "inventory_2", time: "Trước 18h00", title: "Bạn đặt hộp rau", text: "Chọn hộp theo mùa, đặt lẻ, định kỳ hoặc gom cùng ký túc xá, khu trọ. Bố mẹ ở quê đặt cho con cũng được. Giao thứ Tư và Chủ nhật, chốt sổ 18h00 hôm trước." },
   { icon: "psychology", time: "18h00", title: "Bộ não gom nhu cầu", text: "Chốt sổ, cộng tổng từng loại rau, chia lệnh về từng nông hộ theo năng suất." },
   { icon: "agriculture", time: "4h00", title: "Cắt đúng lượng", text: "Bác nông dân nhận một tin nhắn, cắt đúng số ký đã đặt. Không thừa." },
-  { icon: "apartment", time: "16h00", title: "Có tại sảnh", text: "Xe lạnh về phố, hộp rau chờ bạn ở sảnh chung cư trong ngày." },
+  { icon: "apartment", time: "16h00", title: "Có tại điểm nhận", text: "Xe lạnh về phố, hộp rau chờ bạn ở ký túc xá, khu trọ trong ngày." },
 ];
 
 const CUSTOMER_PERKS = [
-  { icon: "inventory_2", t: "Hộp theo mùa, mix từ nhiều vườn", d: "Không phải chọn từng mớ. Mỗi hộp là rau củ ngon nhất mùa này từ các vườn Bắc Kạn, Tuyên Quang.", more: "Mỗi mùa ba mix, mỗi mix ba size như chọn cỡ áo: S 4 kg cho 2 người, M 7 kg cho 3–4 người, L 10 kg cho nhà đông người. Hộp nào cũng đủ ăn 7 ngày." },
-  { icon: "event_repeat", t: "Gói định kỳ", d: "Hộp rau tự về mỗi tuần, miễn phí giao. Tạm dừng hay đổi cỡ hộp bất cứ lúc nào.", more: "Hệ thống tự lên đơn trước mỗi kỳ chốt sổ. Bạn chỉ cần xuống sảnh nhận rau." },
-  { icon: "groups", t: "Gom đơn theo toà nhà", d: "Rủ hàng xóm cùng chung cư đặt chung một chuyến. Đủ nhóm là cả nhóm miễn ship.", more: "Tạo nhóm, chia link trong nhóm cư dân. Thanh tiến độ cho biết còn thiếu mấy nhà." },
-  { icon: "schedule", t: "Theo dõi có giờ, có người", d: "Không còn “đang giao” khô khan: bạn biết 4h sáng ai đang cắt rau cho mình.", more: "Ba mốc: 4h00 thu hoạch, 6h00 lên xe lạnh, 16h00 có tại sảnh chung cư." },
+  { icon: "inventory_2", t: "Hộp theo mùa, mix từ nhiều vườn", d: "Không phải chọn từng mớ. Mỗi hộp là rau củ ngon nhất mùa này từ các vườn Bắc Kạn, Tuyên Quang.", more: "Mỗi mùa ba mix, mỗi mix ba size như chọn cỡ áo: S 3 kg cho 1 người, M 6 kg cho 2 người, L 12 kg cho phòng 3–4 người. Giá đồng nhất theo size: 190.000₫, 320.000₫, 520.000₫. Hộp nào cũng đủ ăn 7 ngày." },
+  { icon: "event_repeat", t: "Gói định kỳ", d: "Hộp rau tự về mỗi tuần vào thứ Tư hoặc Chủ nhật. Tạm dừng, dời ngày giao hay đổi cỡ hộp trước giờ chốt sổ.", more: "Hệ thống tự lên đơn trước mỗi kỳ chốt sổ, trả trước bằng chuyển khoản. Phí giao theo size: S 15.000₫, M 20.000₫, L 30.000₫ mỗi hộp." },
+  { icon: "groups", t: "Gom đơn theo ký túc xá, khu trọ", d: "Rủ bạn cùng phòng, cùng khu đặt chung một chuyến. Đủ nhóm là cả nhóm miễn phí giao.", more: "Tạo nhóm, chia link trong nhóm chat của phòng, của khu. Thanh tiến độ cho biết còn thiếu mấy người." },
+  { icon: "schedule", t: "Theo dõi có giờ, có người", d: "Không còn “đang giao” khô khan: bạn biết 4h sáng ai đang cắt rau cho mình.", more: "Ba mốc: 4h00 thu hoạch, 6h00 lên xe lạnh, 16h00 có tại điểm nhận." },
   { icon: "qr_code_2", t: "Quét QR biết gốc", d: "Mã trên bao bì cho biết rau cắt lúc nào, từ vườn nào, của bác nào.", more: "Trang truy xuất không lộ thông tin người mua, chỉ có nguồn gốc và hành trình." },
-  { icon: "menu_book", t: "Thực đơn kèm hộp", d: "Mỗi hộp có sẵn lịch nấu theo ngày, trưa và tối, kèm cách làm từng món.", more: "Rau lá xếp ăn trước, củ quả để sau, nên dùng hết hộp mà không bỏ phí." },
+  { icon: "menu_book", t: "Thực đơn kèm hộp", d: "Mỗi hộp có sẵn lịch nấu theo ngày, trưa và tối, kèm cách làm từng món.", more: "Rau lá xếp ăn trước, củ quả để sau, nên dùng hết hộp mà không bỏ phí. Mỗi hộp kèm hướng dẫn bảo quản: rau lá để ráo, bọc kín, cất ngăn mát 3–5°C; củ quả để nơi khô thoáng." },
 ];
 
 const FARMER_POINTS = [
-  { icon: "sms", t: "Mỗi ngày một tin nhắn", d: "Không cần học dùng app. Lệnh thu hoạch là một câu rõ ràng, chữ to: cắt gì, bao nhiêu ký, mấy giờ xe tới." },
+  { icon: "sms", t: "Mỗi chuyến một tin nhắn", d: "Không cần học dùng app. Lệnh thu hoạch là một câu rõ ràng, chữ to: cắt gì, bao nhiêu ký, mấy giờ xe tới." },
   { icon: "thumb_up", t: "Một nút duy nhất", d: "Đọc xong bấm “Đã hiểu & Xác nhận”. Hết." },
   { icon: "scale", t: "Cắt đúng lượng đã bán", d: "Rau đã có người đặt trước khi cắt, nên không còn cảnh được mùa mất giá hay rau thừa đổ bỏ." },
-  { icon: "payments", t: "Bán thẳng, giữ trọn giá", d: "Không qua thương lái. Nền tảng chỉ thu 5–10% trên đơn giao thành công." },
+  { icon: "payments", t: "Bán thẳng, giá chốt trước", d: "Không qua thương lái. Giá mua tại vườn chốt theo từng cỡ hộp; nhận 50% khi chuyến được xác nhận, 50% còn lại trong 48 giờ sau khi giao xong." },
 ];
 
 export function Landing({ boxes, farms, stats, deliveryDate, cutoffAt }: { boxes: BoxView[]; farms: FarmCard[]; stats: { farms: number; clusters: number; boxes_delivered: number }; deliveryDate: string; cutoffAt: string }) {
@@ -44,7 +44,7 @@ export function Landing({ boxes, farms, stats, deliveryDate, cutoffAt }: { boxes
           </span>
           <h1 className="display-lg anim-in delay-1" style={{ color: "var(--md-on-primary-container)", marginBottom: 14, maxWidth: 720 }}>Thùng rau mẹ gửi</h1>
           <p className="body-lg anim-in delay-2" style={{ color: "var(--md-on-secondary-container)", maxWidth: 620, marginBottom: 24, fontSize: 18 }}>
-            Đặt hộp rau theo mùa trước 18h00. Sáng mai bác nông dân cắt đúng phần của bạn, chiều rau đã có tại sảnh chung cư.
+            Hộp rau quê cho sinh viên và người đi làm xa nhà ở Hà Nội, bố mẹ ở quê đặt cho con cũng được. Giao thứ Tư và Chủ nhật: đặt trước 18h00 hôm trước, sáng hôm sau bác nông dân cắt đúng phần của bạn, chiều rau đã có tại ký túc xá, khu trọ.
           </p>
           <div className="anim-in delay-3" style={{ maxWidth: 560, marginBottom: 20 }}><CutoffBanner cutoffAt={cutoffAt} deliveryLabel={formatYMD(deliveryDate)} /></div>
           <div className="flex flex-wrap gap-3 anim-in delay-3">
@@ -52,7 +52,7 @@ export function Landing({ boxes, farms, stats, deliveryDate, cutoffAt }: { boxes
             <Link href="/dang-nhap?role=farmer" className="m3-btn m3-btn-elevated m3-btn-lg"><Icon name="agriculture" /><span>Tôi là nhà vườn</span></Link>
           </div>
           <div className="flex flex-wrap gap-x-8 gap-y-2 anim-in delay-4" style={{ marginTop: 32 }}>
-            {[{ v: stats.farms, l: "nông hộ đối tác" }, { v: stats.clusters, l: "cụm chung cư" }, { v: stats.boxes_delivered, l: "hộp đã giao" }, { v: "0%", l: "rau thừa" }].map((s) => (
+            {[{ v: stats.farms, l: "nông hộ đối tác" }, { v: stats.clusters, l: "điểm nhận" }, { v: stats.boxes_delivered, l: "hộp đã giao" }, { v: "0%", l: "rau thừa" }].map((s) => (
               <div key={s.l}><p className="headline-md tabular" style={{ color: "var(--md-on-primary-container)" }}>{s.v}</p><p className="body-sm" style={{ color: "var(--md-on-secondary-container)" }}>{s.l}</p></div>
             ))}
           </div>
@@ -74,7 +74,7 @@ export function Landing({ boxes, farms, stats, deliveryDate, cutoffAt }: { boxes
       </section>
 
       <section>
-        <div className="m3-section-head"><div><p className="m3-eyebrow">Hộp mùa này</p><h2 className="headline-lg text-on-surface">Chọn mix, chọn size cho nhà bạn</h2></div><Link href="/hop-rau" className="m3-btn m3-btn-text m3-btn-sm"><span>Xem chi tiết</span><Icon name="arrow_forward" size={18} /></Link></div>
+        <div className="m3-section-head"><div><p className="m3-eyebrow">Hộp mùa này</p><h2 className="headline-lg text-on-surface">Chọn mix, chọn size cho phòng bạn</h2></div><Link href="/hop-rau" className="m3-btn m3-btn-text m3-btn-sm"><span>Xem chi tiết</span><Icon name="arrow_forward" size={18} /></Link></div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 stagger">{groupMixes(boxes).map((m) => <MixCard key={m.mix} mix={m} />)}</div>
       </section>
 

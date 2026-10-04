@@ -6,7 +6,10 @@ export interface BoxesResponse {
   boxes: Box[];
   delivery_date: string;
   cutoff_at: string;
+  /** The smallest fee (size S); kept for older clients. */
   ship_fee: number;
+  /** Delivery fee per box by size: `{ S, M, L }`. */
+  ship_fees?: Record<string, number>;
 }
 
 /** A farmer's change waiting for the operator: nothing is in force until it is approved. */
@@ -58,7 +61,9 @@ export type MyOrder = Order & {
 };
 
 export interface OrderImpact {
+  /** What the farms are paid at the garden for these boxes (a fixed amount per size). */
   toFarmers: number;
+  toVillage?: number;
   weightKg: number;
   meals: number;
   servings: number;
@@ -78,6 +83,7 @@ export interface TraceFarm {
 export interface TraceContent {
   name: string;
   image_url: string | null;
+  category?: string;
   quantity_kg: number;
   farms: { name: string; slug: string; location?: string; farmer?: string | null }[];
 }
@@ -107,6 +113,11 @@ export interface OrderTrace {
   care_message?: string | null;
   address?: string | null;
   group_order_id?: string | null;
+  /** "Đặt cho người thân": only the buyer sees who receives the box. */
+  recipient_name?: string | null;
+  recipient_phone?: string | null;
+  payment_method?: string;
+  payment_status?: string;
 }
 
 export interface GroupMember {

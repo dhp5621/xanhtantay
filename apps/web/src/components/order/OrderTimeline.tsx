@@ -4,7 +4,7 @@ import { formatClock } from "@/lib/format";
 
 /**
  * Emotional tracking: four steps with their clock times.
- * "4h00: Rau đang được bác Tư thu hoạch" → "6h00: Hàng lên xe lạnh về phố" → "16h00: Rau quê đã có tại sảnh".
+ * "4h00: Rau đang được bác Tư thu hoạch" → "6h00: Hàng lên xe lạnh về phố" → "16h00: Rau quê đã có tại điểm nhận".
  */
 export function OrderTimeline({ status, farmer, times, allocated, compact = false }: {
   status: OrderStatus; farmer?: string | null; allocated?: boolean; compact?: boolean;

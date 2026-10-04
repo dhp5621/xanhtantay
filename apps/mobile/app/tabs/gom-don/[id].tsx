@@ -5,7 +5,7 @@ import * as Clipboard from "expo-clipboard";
 import { useLocalSearchParams, useFocusEffect, router } from "expo-router";
 import { apiFetch, ApiError, API_URL } from "../../../constants/api";
 import { colors, shape, type, elevation, useStyles, type Colors } from "../../../constants/theme";
-import { SHIP_FEE, SIZE_LABELS } from "../../../constants/commerce";
+import { shipFeeFor, SIZE_LABELS } from "../../../constants/commerce";
 import { formatCountdown, formatDateTime, formatDay, formatVND } from "../../../constants/format";
 import type { GroupDetail, Me } from "../../../constants/types";
 import { useCountdown } from "../../../hooks/useCountdown";
@@ -61,7 +61,7 @@ export default function GomDonDetailScreen() {
     setBusy(true);
     try {
       await apiFetch(`/groups/${id}/join`, { method: "POST", body: JSON.stringify({ quantity, address: address.trim() || undefined }) });
-      alert(`${Pronoun} đã vào nhóm!`, "Rủ thêm hàng xóm cho đủ số nhà để cả nhóm miễn phí giao nhé.", undefined, { icon: "celebration" });
+      alert(`${Pronoun} đã vào nhóm!`, "Rủ thêm bạn cùng phòng, cùng khu cho đủ người để cả nhóm miễn phí giao nhé.", undefined, { icon: "celebration" });
       await load();
     } catch (e) {
       alert("Không tham gia được", e instanceof ApiError ? e.message : "Có lỗi xảy ra, xin thử lại giúp ạ.");
@@ -168,17 +168,17 @@ export default function GomDonDetailScreen() {
                 <Icon name={reached ? "celebration" : "group_add"} size={32} filled color={reached ? colors.onPrimary : colors.onSecondaryContainer} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.statusTitle, { color: fg }]}>{reached ? "Đủ người, cả nhóm miễn phí giao!" : `Cần thêm ${group.min_members - group.current_members} nhà nữa`}</Text>
+                <Text style={[styles.statusTitle, { color: fg }]}>{reached ? "Đủ người, cả nhóm miễn phí giao!" : `Cần thêm ${group.min_members - group.current_members} người nữa`}</Text>
                 <Text style={[styles.body, { color: fg, opacity: 0.8 }]}>
-                  {group.current_members}/{group.min_members} nhà tham gia · {totalBoxes} hộp
+                  {group.current_members}/{group.min_members} người tham gia · {totalBoxes} hộp
                 </Text>
               </View>
             </View>
             <AnimatedProgress value={pct} wavy={!reached && open} color={reached ? colors.primary : colors.secondary} height={10} />
             <View style={{ gap: 6, marginTop: 14 }}>
               <Line icon="schedule" color={fg} text={open ? `Chốt sổ ${formatDateTime(group.cutoff_at)}${countdown ? ` (còn ${countdown})` : ""}` : "Nhóm đã chốt sổ"} />
-              <Line icon="event" color={fg} text={`Giao ${formatDay(group.delivery_date)}, 16h00 tại sảnh`} />
-              <Line icon="local_shipping" color={fg} text={reached ? "Phí giao của mọi nhà trong nhóm là 0₫" : `Chưa đủ người lúc chốt sổ thì mỗi nhà trả ${formatVND(SHIP_FEE)} phí giao`} />
+              <Line icon="event" color={fg} text={`Giao ${formatDay(group.delivery_date)}, 16h00 tại điểm nhận`} />
+              <Line icon="local_shipping" color={fg} text={reached ? "Phí giao của mọi người trong nhóm là 0₫" : `Chưa đủ người lúc chốt sổ thì mỗi hộp trả ${formatVND(shipFeeFor(group.box?.size ?? "M"))} phí giao`} />
             </View>
           </View>
         </AnimInScale>
@@ -197,14 +197,14 @@ export default function GomDonDetailScreen() {
             ) : (
               <View style={styles.joinCard}>
                 <Text style={styles.sectionTitle}>Tham gia nhóm</Text>
-                <Text style={styles.label}>Số hộp của nhà bạn</Text>
+                <Text style={styles.label}>Số hộp của bạn</Text>
                 <QuantityStepper value={quantity} onChange={setQuantity} />
-                <Text style={styles.label}>Toà, tầng, số căn hộ</Text>
-                <TextInput style={styles.input} placeholder="Ví dụ: Toà S2, căn 1508" placeholderTextColor={colors.onSurfaceVariant} value={address} onChangeText={setAddress} maxLength={160} />
+                <Text style={styles.label}>Nhà, phòng</Text>
+                <TextInput style={styles.input} placeholder="Ví dụ: Nhà B6, phòng 412" placeholderTextColor={colors.onSurfaceVariant} value={address} onChangeText={setAddress} maxLength={160} />
                 {group.box ? (
                   <Text style={[styles.body, { marginTop: 12 }]}>
                     Tạm tính <Text style={{ fontWeight: "800", color: colors.primary }}>{formatVND(group.box.price * quantity)}</Text>
-                    {reached ? ", miễn phí giao." : `, phí giao ${formatVND(SHIP_FEE)} sẽ về 0₫ khi nhóm đủ người.`}
+                    {reached ? ", miễn phí giao." : `, phí giao ${formatVND(shipFeeFor(group.box.size, quantity))} sẽ về 0₫ khi nhóm đủ người.`}
                   </Text>
                 ) : null}
                 <Button label="Tham gia nhóm này" icon="group_add" onPress={join} loading={busy} style={{ alignSelf: "stretch", marginTop: 14 }} />
@@ -242,7 +242,7 @@ export default function GomDonDetailScreen() {
             <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Các nhà trong nhóm ({group.members.length})</Text>
           </View>
           {group.members.length === 0 ? (
-            <Text style={styles.body}>Chưa có ai. Nhà bạn vào đầu tiên nhé!</Text>
+            <Text style={styles.body}>Chưa có ai. Bạn vào đầu tiên nhé!</Text>
           ) : (
             <View style={{ gap: 8 }}>
               {group.members.map((m, i) => (
@@ -250,7 +250,7 @@ export default function GomDonDetailScreen() {
                   <View style={[styles.memberRow, m.me && { backgroundColor: colors.primaryContainer }]}>
                     <Avatar name={m.name} src={m.avatar_url} size={38} tone={m.me ? "primary" : "tertiary"} />
                     <Text style={[styles.memberName, m.me && { color: colors.onPrimaryContainer }]} numberOfLines={1}>
-                      {m.name ?? "Hàng xóm ẩn danh"}
+                      {m.name ?? "Thành viên ẩn danh"}
                       {m.me ? " (bạn)" : ""}
                     </Text>
                     <Chip label={`${m.quantity} hộp`} small tone={m.me ? "primary" : "surface"} />

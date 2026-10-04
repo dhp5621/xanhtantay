@@ -120,7 +120,7 @@ function FeedView({ feed }: { feed: Feed }) {
           <Text style={styles.eyebrow}>{greetingOf({ call_name: call })}, nhà mình ăn rau gì tuần này?</Text>
           <Text style={styles.heroTitle}>Thùng rau mẹ gửi</Text>
           <Text style={styles.heroBody}>
-            Rau theo mùa từ các vườn {pilot.provinces}. Đặt trước 18h00, 4h00 sáng bác nông dân cắt đúng lượng, 16h00 hộp rau có mặt ở sảnh nhà bạn.
+            Rau theo mùa từ các vườn {pilot.provinces}. Giao thứ Tư và Chủ nhật: đặt trước 18h00 hôm trước, 4h00 sáng bác nông dân cắt đúng lượng, 16h00 hộp rau có mặt ở điểm nhận của bạn.
           </Text>
           <View style={{ flexDirection: "row", gap: 10, flexWrap: "wrap", marginTop: 18, alignItems: "center" }}>
             <Button label="Chọn hộp rau" icon="inventory_2" onPress={() => router.push("/tabs/hop-rau")} />
@@ -182,7 +182,7 @@ function FeedView({ feed }: { feed: Feed }) {
         ) : (
           <View style={styles.hintCard}>
             <Icon name="group_add" size={24} color={colors.onSecondaryContainer} />
-            <Text style={[styles.muted, { flex: 1, color: colors.onSecondaryContainer }]}>Chưa có nhóm nào đang mở. Tạo nhóm cho toà nhà của bạn, đủ người là cả nhóm miễn phí giao.</Text>
+            <Text style={[styles.muted, { flex: 1, color: colors.onSecondaryContainer }]}>Chưa có nhóm nào đang mở. Tạo nhóm cho ký túc xá, khu trọ của bạn, đủ người là cả nhóm miễn phí giao.</Text>
           </View>
         )}
       </View>
@@ -232,7 +232,7 @@ function LandingView({ feed }: { feed: Feed }) {
           </View>
           <Text style={[styles.heroTitle, { fontSize: 32, lineHeight: 38 }]}>Thùng rau mẹ gửi</Text>
           <Text style={styles.heroBody}>
-            Đặt trước hộp rau theo mùa cho cả nhà. Bác nông dân chỉ cắt đúng lượng đã có người đặt, xe lạnh chở thẳng về sảnh chung cư của bạn ngay chiều hôm sau.
+            Hộp rau quê theo mùa cho sinh viên và người đi làm xa nhà ở Hà Nội, bố mẹ ở quê đặt cho con cũng được. Bác nông dân chỉ cắt đúng lượng đã có người đặt, xe lạnh chở thẳng về ký túc xá, khu trọ vào thứ Tư và Chủ nhật.
           </Text>
 
           <View style={{ gap: 10, marginTop: 20 }}>
@@ -242,11 +242,11 @@ function LandingView({ feed }: { feed: Feed }) {
                   <Icon name="inventory_2" size={22} color={colors.onPrimaryContainer} />
                 </View>
                 <View>
-                  <Text style={styles.ctaEyebrow}>Cho cư dân chung cư</Text>
+                  <Text style={styles.ctaEyebrow}>Cho người trẻ xa nhà</Text>
                   <Text style={styles.ctaTitle}>Đặt hộp rau</Text>
                 </View>
               </View>
-              <Text style={styles.muted}>Mua một lần, đăng ký gói định kỳ hoặc gom đơn cùng toà nhà. Theo dõi hộp rau theo từng giờ.</Text>
+              <Text style={styles.muted}>Mua một lần, đăng ký gói định kỳ hoặc gom đơn cùng ký túc xá, khu trọ. Theo dõi hộp rau theo từng giờ.</Text>
               <Text style={[styles.ctaLink, { color: colors.primary }]}>Dùng thử tài khoản khách →</Text>
             </PressableScale>
             <PressableScale style={styles.ctaCard} onPress={() => router.push("/dang-nhap?role=farmer")}>
@@ -259,7 +259,7 @@ function LandingView({ feed }: { feed: Feed }) {
                   <Text style={styles.ctaTitle}>Lệnh thu hoạch</Text>
                 </View>
               </View>
-              <Text style={styles.muted}>Mỗi ngày một tin nhắn, một nút xác nhận. Cắt đúng lượng, không lo rau thừa.</Text>
+              <Text style={styles.muted}>Mỗi chuyến một tin nhắn, một nút xác nhận. Cắt đúng lượng, không lo rau thừa.</Text>
               <Text style={[styles.ctaLink, { color: colors.tertiary }]}>Dùng thử tài khoản nhà vườn →</Text>
             </PressableScale>
           </View>
@@ -267,7 +267,7 @@ function LandingView({ feed }: { feed: Feed }) {
           <View style={{ flexDirection: "row", gap: 24, marginTop: 22, flexWrap: "wrap" }}>
             {[
               { v: feed.stats?.farms ?? 0, l: "vườn cùng trồng" },
-              { v: feed.stats?.clusters ?? 0, l: "cụm chung cư" },
+              { v: feed.stats?.clusters ?? 0, l: "điểm nhận" },
               { v: feed.stats?.boxes_delivered ?? 0, l: "hộp đã giao" },
             ].map((s) => (
               <View key={s.l}>
@@ -312,7 +312,7 @@ function LandingView({ feed }: { feed: Feed }) {
       {mixes.length > 0 && (
         <View>
           <Text style={styles.centerEyebrow}>Hộp mùa này</Text>
-          <Text style={styles.centerTitle}>Chọn mix, chọn size cho nhà bạn</Text>
+          <Text style={styles.centerTitle}>Chọn mix, chọn size cho phòng bạn</Text>
           <View style={{ gap: 12, marginTop: 16 }}>
             {mixes.map((mix, i) => (
               <AnimIn key={mix.mix} index={i}>
@@ -381,7 +381,7 @@ function LandingView({ feed }: { feed: Feed }) {
           <View style={{ flex: 1 }}>
             <Text style={[styles.cardTitle, { color: colors.onSecondaryContainer }]}>Đang thí điểm tại {pilot.city}</Text>
             <Text style={[styles.muted, { color: colors.onSecondaryContainer }]}>
-              Rau đến từ các vườn ở {pilot.provinces}, giao tới sảnh các cụm chung cư tham gia thí điểm. Chưa giao tận cửa từng căn hộ.
+              Rau đến từ các vườn ở {pilot.provinces}, giao tới các ký túc xá, khu trọ tham gia thí điểm vào thứ Tư và Chủ nhật. Chưa giao tận cửa từng phòng.
             </Text>
           </View>
         </View>

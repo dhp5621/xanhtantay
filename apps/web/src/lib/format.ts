@@ -38,10 +38,10 @@ export const CATEGORY_ICONS: Record<string, string> = { rau_la: "eco", cu_qua: "
 export const ORDER_TYPE_LABELS: Record<string, string> = { single: "Đơn lẻ", subscription: "Định kỳ", group: "Gom đơn" };
 export const ORDER_TYPE_ICONS: Record<string, string> = { single: "shopping_bag", subscription: "event_repeat", group: "groups" };
 
-export const STATUS_SHORT: Record<string, string> = { placed: "Đã vào sổ", harvesting: "Đang thu hoạch", loaded: "Trên xe lạnh", delivered: "Đã tới sảnh", cancelled: "Đã huỷ" };
+export const STATUS_SHORT: Record<string, string> = { placed: "Đã vào sổ", harvesting: "Đang thu hoạch", loaded: "Trên xe lạnh", delivered: "Đã tới điểm nhận", cancelled: "Đã huỷ" };
 export const STATUS_ICONS: Record<string, string> = { placed: "inventory", harvesting: "agriculture", loaded: "local_shipping", delivered: "apartment", cancelled: "cancel" };
 
-export const RUN_STATUS_LABELS: Record<string, string> = { allocated: "Đã gửi lệnh", harvesting: "Đang thu hoạch", loaded: "Trên xe lạnh", delivered: "Đã tới sảnh" };
+export const RUN_STATUS_LABELS: Record<string, string> = { allocated: "Đã gửi lệnh", harvesting: "Đang thu hoạch", loaded: "Trên xe lạnh", delivered: "Đã tới điểm nhận" };
 
 /** "04:00" style clock time in Vietnam. */
 export const formatClock = (d: Date | string) => new Date(d).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", timeZone: TZ });

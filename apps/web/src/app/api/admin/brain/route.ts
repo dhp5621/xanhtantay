@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { isAdmin } from "@/lib/admin-session";
-import { previewFor, runCutoff } from "@/lib/brain";
+import { minBatchBoxes, previewFor, runCutoff } from "@/lib/brain";
 import { nextDeliveryDate } from "@/lib/commerce";
 import { notifyCommands } from "@/lib/commands";
 
@@ -8,10 +8,10 @@ import { notifyCommands } from "@/lib/commands";
 export async function GET(req: Request) {
   if (!(await isAdmin())) return NextResponse.json({ error: "Không có quyền quản trị" }, { status: 401 });
   const date = new URL(req.url).searchParams.get("date") ?? nextDeliveryDate();
-  return NextResponse.json(await previewFor(date));
+  return NextResponse.json({ ...(await previewFor(date)), min_batch_boxes: minBatchBoxes() });
 }
 
-/** POST { date? } — close the book now and send the harvest commands. */
+/** POST { date? } — close the book now and send the harvest commands. This is the operator's override: it runs even below MIN_BATCH_BOXES. */
 export async function POST(req: Request) {
   if (!(await isAdmin())) return NextResponse.json({ error: "Không có quyền quản trị" }, { status: 401 });
   const body = (await req.json().catch(() => ({}))) as { date?: string };

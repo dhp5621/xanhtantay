@@ -20,7 +20,7 @@ export const ORDER_STATUSES = [
   { value: "placed", label: "Đã vào sổ" },
   { value: "harvesting", label: "Đang thu hoạch" },
   { value: "loaded", label: "Trên xe lạnh" },
-  { value: "delivered", label: "Đã tới sảnh" },
+  { value: "delivered", label: "Đã tới điểm nhận" },
   { value: "cancelled", label: "Đã huỷ" },
 ];
 export const GROUP_STATUSES = [
@@ -32,17 +32,23 @@ export const GROUP_STATUSES = [
 export const FREQUENCIES = [{ value: "weekly", label: "Mỗi tuần" }, { value: "biweekly", label: "Hai tuần" }, { value: "monthly", label: "Mỗi tháng" }];
 export const SIZES = [{ value: "S", label: "Nhỏ (S)" }, { value: "M", label: "Vừa (M)" }, { value: "L", label: "Lớn (L)" }];
 export const CATEGORIES = [{ value: "rau_la", label: "Rau lá" }, { value: "cu_qua", label: "Củ quả" }];
+export const PAYMENT_METHODS = [{ value: "transfer", label: "Chuyển khoản trước" }, { value: "cod", label: "Trả khi nhận hàng" }];
+export const PAYMENT_STATUSES = [{ value: "pending", label: "Chưa thanh toán" }, { value: "paid", label: "Đã thanh toán" }];
 
 export const SECTIONS: Section[] = [
   {
     key: "orders", table: "orders", label: "Đơn hàng", icon: "package_2", desc: "Mọi hộp đã đặt", canDelete: true,
     fields: [
       { key: "status", label: "Trạng thái", type: "select", options: ORDER_STATUSES },
+      { key: "payment_status", label: "Thanh toán (đánh dấu đã thanh toán ở đây)", type: "select", options: PAYMENT_STATUSES },
+      { key: "payment_method", label: "Cách thanh toán", type: "select", options: PAYMENT_METHODS },
       { key: "quantity", label: "Số hộp", type: "number", min: 1 },
-      { key: "delivery_date", label: "Ngày giao", type: "day" },
-      { key: "address", label: "Toà · căn hộ", type: "text" },
+      { key: "delivery_date", label: "Ngày giao (thứ Tư hoặc Chủ nhật)", type: "day" },
+      { key: "address", label: "Nhà · phòng", type: "text" },
+      { key: "recipient_name", label: "Người nhận (đơn đặt cho người thân)", type: "text" },
+      { key: "recipient_phone", label: "Điện thoại người nhận", type: "text" },
       { key: "note", label: "Ghi chú", type: "textarea" },
-      { key: "care_message", label: "Lời nhắn quan tâm", type: "textarea" },
+      { key: "care_message", label: "Lời nhắn quan tâm / lời nhắn của người gửi", type: "textarea" },
     ],
     createFields: [],
   },
@@ -81,7 +87,7 @@ export const SECTIONS: Section[] = [
     ],
   },
   {
-    key: "farm_capacity", table: "farm_capacity", label: "Năng suất", icon: "speed", desc: "Mỗi nông hộ đăng ký cắt được bao nhiêu ký mỗi ngày", canDelete: true,
+    key: "farm_capacity", table: "farm_capacity", label: "Năng suất", icon: "speed", desc: "Mỗi nông hộ đăng ký cắt được bao nhiêu ký mỗi ngày thu hoạch", canDelete: true,
     fields: [
       { key: "farm_id", label: "Vườn", type: "text", required: true },
       { key: "produce_id", label: "Rau củ", type: "text", required: true },
@@ -114,23 +120,25 @@ export const SECTIONS: Section[] = [
       { key: "active", label: "Đang chạy", type: "boolean" },
       { key: "frequency", label: "Tần suất", type: "select", options: FREQUENCIES },
       { key: "quantity", label: "Số hộp", type: "number", min: 1 },
-      { key: "next_delivery", label: "Hộp tiếp theo", type: "day" },
+      { key: "next_delivery", label: "Hộp tiếp theo (thứ Tư hoặc Chủ nhật)", type: "day" },
+      { key: "recipient_name", label: "Người nhận (gói đặt cho người thân)", type: "text" },
+      { key: "recipient_phone", label: "Điện thoại người nhận", type: "text" },
       { key: "care_message", label: "Lời nhắn quan tâm (để trống: chọn ngẫu nhiên mỗi kỳ)", type: "textarea" },
     ],
     createFields: [],
   },
   {
-    key: "group_orders", table: "group_orders", label: "Gom đơn", icon: "groups", desc: "Nhóm mua chung theo chung cư", canDelete: true,
+    key: "group_orders", table: "group_orders", label: "Gom đơn", icon: "groups", desc: "Nhóm mua chung theo điểm nhận", canDelete: true,
     fields: [
       { key: "title", label: "Tên nhóm", type: "text", required: true },
       { key: "status", label: "Trạng thái", type: "select", options: GROUP_STATUSES },
-      { key: "min_members", label: "Số nhà tối thiểu", type: "number", min: 1 },
-      { key: "delivery_date", label: "Ngày giao", type: "day" },
+      { key: "min_members", label: "Số người tối thiểu", type: "number", min: 1 },
+      { key: "delivery_date", label: "Ngày giao (thứ Tư hoặc Chủ nhật)", type: "day" },
     ],
     createFields: [],
   },
   {
-    key: "clusters", table: "clusters", label: "Chung cư", icon: "apartment", desc: "Cụm chung cư nhận hàng tại Hà Nội", canDelete: true,
+    key: "clusters", table: "clusters", label: "Điểm nhận", icon: "apartment", desc: "Ký túc xá, khu trọ nhận hàng tại Hà Nội", canDelete: true,
     fields: [
       { key: "name", label: "Tên", type: "text", required: true },
       { key: "address", label: "Địa chỉ", type: "text", required: true },
@@ -147,8 +155,8 @@ export const SECTIONS: Section[] = [
       { key: "email", label: "Email", type: "text" },
       { key: "phone", label: "Điện thoại", type: "text" },
       { key: "role", label: "Vai trò", type: "select", options: [{ value: "customer", label: "Khách hàng" }, { value: "farmer", label: "Nhà vườn" }] },
-      { key: "cluster_id", label: "Chung cư", type: "text" },
-      { key: "address", label: "Toà · căn hộ", type: "text" },
+      { key: "cluster_id", label: "Điểm nhận", type: "text" },
+      { key: "address", label: "Nhà · phòng", type: "text" },
     ],
   },
 ];

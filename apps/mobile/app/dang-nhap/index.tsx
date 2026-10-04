@@ -51,7 +51,7 @@ export default function DangNhapScreen() {
             <HeroBlob size={140} right={120} top={90} delay={1500} color="rgba(255,255,255,.18)" />
             <Icon name="eco" size={52} filled color={colors.primary} />
             <Text style={styles.title}>Xanh Tận Tay</Text>
-            <Text style={styles.tagline}>Thùng rau mẹ gửi: đặt trước 18h00, chiều mai rau tới sảnh</Text>
+            <Text style={styles.tagline}>Thùng rau mẹ gửi: giao thứ Tư và Chủ nhật, đặt trước 18h00 hôm trước</Text>
           </AnimInScale>
 
           <AnimIn delay={80}>

@@ -5,6 +5,7 @@ import * as schema from "@/db/schema";
 import { isAdmin } from "@/lib/admin-session";
 import { sectionByKey, type Field, type AdminTableName } from "@/lib/admin-config";
 import { syncGroupCount } from "@/lib/queries";
+import { shipFeeFor } from "@/lib/commerce";
 
 const TABLES: Record<AdminTableName, unknown> = {
   users: schema.users, clusters: schema.clusters, farms: schema.farms, produce: schema.produce, farm_capacity: schema.farm_capacity,
@@ -58,8 +59,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ table:
     if (!Object.keys(updates).length) return NextResponse.json({ error: "Không có gì để cập nhật" }, { status: 400 });
     // Order money follows quantity.
     if (g.section.table === "orders" && "quantity" in updates) {
-      const [o] = await db.select({ o: schema.orders, price: schema.boxes.price }).from(schema.orders).innerJoin(schema.boxes, eq(schema.orders.box_id, schema.boxes.id)).where(eq(schema.orders.id, id));
-      if (o) { updates.subtotal = o.price * Number(updates.quantity); updates.total = o.price * Number(updates.quantity) + o.o.ship_fee; }
+      const [o] = await db.select({ o: schema.orders, price: schema.boxes.price, size: schema.boxes.size }).from(schema.orders).innerJoin(schema.boxes, eq(schema.orders.box_id, schema.boxes.id)).where(eq(schema.orders.id, id));
+      if (o) {
+        // The delivery fee is per box, so it follows quantity too; an order that ships free (full group) stays free.
+        const ship = o.o.ship_fee > 0 ? shipFeeFor(o.size, Number(updates.quantity)) : 0;
+        updates.subtotal = o.price * Number(updates.quantity); updates.ship_fee = ship; updates.total = o.price * Number(updates.quantity) + ship;
+      }
     }
     // A status set by hand gets the time of its stage, so tracking and the refund window stay right.
     if (g.section.table === "orders" && typeof updates.status === "string") {
@@ -112,7 +117,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ table
       case "subscriptions": await db.update(schema.orders).set({ subscription_id: null }).where(eq(schema.orders.subscription_id, id)); break;
       case "clusters": {
         const [{ n }] = (await db.select({ n: sql<number>`count(*)::int` }).from(schema.group_orders).where(eq(schema.group_orders.cluster_id, id)));
-        if (n > 0) return NextResponse.json({ error: "Chung cư này còn nhóm gom đơn, hãy xoá nhóm trước" }, { status: 409 });
+        if (n > 0) return NextResponse.json({ error: "Điểm nhận này còn nhóm gom đơn, hãy xoá nhóm trước" }, { status: 409 });
         break;
       }
       case "users": {

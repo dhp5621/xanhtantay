@@ -1,7 +1,7 @@
 # Xanh Tận Tay — product pivot (28/9) and API contract
 
 ## Product in one paragraph
-PULL model. Customers in **Hà Nội apartment clusters** pre-order seasonal **boxes** (three mixes a season such as "Thùng rau mẹ gửi", each in sizes S/M/L and lasting 7 days, mixed from several farms in **Bắc Kạn** and **Tuyên Quang**). Every day at **18:00** the book closes; the brain aggregates demand and sends each farmer exactly one **harvest command** sized to their registered capacity (0 % surplus). Farmers cut at **4:00**, the cold truck loads at **6:00**, boxes reach the building lobby at **16:00**. Order before 18:00 → delivered tomorrow.
+PULL model. **Students and young workers living away from home in Hà Nội** (dormitories, rented rooms; the buyer may be a parent back home) pre-order seasonal **boxes** (three mixes a season such as "Thùng rau mẹ gửi", each in sizes S/M/L = 3 / 6 / 12 kg for 1 / 2 / 3–4 people, one price per size for every mix: 190,000₫ / 320,000₫ / 520,000₫, lasting 7 days, mixed from several farms in **Bắc Kạn** and **Tuyên Quang**). Boxes are delivered on fixed days, **Wednesday and Sunday**; the book for a delivery day closes at **18:00 the day before**. The brain aggregates demand and sends each farmer exactly one **harvest command** sized to their registered capacity (0 % surplus); the automatic cut-off only opens a batch that reaches the minimum (`MIN_BATCH_BOXES`, default 240). Farmers cut at **4:00**, the cold truck loads at **6:00**, boxes reach the pickup point (a "cluster": a dormitory or an area of rented rooms) at **16:00**. See "Proposal alignment" at the end for the rules added with this change.
 
 Removed for good: buying single vegetables, cart, product catalog, recipes/AI kitchen, meal-plan generator, farm diary, livestream, loyalty points/tree, farmer product/stock/diary management, ads.
 Kept: subscription, group buying (per cluster), emotional order tracking, QR traceability, avatars, push notifications, light/dark theme, the Material 3 Expressive design.
@@ -16,15 +16,15 @@ See `packages/types/src/index.ts` (`Box`, `BoxItem`, `BoxMealDay`, `Order`, `Ord
 `OrderStatus = "placed" | "harvesting" | "loaded" | "delivered" | "cancelled"`. Dates named `*_date` / `next_delivery` are `"YYYY-MM-DD"` strings; `*_at` are ISO timestamps.
 
 Emotional tracking copy (use `ORDER_TIMELINE`):
-1. placed — "Đơn đã vào sổ, 18h00 chốt và gửi lệnh về vườn"
+1. placed — "Đơn đã vào sổ, 18h00 hôm trước ngày giao chốt và gửi lệnh về vườn"
 2. harvesting — "4h00: Rau đang được {bác Tư} thu hoạch"
 3. loaded — "6h00: Hàng lên xe lạnh về phố"
-4. delivered — "16h00: Rau quê đã có tại sảnh chung cư nhà bạn"
+4. delivered — "16h00: Rau quê đã có tại điểm nhận của bạn"
 
 ## Endpoints (all under `/api`)
 
 ### Catalog
-- `GET /boxes` → `{ boxes: Box[], delivery_date, cutoff_at, ship_fee }`.
+- `GET /boxes` → `{ boxes: Box[], delivery_date, cutoff_at, ship_fee, ship_fees: { S, M, L } }`. `delivery_date` is the earliest delivery day still open (a Wednesday or a Sunday), `cutoff_at` its cut-off (18:00 Vietnam time the day before). `ship_fees` is the delivery fee per box by size (15,000 / 20,000 / 30,000₫); `ship_fee` is the size S fee, kept for older clients.
   `Box = { id, slug, name, mix, mix_name, size: "S"|"M"|"L", weight_kg: number, price, season, servings, days, description, image_url, active, meal_plan: BoxMealDay[], items: BoxItem[] }`
   `BoxItem = { produce_id, name, image_url, category, quantity_kg, farms: { id, name, slug, province, location }[] }`
   `BoxMealDay = { day, meals: { time: "Trưa"|"Tối", title, uses: string[], note?, recipe: { minutes?, ingredients: string[], steps: string[] } }[] }`
@@ -36,21 +36,21 @@ Emotional tracking copy (use `ORDER_TIMELINE`):
 
 ### Orders
 - `GET /orders` (auth) → `Order[]`, newest delivery first. Each has `box` (brief), `cluster`, `allocated: boolean` (cut-off done), `farmers: { farm, slug, farmer, location, confirmed, items }[]`.
-- `POST /orders` `{ box_id, quantity?, cluster_id?, address?, note?, care_message? }` → 201 `Order & { box, cluster, impact: { toFarmers, weightKg, meals, servings } }`. Ship fee 15,000₫ for one-off orders.
-- `GET /orders/{id}` public trace → `{ id, status, type, quantity, delivery_date, created_at, harvested_at, loaded_at, delivered_at, cutoff_at, allocated, cluster: { name, district } | null, box: { id, slug, name, size, weight_kg, image_url, days, servings, meal_plan }, contents: { name, image_url, quantity_kg, farms: { name, slug, location, farmer }[] }[], farms: { name, slug, location, farmer, confirmed }[], mine: boolean }` and, when `mine`, also `{ total, subtotal, ship_fee, note, care_message, address, group_order_id }`.
+- `POST /orders` `{ box_id, quantity?, cluster_id?, address?, note?, care_message?, recipient_name?, recipient_phone?, payment_method?: "transfer"|"cod" }` → 201 `Order & { box, cluster, impact: { toFarmers, toVillage, weightKg, meals, servings } }`. Delivered on the earliest open delivery day. Ship fee = fee of the box size × quantity. `impact.toFarmers` is the amount paid to the farms at the garden (S 65,000 / M 112,000 / L 185,000₫ per box × quantity); `toVillage` the village team allowance (7,000 / 12,000 / 20,000₫ per box).
+- `GET /orders/{id}` public trace → `{ id, status, type, quantity, delivery_date, created_at, harvested_at, loaded_at, delivered_at, cutoff_at, allocated, cluster: { name, district } | null, box: { id, slug, name, size, weight_kg, image_url, days, servings, meal_plan }, contents: { name, image_url, quantity_kg, farms: { name, slug, location, farmer }[] }[], farms: { name, slug, location, farmer, confirmed }[], mine: boolean }` and, when `mine`, also `{ total, subtotal, ship_fee, note, care_message, address, group_order_id, recipient_name, recipient_phone, payment_method, payment_status }`. Each `contents` line also has `category` (`"rau_la" | "cu_qua"`). The public response never contains the buyer or the recipient.
 - `POST /orders/{id}/cancel` — only while `status === "placed"` and not `allocated`.
 
 ### Subscriptions ("Gói định kỳ")
 - `GET /subscriptions` → `Subscription[]` with `box`, `cluster`.
-- `POST /subscriptions` `{ box_id, quantity?, frequency?: "weekly"|"biweekly"|"monthly", cluster_id?, address?, care_message? }` → 201. Free delivery. `care_message` goes with every box; left out, each box gets one from the list. 409 if an active one exists for the same box.
-- `PATCH /subscriptions` `{ id, active?, quantity?, frequency?, box_id? }`.
+- `POST /subscriptions` `{ box_id, quantity?, frequency?: "weekly"|"biweekly"|"monthly", cluster_id?, address?, care_message?, recipient_name?, recipient_phone? }` → 201. The first box is for the earliest open delivery day. Each box pays the delivery fee of its size and is prepaid by transfer. `care_message` goes with every box; left out, each box gets one from the list. 409 if an active one exists for the same box.
+- `PATCH /subscriptions` `{ id, active?, quantity?, frequency?, box_id?, next_delivery? }`. `next_delivery` (`YYYY-MM-DD`) moves the next box to another delivery day: a Wednesday or Sunday from the earliest open day up to 28 days later, and only until 24 hours before the cut-off of the box being moved (400 `{ error }` otherwise). Later boxes follow from the new date.
 
 ### Group buying ("Gom đơn chung", per cluster)
 - `GET /groups?cluster_id=` → open `GroupOrder[]` with `box`, `cluster`.
-- `POST /groups` `{ box_id, cluster_id?, title, min_members, delivery_date?, quantity?, address?, care_message? }` → 201 (creator joins).
+- `POST /groups` `{ box_id, cluster_id?, title, min_members, delivery_date?, quantity?, address?, care_message?, recipient_name?, recipient_phone?, payment_method? }` → 201 (creator joins).
 - `GET /groups/{id}` → group + `{ cutoff_at, closed, joined, members: { id, name, avatar_url, quantity, me }[] }`
-- `POST /groups/{id}/join` `{ quantity?, address?, care_message? }` → 201 Order. `POST /groups/{id}/leave`.
-  Enough members at cut-off ⇒ everyone's ship fee becomes 0.
+- `POST /groups/{id}/join` `{ quantity?, address?, care_message?, recipient_name?, recipient_phone?, payment_method? }` → 201 Order. `POST /groups/{id}/leave`.
+  Member orders carry the fee of the box size × quantity. Enough members at cut-off ⇒ everyone's ship fee becomes 0.
 
 ### Farmer (extremely minimal)
 - `GET /farmer/commands` → `{ farm: { id, name, location } | null, current: HarvestCommand | null, commands: HarvestCommand[] }`
@@ -94,7 +94,7 @@ Emotional tracking copy (use `ORDER_TIMELINE`):
 
 ## Groups: delivery day
 
-`POST /groups` accepts `delivery_date` (`YYYY-MM-DD`) from the earliest open day (`delivery_date` of `GET /boxes`) up to 14 days later. Only the day is chosen; delivery is always 16:00, cut-off 18:00 the day before.
+`POST /groups` accepts `delivery_date` (`YYYY-MM-DD`) from the earliest open day (`delivery_date` of `GET /boxes`) up to 14 days later, and it must be a delivery day (Wednesday or Sunday; 400 otherwise). Only the day is chosen; delivery is always 16:00, cut-off 18:00 the day before.
 
 ## Farmer: farm profile
 
@@ -144,3 +144,14 @@ Shown on an order once it is `delivered`, for 3 days after `delivered_at`. One r
 - `GET /users/me` returns `gender`, `salutation`, `short_name`, and the resolved **`call_name`** (e.g. "Cô Tư") and **`pronoun`** (e.g. "cô"). Clients must use `pronoun` wherever the app addresses the signed-in person in its own text (never a hardcoded "bác"), capitalised at the start of a sentence, and `call_name` in greetings.
 - `PATCH /users/me` accepts `gender` (`"male" | "female" | null`), `salutation` (letters only, max 12, empty string = follow gender) and `short_name` (max 24, empty = given name), and returns the same fields including the new `call_name` and `pronoun`.
 - Accounts may have their own password (set by the admin); sign-in is unchanged for clients.
+
+## Proposal alignment: delivery days, fees, gift orders, payment, storage
+
+- **Delivery days.** Boxes are delivered on **Wednesdays and Sundays** only. Every `delivery_date` / `next_delivery` the API hands out or accepts from customers is one of those days; its cut-off is 18:00 Vietnam time the day before. Clients offer only those days (single orders take the earliest open one; groups and moved subscriptions pick among the next ones).
+- **Minimum batch.** `GET /cron/cutoff` runs daily at 18:00 but only closes a book on the evening before a delivery day, and only when the batch has at least `MIN_BATCH_BOXES` boxes (env, default 240). Otherwise it answers `{ skipped: true, reason: "not_delivery_day" | "below_minimum", delivery_date, boxes?, min_batch_boxes? }` and sends no harvest command. `POST /admin/brain` (the operator's button) closes the book regardless of the minimum; `GET /admin/brain` adds `min_batch_boxes` to the preview.
+- **Delivery fee.** Per box by size: S 15,000₫, M 20,000₫, L 30,000₫ (`ship_fees` of `GET /boxes`). One-off orders and subscription orders pay it × quantity. Group members pay it too unless the group reaches `min_members` at cut-off, in which case every member's `ship_fee` becomes 0.
+- **Farmer share.** No percentage. The farms are paid at the garden S 65,000₫, M 112,000₫, L 185,000₫ per box (`impact.toFarmers` = that × quantity), plus a village team allowance of S 7,000₫, M 12,000₫, L 20,000₫ per box (`impact.toVillage`).
+- **Gift orders ("Đặt cho người thân").** `recipient_name` (2 to 80 characters) and `recipient_phone` (Vietnamese number, `0…` or `+84…`) on `POST /orders`, `POST /subscriptions`, `POST /groups`, `POST /groups/{id}/join`: both or neither, 400 `{ error }` when only one is usable. The order's `cluster_id` and `address` are then the recipient's, and the buyer's saved pickup point is left alone. `care_message` is the sender's own note ("lời nhắn của người gửi"). `Order` and `Subscription` return `recipient_name`, `recipient_phone` (null on ordinary orders); a subscription copies them onto every order it creates. They are owner-only on `GET /orders/{id}`.
+- **Payment.** `Order.payment_method`: `"transfer"` (chuyển khoản trước) | `"cod"` (trả khi nhận); `Order.payment_status`: `"pending"` | `"paid"`. Subscription orders and gift orders are always `transfer`. Otherwise `payment_method` on `POST /orders`, `POST /groups`, `POST /groups/{id}/join` chooses; left out it is `cod`. There is no online payment: the operator marks an order `paid` in `/admin` (orders table).
+- **Farmer payout rule** (text shown with the harvest command, no accounting): 50% when the batch is confirmed, 50% within 48 hours after delivery completes.
+- **Storage guidance.** Derived on the client from the `category` of the produce (`BoxItem.category` on `GET /boxes`, `contents[].category` on `GET /orders/{id}`): `rau_la` → dry, wrapped, in the fridge at 3–5°C; `cu_qua` → a dry, airy place; plus a short tip. Web: `storageTips` in `apps/web/src/lib/commerce.ts`; mobile: `storageTips` in `apps/mobile/constants/commerce.ts`.

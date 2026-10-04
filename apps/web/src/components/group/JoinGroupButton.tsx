@@ -22,7 +22,7 @@ export function JoinGroupButton({ groupId, joined, closed }: { groupId: string; 
       const res = await fetch(`/api/groups/${groupId}/${action}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(action === "join" ? { quantity: qty } : {}) });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error ?? (action === "join" ? "Không tham gia được" : "Không rời được"));
-      show(action === "join" ? "Bạn đã vào nhóm! Rủ thêm hàng xóm để cả nhóm miễn ship." : "Bạn đã rời nhóm, hộp rau trong nhóm đã huỷ.", { kind: "success" });
+      show(action === "join" ? "Bạn đã vào nhóm! Rủ thêm bạn cùng khu để cả nhóm miễn phí giao." : "Bạn đã rời nhóm, hộp rau trong nhóm đã huỷ.", { kind: "success" });
       router.refresh();
     } catch (e) { show(e instanceof Error ? e.message : "Có lỗi xảy ra", { kind: "error" }); }
     finally { setLoading(false); setConfirm(false); }
@@ -42,7 +42,7 @@ export function JoinGroupButton({ groupId, joined, closed }: { groupId: string; 
             <div className="m3-scrim" onClick={() => setConfirm(false)} aria-hidden />
             <div className="m3-dialog" role="alertdialog" aria-modal="true" style={{ width: "min(420px, calc(100vw - 32px))" }}>
               <h2 className="headline-sm" style={{ marginBottom: 6 }}>Rời nhóm gom đơn?</h2>
-              <p className="body-md text-on-surface-variant">Hộp rau của bạn trong nhóm sẽ bị huỷ và nhóm có thể mất điều kiện miễn ship. Bạn vào lại được trước giờ chốt sổ.</p>
+              <p className="body-md text-on-surface-variant">Hộp rau của bạn trong nhóm sẽ bị huỷ và nhóm có thể mất điều kiện miễn phí giao. Bạn vào lại được trước giờ chốt sổ.</p>
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 22 }}>
                 <button className="m3-btn m3-btn-text" onClick={() => setConfirm(false)}>Ở lại</button>
                 <button className="m3-btn m3-btn-error" onClick={() => call("leave")} disabled={loading}>{loading ? <span className="m3-loader sm" /> : <Icon name="logout" />}<span>Rời nhóm</span></button>

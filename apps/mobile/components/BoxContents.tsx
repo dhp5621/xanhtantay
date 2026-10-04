@@ -2,6 +2,7 @@ import { View, Text, StyleSheet } from "react-native";
 import { router } from "expo-router";
 import { colors, shape, type, useStyles, type Colors } from "../constants/theme";
 import { formatKg } from "../constants/format";
+import { storageTips } from "../constants/commerce";
 import { AnimIn, PressableScale } from "./motion";
 import { SmartImage } from "./SmartImage";
 import { Icon } from "./Icon";
@@ -9,14 +10,17 @@ import { Icon } from "./Icon";
 export interface ContentLine {
   name: string;
   image_url: string | null;
+  /** "rau_la" | "cu_qua": decides the storage guidance under the list */
+  category?: string;
   quantity_kg: number;
   farms: { name: string; slug: string; province?: string; location?: string; farmer?: string | null }[];
 }
 
-/** What is inside a box: each produce with its weight, photo and the farms that grow it. */
+/** What is inside a box: each produce with its weight, photo and the farms that grow it, then how to keep it fresh. */
 export function BoxContents({ items, quantity = 1, linkFarms = true }: { items: ContentLine[]; quantity?: number; linkFarms?: boolean }) {
   const styles = useStyles(makeStyles);
   if (!items?.length) return <Text style={styles.muted}>Danh sách rau trong hộp đang được cập nhật theo mùa.</Text>;
+  const tips = storageTips(items.map((it) => it.category));
   return (
     <View style={{ gap: 8 }}>
       {items.map((it, i) => (
@@ -53,6 +57,20 @@ export function BoxContents({ items, quantity = 1, linkFarms = true }: { items: 
           </View>
         </AnimIn>
       ))}
+      {tips.length ? (
+        <View style={styles.storage}>
+          <Text style={styles.storageTitle}>Bảo quản cho rau tươi lâu</Text>
+          {tips.map((t) => (
+            <View key={t.title} style={styles.tip}>
+              <Icon name={t.icon} size={18} filled color={colors.primary} />
+              <Text style={styles.tipText}>
+                <Text style={styles.tipTitle}>{t.title}: </Text>
+                {t.text}
+              </Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -67,4 +85,9 @@ const makeStyles = (c: Colors) =>
     farms: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 6 },
     farmChip: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: c.surfaceContainer, borderRadius: shape.full, paddingVertical: 4, paddingHorizontal: 10, maxWidth: 240 },
     farmText: { ...type.labelLarge, color: c.onSurfaceVariant, fontSize: 12, lineHeight: 16, flexShrink: 1 },
+    storage: { backgroundColor: c.surfaceContainerLow, borderRadius: shape.lg, padding: 14, gap: 8, marginTop: 4 },
+    storageTitle: { ...type.titleMedium, color: c.onSurface, fontSize: 15 },
+    tip: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
+    tipText: { ...type.bodyMedium, color: c.onSurfaceVariant, fontSize: 13, lineHeight: 19, flex: 1 },
+    tipTitle: { fontWeight: "700", color: c.onSurface },
   });

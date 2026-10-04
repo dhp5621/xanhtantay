@@ -62,7 +62,7 @@ async function farmersByRun(runIds: string[]) {
   return out;
 }
 
-/** Everything the QR page shows. Never exposes who bought the box. */
+/** Everything the QR page shows, plus the owner-only fields at the end (the order API strips them for anyone else). The public page never shows who bought or receives the box. */
 export async function getOrderTrace(id: string) {
   const [row] = await db.select({ o: orders, cluster: clusters, run: harvest_runs }).from(orders).leftJoin(clusters, eq(orders.cluster_id, clusters.id)).leftJoin(harvest_runs, eq(orders.run_id, harvest_runs.id)).where(eq(orders.id, id));
   if (!row) return null;
@@ -72,7 +72,7 @@ export async function getOrderTrace(id: string) {
   // For each produce in the box: the farms that actually cut it for this run (or, before cut-off, the registered growers).
   const contents = box.items.map((it) => {
     const cut = growers.filter((g) => g.items.some((x) => x.name === it.name));
-    return { name: it.name, image_url: it.image_url, quantity_kg: it.quantity_kg * row.o.quantity, farms: cut.length ? cut.map((g) => ({ name: g.farm, slug: g.slug, location: g.location, farmer: g.farmer })) : it.farms.map((f) => ({ name: f.name, slug: f.slug, location: f.location, farmer: null as string | null })) };
+    return { name: it.name, image_url: it.image_url, category: it.category, quantity_kg: it.quantity_kg * row.o.quantity, farms: cut.length ? cut.map((g) => ({ name: g.farm, slug: g.slug, location: g.location, farmer: g.farmer })) : it.farms.map((f) => ({ name: f.name, slug: f.slug, location: f.location, farmer: null as string | null })) };
   });
   return {
     id: row.o.id, status: row.o.status, type: row.o.type, quantity: row.o.quantity, delivery_date: row.o.delivery_date, created_at: row.o.created_at,
@@ -83,6 +83,7 @@ export async function getOrderTrace(id: string) {
     contents,
     farms: growers.map((g) => ({ name: g.farm, slug: g.slug, location: g.location, farmer: g.farmer, confirmed: g.confirmed })),
     user_id: row.o.user_id, total: row.o.total, subtotal: row.o.subtotal, ship_fee: row.o.ship_fee, note: row.o.note, care_message: row.o.care_message, address: row.o.address, group_order_id: row.o.group_order_id,
+    recipient_name: row.o.recipient_name, recipient_phone: row.o.recipient_phone, payment_method: row.o.payment_method, payment_status: row.o.payment_status,
   };
 }
 

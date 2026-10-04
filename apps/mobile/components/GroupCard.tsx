@@ -7,7 +7,7 @@ import { Chip } from "./ui";
 import { Icon } from "./Icon";
 import { EmojiText } from "./EmojiText";
 
-/** An open group order of one apartment cluster with its progress towards free delivery. */
+/** An open group order of one pickup point with its progress towards free delivery. */
 export function GroupCard({ group, mine, onPress, style }: { group: GroupOrder; mine?: boolean; onPress?: () => void; style?: StyleProp<ViewStyle> }) {
   const styles = useStyles(makeStyles);
   const reached = group.current_members >= group.min_members;
@@ -22,7 +22,7 @@ export function GroupCard({ group, mine, onPress, style }: { group: GroupOrder; 
             {group.cluster ? ` · ${group.cluster.name}` : ""}
           </Text>
         </View>
-        {reached ? <Chip icon="local_shipping" label="Miễn phí giao" tone="primary" small /> : <Chip label={`Thiếu ${group.min_members - group.current_members} nhà`} small />}
+        {reached ? <Chip icon="local_shipping" label="Miễn phí giao" tone="primary" small /> : <Chip label={`Thiếu ${group.min_members - group.current_members} người`} small />}
       </View>
       <AnimatedProgress value={pct} wavy={!reached} color={reached ? colors.primary : colors.secondary} height={6} track={colors.surfaceContainerHighest} />
       <View style={styles.footer}>
@@ -37,7 +37,7 @@ export function GroupCard({ group, mine, onPress, style }: { group: GroupOrder; 
       {mine ? (
         <View style={styles.mine}>
           <Icon name="apartment" size={13} color={colors.primary} />
-          <Text style={styles.mineText}>Toà nhà của bạn</Text>
+          <Text style={styles.mineText}>Điểm nhận của bạn</Text>
         </View>
       ) : null}
     </>

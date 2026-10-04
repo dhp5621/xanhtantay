@@ -15,7 +15,7 @@ import { BoxMenu } from "./BoxMenu";
 
 /**
  * The journey of one box, shared by the order detail and the public QR trace: which farms cut it and
- * when, how it travelled, what is inside and the menu that comes with it. Never shows who bought it.
+ * when, how it travelled, what is inside (with how to store it) and the menu that comes with it. Never shows who bought or receives it.
  */
 export function TraceView({ trace, linkFarms = true, lead, menuTarget, children }: { trace: OrderTrace; linkFarms?: boolean; lead?: ReactNode; /** set on the buyer's own order; the public trace keeps the menu read-only */ menuTarget?: MenuTarget; children?: ReactNode }) {
   const styles = useStyles(makeStyles);
@@ -50,7 +50,7 @@ export function TraceView({ trace, linkFarms = true, lead, menuTarget, children 
           </View>
           <View style={styles.facts}>
             <Fact icon="event" label="Ngày giao" value={formatDay(trace.delivery_date)} />
-            {trace.cluster ? <Fact icon="apartment" label="Điểm nhận" value={`Sảnh ${trace.cluster.name}, ${trace.cluster.district}`} /> : null}
+            {trace.cluster ? <Fact icon="apartment" label="Điểm nhận" value={`${trace.cluster.name}, ${trace.cluster.district}`} /> : null}
             <Fact icon="agriculture" label="Thu hoạch" value={trace.harvested_at ? formatDateTime(trace.harvested_at) : trace.status === "cancelled" ? "Đơn đã huỷ trước khi thu hoạch" : "4h00 sáng ngày giao, sau khi chốt sổ"} />
             <Fact icon="schedule" label="Đặt lúc" value={formatDateTime(trace.created_at)} />
           </View>

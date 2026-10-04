@@ -4,15 +4,15 @@ import { HeroBlob } from "./motion";
 import { Icon } from "./Icon";
 import { EmojiText } from "./EmojiText";
 
-/** "Lời nhắn từ quê" — the caring note that comes with every order. */
-export function CareMessage({ message, style }: { message: string; style?: StyleProp<ViewStyle> }) {
+/** "Lời nhắn từ quê" — the caring note that comes with every order. On a gift order `label` says it is the sender's own. */
+export function CareMessage({ message, label = "Lời nhắn từ quê", style }: { message: string; label?: string; style?: StyleProp<ViewStyle> }) {
   const styles = useStyles(makeStyles);
   return (
     <View style={[styles.card, style]}>
       <HeroBlob size={180} right={-70} top={-90} color={colors.tintOverlay} />
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 }}>
         <Icon name="favorite" size={20} filled color={colors.onPrimaryContainer} />
-        <Text style={styles.eyebrow}>Lời nhắn từ quê</Text>
+        <Text style={styles.eyebrow}>{label}</Text>
       </View>
       <EmojiText style={styles.message}>{message}</EmojiText>
     </View>

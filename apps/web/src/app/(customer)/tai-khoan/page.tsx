@@ -63,7 +63,7 @@ export default async function TaiKhoanPage() {
     menuItems = [
       { href: "/don-hang", icon: "package_2", label: "Đơn hàng của tôi", desc: "Hành trình hộp rau và thực đơn" },
       { href: "/dinh-ky", icon: "event_repeat", label: "Gói định kỳ", desc: "Hộp rau tự về mỗi kỳ" },
-      { href: "/gom-don", icon: "groups", label: "Gom đơn chung", desc: "Cùng toà nhà, miễn ship" },
+      { href: "/gom-don", icon: "groups", label: "Gom đơn chung", desc: "Cùng điểm nhận, đủ nhóm miễn phí giao" },
       { href: "/farms", icon: "potted_plant", label: "Nông hộ đối tác", desc: "Ai trồng rau cho hộp của bạn" },
     ];
   }

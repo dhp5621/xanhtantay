@@ -1,8 +1,8 @@
 export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { db } from "@/db";
-import { users, farms, orders, subscriptions, group_orders, push_devices, harvest_runs, harvest_commands, farm_capacity, produce, change_requests, callName, type FarmChange, type CapacityChange, type ProduceProposal } from "@/db/schema";
-import { and, count, desc, eq, ne, sum } from "drizzle-orm";
+import { users, farms, boxes, orders, subscriptions, group_orders, push_devices, harvest_runs, harvest_commands, farm_capacity, produce, change_requests, callName, type FarmChange, type CapacityChange, type ProduceProposal } from "@/db/schema";
+import { count, desc, eq, sum } from "drizzle-orm";
 import { Icon } from "@/components/ui/Icon";
 import { AdminPush } from "@/components/admin/AdminPush";
 import { RequestReview } from "@/components/admin/RequestReview";
@@ -10,19 +10,21 @@ import { FARM_FIELD_LABELS } from "@/lib/requests";
 import { CutoffBanner } from "@/components/ui/CutoffBanner";
 import { CutoffButton, AdvanceRunButton } from "@/components/admin/BrainControls";
 import { formatVND, RUN_STATUS_LABELS, formatClock } from "@/lib/format";
-import { previewFor, forecast } from "@/lib/brain";
-import { addressFarmer, cutoffInstant, FARMER_SHARE, formatKg, formatYMD, isPastCutoff, nextDeliveryDate, todayVN, addDays } from "@/lib/commerce";
+import { previewFor, forecast, minBatchBoxes } from "@/lib/brain";
+import { addressFarmer, cutoffInstant, FARM_PAYOUT, formatKg, formatYMD, isDeliveryDay, isPastCutoff, nextDeliveryDate, todayVN, addDays } from "@/lib/commerce";
 
 export const metadata = { title: { absolute: "Bộ não · Quản trị Xanh Tận Tay" } };
 
 export default async function BrainDashboard() {
   const today = todayVN();
-  const bookDate = nextDeliveryDate();                 // the book customers are ordering into right now
-  // If tomorrow's book is past its cut-off but was never closed, that one needs closing first.
+  const bookDate = nextDeliveryDate();                 // the book customers are ordering into right now: the next Wednesday or Sunday still open
+  // If tomorrow is a delivery day whose book is past its cut-off but was never closed (the cron
+  // leaves a batch below the minimum alone), that one needs the operator's decision first.
   const tomorrow = addDays(today, 1);
+  const minBatch = minBatchBoxes();
 
   const requests = await db.select({ r: change_requests, farm: farms, farmer: callName }).from(change_requests).innerJoin(farms, eq(change_requests.farm_id, farms.id)).leftJoin(users, eq(farms.owner_id, users.id)).where(eq(change_requests.status, "pending")).orderBy(desc(change_requests.created_at));
-  const [preview, fc, runs, caps, [u], [f], [rev], [s], [g], pushRows, [openTomorrow]] = await Promise.all([
+  const [preview, fc, runs, caps, [u], [f], [rev], [s], [g], pushRows, deliveredBySize] = await Promise.all([
     previewFor(bookDate),
     forecast(addDays(today, 1), 7),
     db.select().from(harvest_runs).orderBy(desc(harvest_runs.delivery_date)).limit(6),
@@ -33,24 +35,29 @@ export default async function BrainDashboard() {
     db.select({ c: count() }).from(subscriptions).where(eq(subscriptions.active, true)),
     db.select({ c: count() }).from(group_orders).where(eq(group_orders.status, "open")),
     db.select({ platform: push_devices.platform, c: count() }).from(push_devices).groupBy(push_devices.platform),
-    db.select({ c: count() }).from(orders).where(and(eq(orders.delivery_date, tomorrow), eq(orders.status, "placed"), ne(orders.type, "subscription"))),
+    db.select({ size: boxes.size, q: sum(orders.quantity) }).from(orders).innerJoin(boxes, eq(orders.box_id, boxes.id)).where(eq(orders.status, "delivered")).groupBy(boxes.size),
   ]);
   const commands = runs.length ? await db.select({ c: harvest_commands, farm: farms.name, farmer: callName }).from(harvest_commands).innerJoin(farms, eq(harvest_commands.farm_id, farms.id)).leftJoin(users, eq(farms.owner_id, users.id)).orderBy(desc(harvest_commands.total_kg)) : [];
   const pushCounts = { mobile: pushRows.filter((r) => r.platform !== "web").reduce((n, r) => n + r.c, 0), web: pushRows.find((r) => r.platform === "web")?.c ?? 0 };
   const revenue = Number(rev.s ?? 0);
+  // Paid to the farms at the garden: a fixed amount per delivered box, by size.
+  const paidToFarms = deliveredBySize.reduce((n, r) => n + (FARM_PAYOUT[r.size] ?? 0) * Number(r.q ?? 0), 0);
   const capOf = new Map(caps.map((c) => [c.produce_id, Number(c.s ?? 0)]));
   const totalCapacity = caps.reduce((n, c) => n + Number(c.s ?? 0), 0);
   const bookRun = runs.find((r) => r.delivery_date === bookDate);
-  const lateBook = bookDate !== tomorrow && openTomorrow.c > 0 && !runs.some((r) => r.delivery_date === tomorrow) && isPastCutoff(tomorrow);
+  const latePreview = bookDate !== tomorrow && isDeliveryDay(tomorrow) && isPastCutoff(tomorrow) && !runs.some((r) => r.delivery_date === tomorrow) ? await previewFor(tomorrow) : null;
+  const lateBoxes = latePreview?.boxes ?? 0;
+  const lateBook = lateBoxes > 0;
+  const below = (n: number) => (n < minBatch ? { boxes: n, min: minBatch } : undefined);
   const maxFc = Math.max(1, ...fc.days.map((d) => d.kg));
 
   const tiles = [
-    { icon: "inventory_2", label: `Hộp trong sổ (giao ${formatYMD(bookDate, { day: "numeric", month: "numeric" })})`, value: preview.boxes, tone: "primary" },
-    { icon: "scale", label: "Cần thu hoạch", value: formatKg(preview.total_kg), tone: "tertiary" },
-    { icon: "recycling", label: "Rau thừa dự kiến", value: "0%", tone: "secondary" },
+    { icon: "inventory_2", label: `Hộp trong sổ / tối thiểu mở chuyến (giao ${formatYMD(bookDate, { day: "numeric", month: "numeric" })})`, value: `${preview.boxes}/${minBatch}`, tone: preview.boxes >= minBatch ? "primary" : "tertiary" },
+    { icon: "scale", label: "Cần thu hoạch", value: formatKg(preview.total_kg), tone: "secondary" },
+    { icon: "recycling", label: "Rau thừa dự kiến", value: "0%", tone: "surface" },
     { icon: "warning", label: "Thiếu so với năng suất", value: formatKg(preview.shortage_kg), tone: preview.shortage_kg > 0 ? "error" : "surface" },
     { icon: "payments", label: "GMV đã giao", value: formatVND(revenue), tone: "surface" },
-    { icon: "agriculture", label: "Về tay nông hộ", value: formatVND(Math.round(revenue * FARMER_SHARE)), tone: "surface" },
+    { icon: "agriculture", label: "Về tay nông hộ (mua tại vườn)", value: formatVND(paidToFarms), tone: "surface" },
     { icon: "event_repeat", label: "Gói định kỳ đang chạy", value: s.c, tone: "surface" },
     { icon: "groups", label: "Nhóm gom đơn mở", value: g.c, tone: "surface" },
   ];
@@ -65,14 +72,20 @@ export default async function BrainDashboard() {
           <p className="body-md text-on-surface-variant">{u.c} khách · {f.c} nông hộ · tổng năng suất {formatKg(totalCapacity)}/ngày</p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          {lateBook && <CutoffButton date={tomorrow} label={formatYMD(tomorrow)} />}
-          {!lateBook && (bookRun ? <CutoffButton date={bookDate} label={formatYMD(bookDate)} reallocate disabled={bookRun.status !== "allocated"} /> : <CutoffButton date={bookDate} label={formatYMD(bookDate)} disabled={preview.boxes === 0} />)}
+          {lateBook && <CutoffButton date={tomorrow} label={formatYMD(tomorrow)} below={below(lateBoxes)} />}
+          {!lateBook && (bookRun ? <CutoffButton date={bookDate} label={formatYMD(bookDate)} reallocate disabled={bookRun.status !== "allocated"} /> : <CutoffButton date={bookDate} label={formatYMD(bookDate)} disabled={preview.boxes === 0} below={below(preview.boxes)} />)}
         </div>
       </div>
 
-      {lateBook && <p className="status-pill status-cancelled" style={{ height: "auto", padding: "10px 14px", whiteSpace: "normal" }}><Icon name="warning" size={18} filled /> Sổ giao {formatYMD(tomorrow)} đã qua 18h00 mà chưa chốt ({openTomorrow.c} đơn). Bấm “Chốt sổ & gửi lệnh”.</p>}
+      {lateBook && <p className="status-pill status-cancelled" style={{ height: "auto", padding: "10px 14px", whiteSpace: "normal" }}><Icon name="warning" size={18} filled /> Sổ giao {formatYMD(tomorrow)} đã qua 18h00 mà chưa chốt: {lateBoxes}/{minBatch} hộp{lateBoxes < minBatch ? ", chưa đủ tối thiểu nên hệ thống không tự gửi lệnh" : ""}. Bấm “Chốt sổ & gửi lệnh” để mở chuyến.</p>}
       {requests.length > 0 && <a href="#duyet" className="m3-request pending" style={{ textDecoration: "none" }}><Icon name="fact_check" filled /><span style={{ flex: 1 }}><span className="title-md" style={{ display: "block" }}>{requests.length} yêu cầu của nông hộ đang chờ duyệt</span><span className="body-sm" style={{ opacity: 0.85 }}>Đổi thông tin vườn hoặc rau củ đăng ký chỉ có hiệu lực sau khi duyệt.</span></span><Icon name="arrow_downward" /></a>}
       <CutoffBanner cutoffAt={cutoffInstant(bookDate).toISOString()} deliveryLabel={formatYMD(bookDate)} />
+      {!bookRun && (
+        <p className="body-md text-on-surface-variant" style={{ marginTop: -16 }}>
+          <Icon name={preview.boxes >= minBatch ? "check_circle" : "flag"} size={18} filled /> Chuyến giao {formatYMD(bookDate)}: đã có <strong className="text-on-surface tabular">{preview.boxes}/{minBatch}</strong> hộp so với mức tối thiểu để mở chuyến thu hoạch.{" "}
+          {preview.boxes >= minBatch ? "Đủ tối thiểu, 18h00 hôm trước ngày giao hệ thống tự chốt sổ và gửi lệnh." : "Chưa đủ thì tới giờ chốt hệ thống sẽ không tự gửi lệnh; nút “Chốt sổ & gửi lệnh” vẫn mở được chuyến dù dưới mức tối thiểu."}
+        </p>
+      )}
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 stagger">
         {tiles.map((t) => (
@@ -128,7 +141,7 @@ export default async function BrainDashboard() {
 
       {/* Forecast */}
       <section className="m3-card-filled" style={{ padding: 22, borderRadius: "var(--shape-xl)" }}>
-        <div className="m3-section-head"><h2 className="title-lg text-on-surface"><Icon name="insights" filled /> Dự báo 7 ngày tới</h2><span className="body-sm text-on-surface-variant">Từ gói định kỳ và đơn đã đặt trước</span></div>
+        <div className="m3-section-head"><h2 className="title-lg text-on-surface"><Icon name="insights" filled /> Dự báo 7 ngày tới</h2><span className="body-sm text-on-surface-variant">Từ gói định kỳ và đơn đã đặt trước · chỉ giao thứ Tư và Chủ nhật</span></div>
         <div className="grid grid-cols-7 gap-2" style={{ alignItems: "end", height: 170 }}>
           {fc.days.map((d) => (
             <div key={d.date} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, height: "100%", justifyContent: "flex-end" }}>
